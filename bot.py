@@ -726,7 +726,7 @@ async def emoji_ids(m: Message, state: FSMContext):
 
 @router.message(Command("privacy"))
 async def privacy_cmd(m: Message):
-    url = f"{WEBAPP_URL}/privacy" if WEBAPP_URL else None
+    url = f"{WEBAPP_URL}/privacy.html" if WEBAPP_URL else None
     await m.answer(f"🔒 Maxfiylik siyosati: {url}" if url else f"🔒 Maxfiylik siyosati bo'yicha savollar: {CONTACT}")
 
 
@@ -776,6 +776,17 @@ def make_web_app():
         return web.FileResponse(p)
 
     app.router.add_get("/samples/{name}", sample)
+
+    async def catalog_file(_):
+        return web.json_response(catalog_json())
+
+    async def video(_):
+        return web.FileResponse(SAMPLES / "4_Reklama.mp4")
+
+    app.router.add_get("/catalog.json", catalog_file)
+    if (SAMPLES / "4_Reklama.mp4").exists():
+        app.router.add_get("/4_Reklama.mp4", video)
+    app.router.add_get("/privacy.html", privacy)
     return app
 
 

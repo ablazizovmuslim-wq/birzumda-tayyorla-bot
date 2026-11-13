@@ -131,7 +131,7 @@ nav button.on svg{transform:translateY(-2px) scale(1.12)}
 <!-- SAMPLES -->
 <section class="page" id="p-samples">
   <h2>Namunalar</h2>
-  <video src="samples/4_Reklama.mp4" autoplay muted loop playsinline></video>
+  <video src="4_Reklama.mp4" autoplay muted loop playsinline></video>
   <div class="grid2 stag" style="margin-top:12px">
     <div class="card"><div class="mock s"><i style="left:14px;top:16px;width:70px;height:9px;background:#C9A6FF"></i><i style="left:14px;top:34px;width:110px;height:6px;background:#4B3A66"></i><i class="bar" style="right:44px;bottom:14px;width:12px;height:50px;background:#6A1FB0"></i><i class="bar" style="right:24px;bottom:14px;width:12px;height:70px;background:#A06BFF;animation-delay:.3s"></i></div><b>Start</b><p class="m" style="font-size:13px">Zamonaviy dizayn</p></div>
     <div class="card"><div class="mock p"><i style="left:14px;top:16px;width:90px;height:9px;background:#fff"></i><i style="left:14px;top:40px;width:14px;height:14px;border-radius:50%;background:#6A1FB0"></i><i style="left:34px;top:44px;width:70px;height:6px;background:#4B3A66"></i><i style="left:14px;top:62px;width:14px;height:14px;border-radius:50%;background:#6A1FB0"></i><i style="left:34px;top:66px;width:56px;height:6px;background:#4B3A66"></i><i class="bar" style="right:20px;bottom:14px;width:12px;height:66px;background:#A06BFF"></i></div><b>Professional</b><p class="m" style="font-size:13px">Animatsiya + diagramma</p></div>
@@ -251,7 +251,7 @@ document.getElementById('sendBtn').onclick = () => {
   tg.sendData(JSON.stringify(data));
 };
 
-fetch('api/catalog').then(r => r.json()).then(c => { CAT = c; renderHome(); }).catch(() => toast("Narxlar yuklanmadi"));
+fetch('catalog.json?v=' + Date.now()).then(r => r.json()).then(c => { CAT = c; renderHome(); }).catch(() => toast("Narxlar yuklanmadi"));
 </script>
 </body>
 </html>
