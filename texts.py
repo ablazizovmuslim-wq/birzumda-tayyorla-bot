@@ -17,6 +17,9 @@ BTN = {
     "orders":   {"uz": "📦 Buyurtmalarim", "ru": "📦 Мои заказы", "en": "📦 My orders"},
     "contact":  {"uz": "📞 Aloqa", "ru": "📞 Связь", "en": "📞 Contact"},
     "lang":     {"uz": "🌐 Til", "ru": "🌐 Язык", "en": "🌐 Language"},
+    "info":     {"uz": "📖 Ma'lumot", "ru": "📖 Информация", "en": "📖 Info"},
+    "channel":  {"uz": "📢 Kanalimiz", "ru": "📢 Наш канал", "en": "📢 Our channel"},
+    "subscribe": {"uz": "📢 Kanalga obuna bo'lish", "ru": "📢 Подписаться на канал", "en": "📢 Subscribe to the channel"},
     # inline tugmalar
     "back":     {"uz": "⬅️ Orqaga", "ru": "⬅️ Назад", "en": "⬅️ Back"},
     "see_samples": {"uz": "🎨 Namunalarni ko'rish", "ru": "🎨 Посмотреть примеры", "en": "🎨 See samples"},
@@ -346,4 +349,132 @@ TX = {
         "uz": "Slayd, mustaqil ish, kurs ishi — tez va chiroyli! Havola orqali kirsang, birinchi buyurtmaga {sum} chegirma 🎁",
         "ru": "Слайды, самостоятельные, курсовые — быстро и красиво! По ссылке — скидка {sum} на первый заказ 🎁",
         "en": "Slides, papers, term papers — fast and beautiful! Join with my link and get {sum} off your first order 🎁"},
+    "channel_msg": {
+        "uz": "{e[channel]} <b>Kanalimizga obuna bo'ling!</b>\n\nYangi namunalar, {e[fire]} aksiyalar va {e[star]} promokodlar birinchi bo'lib shu yerda chiqadi.",
+        "ru": "{e[channel]} <b>Подпишитесь на наш канал!</b>\n\nНовые примеры работ, {e[fire]} акции и {e[star]} промокоды — первыми именно там.",
+        "en": "{e[channel]} <b>Subscribe to our channel!</b>\n\nNew samples, {e[fire]} promos and {e[star]} promo codes appear there first."},
+    "channel_soon": {"uz": "Kanal tez orada ochiladi 🙂", "ru": "Канал скоро откроется 🙂", "en": "The channel is coming soon 🙂"},
+    "info": {
+        "uz": ("{e[bot]} <b>{bot} haqida</b>\n\n"
+               "{e[student]} <b>Talabalarga</b> ({min_s}): slayd, mustaqil ish, kurs ishi, maqola, amaliy ish, referat, portfolio\n"
+               "{e[teacher]} <b>Ustozlarga</b> ({min_t}): taqdimot, portfolio, o'quv-uslubiy majmua, dars ishlanmasi, maqola, test, tadbir\n"
+               "{e[edit]} Ro'yxatda yo'q ish — yozasiz, narxni kelishamiz\n\n"
+               "{e[image]} <b>Slayd paketlari</b>\n"
+               "• <b>Start</b> — zamonaviy, toza dizayn\n"
+               "• <b>Professional</b> — animatsiya, diagrammalar, 🐢\n"
+               "• <b>Premium</b> — Morph, neon dizayn, nutq matni, 🐢\n"
+               "🐢 <b>Toshbaqa o'qituvchi</b> — slaydda gapirib, mavzuni tushuntiradi (Pro va Premium)\n\n"
+               "{e[orders]} <b>Qanday ishlaydi?</b>\n"
+               "{e[n1]} Ish va paketni tanlaysiz, mavzuni yozasiz\n"
+               "{e[n2]} Kartaga to'lab, chek rasmini yuborasiz\n"
+               "{e[n3]} Admin tasdiqlaydi va ishni boshlaymiz\n"
+               "{e[n4]} Tayyor fayl shu chatga keladi\n\n"
+               "{e[fire]} Shoshilinch: +{urgent}% · 🔁 Tuzatish bepul\n\n"
+               "{e[heart]} <b>Bonus va aksiyalar</b>\n"
+               "• Do'stingiz havolangiz orqali kelsa — unga <b>{welcome}</b> chegirma, sizga <b>{bonus}</b> bonus\n"
+               "• Bonus bilan buyurtmaning {pct}% gacha qismini to'laysiz\n"
+               "• Promokodlar va aksiyalar — kanalimizda\n\n"
+               "{e[globe]} Tillar: O'zbekcha · Русский · English — /lang\n"
+               "{e[channel]} Kanal: {channel}\n"
+               "{e[bot]} Video yuklash boti: {yukla}\n"
+               "{e[contact]} Admin: {contact}\n"
+               "🔒 Maxfiylik siyosati: /privacy"),
+        "ru": ("{e[bot]} <b>О боте {bot}</b>\n\n"
+               "{e[student]} <b>Студентам</b> ({min_s}): слайды, самостоятельная, курсовая, статья, практическая, реферат, портфолио\n"
+               "{e[teacher]} <b>Преподавателям</b> ({min_t}): презентации, портфолио, УМК, разработки уроков, статьи, тесты, мероприятия\n"
+               "{e[edit]} Нет в списке — напишите, цену согласуем\n\n"
+               "{e[image]} <b>Пакеты слайдов</b>\n"
+               "• <b>Start</b> — современный чистый дизайн\n"
+               "• <b>Professional</b> — анимация, диаграммы, 🐢\n"
+               "• <b>Premium</b> — Morph, неон, текст речи, 🐢\n"
+               "🐢 <b>Черепаха-учитель</b> — говорит на слайдах и объясняет тему (Pro и Premium)\n\n"
+               "{e[orders]} <b>Как это работает?</b>\n"
+               "{e[n1]} Выбираете работу и пакет, пишете тему\n"
+               "{e[n2]} Оплачиваете на карту и отправляете фото чека\n"
+               "{e[n3]} Админ подтверждает, и мы начинаем\n"
+               "{e[n4]} Готовый файл приходит в этот чат\n\n"
+               "{e[fire]} Срочно: +{urgent}% · 🔁 Правки бесплатно\n\n"
+               "{e[heart]} <b>Бонусы и акции</b>\n"
+               "• Друг пришёл по вашей ссылке — ему скидка <b>{welcome}</b>, вам <b>{bonus}</b> бонуса\n"
+               "• Бонусами можно оплатить до {pct}% заказа\n"
+               "• Промокоды и акции — в нашем канале\n\n"
+               "{e[globe]} Языки: O'zbekcha · Русский · English — /lang\n"
+               "{e[channel]} Канал: {channel}\n"
+               "{e[bot]} Бот для скачивания видео: {yukla}\n"
+               "{e[contact]} Админ: {contact}\n"
+               "🔒 Политика конфиденциальности: /privacy"),
+        "en": ("{e[bot]} <b>About {bot}</b>\n\n"
+               "{e[student]} <b>For students</b> ({min_s}): slides, independent work, term paper, article, lab work, essay, portfolio\n"
+               "{e[teacher]} <b>For teachers</b> ({min_t}): presentations, portfolio, teaching materials, lesson plans, articles, tests, events\n"
+               "{e[edit]} Not on the list — describe it and we'll agree on a price\n\n"
+               "{e[image]} <b>Slide packages</b>\n"
+               "• <b>Start</b> — modern, clean design\n"
+               "• <b>Professional</b> — animation, charts, 🐢\n"
+               "• <b>Premium</b> — Morph, neon design, speech text, 🐢\n"
+               "🐢 <b>Turtle teacher</b> — talks on the slides and explains the topic (Pro and Premium)\n\n"
+               "{e[orders]} <b>How it works</b>\n"
+               "{e[n1]} Pick the work and package, write the topic\n"
+               "{e[n2]} Pay by card and send a photo of the receipt\n"
+               "{e[n3]} The admin confirms and we start\n"
+               "{e[n4]} The finished file arrives in this chat\n\n"
+               "{e[fire]} Urgent: +{urgent}% · 🔁 Free revisions\n\n"
+               "{e[heart]} <b>Bonuses & promos</b>\n"
+               "• A friend joins with your link — they get <b>{welcome}</b> off, you get a <b>{bonus}</b> bonus\n"
+               "• Pay up to {pct}% of an order with bonuses\n"
+               "• Promo codes and offers — in our channel\n\n"
+               "{e[globe]} Languages: O'zbekcha · Русский · English — /lang\n"
+               "{e[channel]} Channel: {channel}\n"
+               "{e[bot]} Video downloader bot: {yukla}\n"
+               "{e[contact]} Admin: {contact}\n"
+               "🔒 Privacy policy: /privacy")},
+}
+
+# Bot menyusidagi buyruqlar (chap pastdagi «Menu» tugmasi)
+COMMANDS = {
+    "uz": [("start", "Botni ishga tushirish"), ("order", "Buyurtma berish"), ("bonus", "Bonus va aksiyalar"),
+           ("info", "Bot haqida ma'lumot"), ("channel", "Kanalimizga obuna bo'lish"), ("lang", "Tilni o'zgartirish"),
+           ("privacy", "Maxfiylik siyosati")],
+    "ru": [("start", "Запустить бота"), ("order", "Сделать заказ"), ("bonus", "Бонусы и акции"),
+           ("info", "Информация о боте"), ("channel", "Подписаться на канал"), ("lang", "Сменить язык"),
+           ("privacy", "Политика конфиденциальности")],
+    "en": [("start", "Start the bot"), ("order", "Place an order"), ("bonus", "Bonuses & promos"),
+           ("info", "About the bot"), ("channel", "Subscribe to our channel"), ("lang", "Change language"),
+           ("privacy", "Privacy policy")],
+}
+
+# Bot profili: «Bu bot nima qila oladi?» (description, 512 belgigacha) va qisqa tavsif (about, 120 belgigacha)
+DESCRIPTION = {
+    "uz": ("🎓 Talabalar va 👩‍🏫 ustozlar uchun tez va chiroyli tayyorlaymiz: slayd, mustaqil ish, kurs ishi, "
+           "maqola, referat, portfolio, O'UM, dars ishlanmasi, testlar.\n\n"
+           "📦 Start · Professional · Premium\n"
+           "🐢 Toshbaqa o'qituvchi — slaydda gapirib tushuntiradi (Pro, Premium)\n"
+           "⚡ Shoshilinch · 🔁 Bepul tuzatish\n"
+           "🎁 Do'st taklif qiling — bonus oling · 🎟 promokodlar\n"
+           "🌐 O'zbekcha · Русский · English\n\n{channel_line}"
+           "📥 Video yuklash: {yukla}\n"
+           "💜 Admin: {contact}"),
+    "ru": ("🎓 Студентам и 👩‍🏫 преподавателям быстро и красиво: слайды, самостоятельные, курсовые, "
+           "статьи, рефераты, портфолио, УМК, разработки уроков, тесты.\n\n"
+           "📦 Start · Professional · Premium\n"
+           "🐢 Черепаха-учитель — объясняет тему голосом (Pro, Premium)\n"
+           "⚡ Срочно · 🔁 Бесплатные правки\n"
+           "🎁 Приглашайте друзей — бонусы · 🎟 промокоды\n"
+           "🌐 O'zbekcha · Русский · English\n\n{channel_line}"
+           "📥 Скачать видео: {yukla}\n"
+           "💜 Админ: {contact}"),
+    "en": ("🎓 For students and 👩‍🏫 teachers: slides, independent work, term papers, articles, essays, "
+           "portfolios, teaching materials, lesson plans, tests — fast and beautiful.\n\n"
+           "📦 Start · Professional · Premium\n"
+           "🐢 Turtle teacher — explains the topic out loud (Pro, Premium)\n"
+           "⚡ Urgent orders · 🔁 Free revisions\n"
+           "🎁 Invite friends — earn bonuses · 🎟 promo codes\n"
+           "🌐 O'zbekcha · Русский · English\n\n{channel_line}"
+           "📥 Video downloader: {yukla}\n"
+           "💜 Admin: {contact}"),
+}
+CHANNEL_LINE = {"uz": "📢 Kanal: {ch}\n", "ru": "📢 Канал: {ch}\n", "en": "📢 Channel: {ch}\n"}
+SHORT_DESC = {
+    "uz": "Slayd, mustaqil ish, kurs ishi va boshqalar — tez va chiroyli. 🐢 Toshbaqa o'qituvchi, bonuslar. 💜 {contact}",
+    "ru": "Слайды, самостоятельные, курсовые и другое — быстро и красиво. 🐢 Черепаха-учитель, бонусы. 💜 {contact}",
+    "en": "Slides, papers, term papers and more — fast and beautiful. 🐢 Turtle teacher, bonuses. 💜 {contact}",
 }

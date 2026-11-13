@@ -40,6 +40,8 @@ ADMIN_IDS = {int(x) for x in os.getenv("ADMIN_ID", "0").replace(" ", "").split("
 CARD_NUMBER = os.getenv("CARD_NUMBER", "0000 0000 0000 0000")
 CARD_OWNER = os.getenv("CARD_OWNER", "Ism Familiya")
 CONTACT = os.getenv("CONTACT", "@Abdulazizov_prince")
+CHANNEL = os.getenv("CHANNEL", "@Birzumda_Tayyorla").strip()
+OTHER_BOTS = os.getenv("OTHER_BOTS", "@Birzumda_Yukla_bot")  # boshqa Birzumda botlari  # bot kanali: @username yoki https://t.me/... havola
 DB_PATH = os.getenv("DB_PATH", "orders.db")
 BASE = Path(__file__).parent
 SAMPLES = BASE
@@ -83,13 +85,13 @@ def pe(key: str, fallback: str) -> str:
 
 logging.basicConfig(level=logging.INFO)
 
-from texts import (BTN, CAT_TR, CURRENCY, DEFAULT_LANG, FROM, LANGS, NEGOTIABLE, TURTLE_LONG, TX,  # noqa: E402
+from texts import (BTN, CAT_TR, CHANNEL_LINE, COMMANDS, CURRENCY, DESCRIPTION, SHORT_DESC, DEFAULT_LANG, FROM, LANGS, NEGOTIABLE, TURTLE_LONG, TX,  # noqa: E402
                    DEADLINES as DL_TR, STATUS as ST_TR)
 
 # Matnlardagi {e[kalit]} uchun premium emoji (ID bo'lmasa oddiy emoji)
 E_FALLBACK = {"hi": "👋", "star": "✨", "bot": "🤖", "student": "🎓", "teacher": "👩‍🏫", "edit": "✍️",
               "heart": "🎁", "ok": "✅", "image": "🎨", "fire": "⚡", "orders": "📋", "contact": "💜",
-              "down": "👇", "money": "💰", "check": "📋", "globe": "🌐", "app": "✨",
+              "down": "👇", "money": "💰", "check": "📋", "globe": "🌐", "app": "✨", "channel": "📢",
               "n1": "1️⃣", "n2": "2️⃣", "n3": "3️⃣", "n4": "4️⃣"}
 E = {k: pe(k, v) for k, v in E_FALLBACK.items()}
 
@@ -468,6 +470,7 @@ def main_kb(lang: str = DEFAULT_LANG):
         [kbtn(b(lang, "order"), "success", "order")],
         [kbtn(b(lang, "prices"), "primary", "prices"), kbtn(b(lang, "samples"), "primary", "samples")],
         [kbtn(b(lang, "bonus"), "danger", "heart")],
+        [kbtn(b(lang, "info"), "primary", "bot"), kbtn(b(lang, "channel"), "success", "channel")],
         [kbtn(b(lang, "orders"), None, "orders"), kbtn(b(lang, "contact"), None, "contact"),
          kbtn(b(lang, "lang"), None, "globe")],
     ]
@@ -1141,6 +1144,55 @@ def refund_discounts(o):
         use_promo(o["promo"], -1)
 
 
+# ------------------------------------------------------------------ ma'lumot va kanal
+def channel_url() -> str:
+    if not CHANNEL:
+        return ""
+    if CHANNEL.startswith("http"):
+        return CHANNEL
+    return "https://t.me/" + CHANNEL.lstrip("@")
+
+
+def channel_name() -> str:
+    url = channel_url()
+    return "@" + url.rstrip("/").split("/")[-1] if url else "—"
+
+
+def channel_kb(lang: str):
+    url = channel_url()
+    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(
+        text=b(lang, "subscribe"), url=url, style="success",
+        **({"icon_custom_emoji_id": EMOJI_IDS["channel"]} if EMOJI_IDS.get("channel") else {}))]]) if url else None
+
+
+def min_price(aud: str) -> int:
+    prices = []
+    for s in CATALOG[aud]["services"].values():
+        if "packages" in s:
+            prices += [p[1] for p in s["packages"].values()]
+        elif s["price"]:
+            prices.append(s["price"])
+    return min(prices)
+
+
+@router.message(F.text.in_(btn_texts("info")))
+@router.message(Command("info", "help"))
+async def info_cmd(m: Message):
+    lang = L(m.from_user.id)
+    txt = tr(lang, "info", bot=BOT_NAME, min_s=price_from(min_price("s"), lang), min_t=price_from(min_price("t"), lang),
+             urgent=int(URGENT_EXTRA * 100), welcome=money(REF_WELCOME, lang), bonus=money(REF_BONUS, lang),
+             pct=BONUS_MAX_PCT, channel=channel_name(), contact=CONTACT, yukla=OTHER_BOTS)
+    await m.answer(txt, reply_markup=channel_kb(lang), link_preview_options=LinkPreviewOptions(is_disabled=True))
+
+
+@router.message(F.text.in_(btn_texts("channel")))
+@router.message(Command("channel", "kanal"))
+async def channel_cmd(m: Message):
+    lang = L(m.from_user.id)
+    kb = channel_kb(lang)
+    await m.answer(tr(lang, "channel_msg") if kb else tr(lang, "channel_soon"), reply_markup=kb)
+
+
 # ------------------------------------------------------------------ bonus va aksiyalar
 @router.message(F.text.in_(btn_texts("bonus")))
 @router.message(Command("bonus"))
@@ -1517,6 +1569,30 @@ def make_web_app():
     return app
 
 
+async def set_commands(bot: Bot):
+    """Chap pastdagi «Menu» ro'yxati — har bir til uchun alohida."""
+    from aiogram.types import BotCommand
+    try:
+        for lang, cmds in COMMANDS.items():
+            items = [BotCommand(command=c, description=d) for c, d in cmds]
+            await bot.set_my_commands(items, language_code=lang)
+            if lang == DEFAULT_LANG:
+                await bot.set_my_commands(items)  # boshqa tildagi foydalanuvchilar uchun
+    except Exception as e:
+        logging.warning("set_my_commands: %s", e)
+    # bot profilidagi tavsif — hamma ko'radi («Bu bot nima qila oladi?» va bio)
+    for lang in DESCRIPTION:
+        ch = CHANNEL_LINE[lang].format(ch=channel_name()) if channel_url() else ""
+        desc = DESCRIPTION[lang].format(channel_line=ch, contact=CONTACT, yukla=OTHER_BOTS)[:512]
+        short = SHORT_DESC[lang].format(contact=CONTACT)[:120]
+        try:
+            for code in ([lang, None] if lang == DEFAULT_LANG else [lang]):
+                await bot.set_my_description(description=desc, language_code=code)
+                await bot.set_my_short_description(short_description=short, language_code=code)
+        except Exception as e:
+            logging.warning("set_my_description %s: %s", lang, e)
+
+
 async def main():
     if not BOT_TOKEN:
         raise SystemExit("BOT_TOKEN o'rnatilmagan")
@@ -1535,6 +1611,7 @@ async def main():
         return await handler(event, data)
 
     dp.include_router(router)
+    await set_commands(bot)
     global BOT_USERNAME
     try:
         BOT_USERNAME = (await bot.get_me()).username or BOT_USERNAME
