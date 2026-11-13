@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Birzumda Taqdimot</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#0B0812;--card:rgba(28,20,44,.78);--line:#33264D;--a:#A06BFF;--a2:#6A1FB0;--pk:#FF5FC8;--t:#F2ECFA;--m:#B9AECB}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--t);font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100%;overflow-x:hidden}
+button,input,textarea,select{font:inherit;color:inherit}
+.orb{position:fixed;border-radius:50%;filter:blur(40px);opacity:.55;z-index:0;pointer-events:none}
+.o1{width:320px;height:320px;background:#7B2CBF;top:-90px;right:-110px;animation:float1 9s ease-in-out infinite}
+.o2{width:260px;height:260px;background:#FF4FD8;bottom:80px;left:-140px;opacity:.28;animation:float2 11s ease-in-out infinite}
+.o3{width:200px;height:200px;background:#4C1D95;top:45%;right:-80px;opacity:.4;animation:float1 13s ease-in-out infinite reverse}
+@keyframes float1{50%{transform:translate(-40px,50px) scale(1.15)}}
+@keyframes float2{50%{transform:translate(60px,-40px) scale(1.2)}}
+main{position:relative;z-index:1;padding:18px 16px 110px;max-width:560px;margin:0 auto}
+.page{display:none;animation:pageIn .45s cubic-bezier(.2,.8,.2,1)}
+.page.on{display:block}
+@keyframes pageIn{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(145deg,#8B4DFF,#5A189A);display:grid;place-items:center;font-weight:900;font-size:24px;box-shadow:0 0 0 0 rgba(160,107,255,.6);animation:pulse 2.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(160,107,255,.55)}70%{box-shadow:0 0 0 14px rgba(160,107,255,0)}100%{box-shadow:0 0 0 0 rgba(160,107,255,0)}}
+.k{font-size:12px;font-weight:800;letter-spacing:.24em;color:#B48CFF;text-transform:uppercase}
+h1{font-size:40px;line-height:1;font-weight:900;letter-spacing:-1.5px;margin:6px 0 12px}
+h1 .grad{background:linear-gradient(90deg,#B48CFF,#FF8FDA,#B48CFF);background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 4s linear infinite}
+@keyframes shine{to{background-position:200% center}}
+h2{font-size:26px;font-weight:900;letter-spacing:-.5px;margin-bottom:14px}
+p.m{color:var(--m);font-size:15px;line-height:1.45}
+.rot{display:inline-block;color:#FF8FDA;font-weight:800;animation:rotIn .5s}
+@keyframes rotIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stag>*{opacity:0;animation:up .5s cubic-bezier(.2,.8,.2,1) forwards}
+.stag>*:nth-child(1){animation-delay:.05s}.stag>*:nth-child(2){animation-delay:.12s}.stag>*:nth-child(3){animation-delay:.19s}.stag>*:nth-child(4){animation-delay:.26s}.stag>*:nth-child(5){animation-delay:.33s}.stag>*:nth-child(6){animation-delay:.4s}
+@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.hero{position:relative;overflow:hidden;padding:20px;margin-bottom:14px}
+.hero .ring{position:absolute;right:-50px;top:-50px;width:170px;height:170px;border-radius:50%;border:18px dashed rgba(160,107,255,.35);animation:spin 18s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sticker{position:absolute;right:16px;bottom:16px;width:64px;height:64px;animation:wob 2.6s ease-in-out infinite}
+@keyframes wob{0%,100%{transform:rotate(-8deg) scale(1)}50%{transform:rotate(8deg) scale(1.08)}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{padding:8px 12px;border-radius:999px;background:#1C1430;border:1px solid var(--line);font-size:13px;font-weight:600}
+.chip.hot{background:var(--a2);border-color:var(--a)}
+.tile{display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:transform .15s}
+.tile:active{transform:scale(.96)}
+.ico{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(145deg,#7B3FD0,#4C1D95);margin-bottom:4px}
+.ico svg{width:22px;height:22px}
+.tile b{font-size:16px}.tile span{font-size:12.5px;color:var(--m);line-height:1.35}
+.tile .pr{margin-top:4px;font-size:16px;white-space:nowrap;font-weight:900;color:#C9A6FF}
+.seg{position:relative;display:grid;grid-template-columns:1fr 1fr;background:#160F24;border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:14px}
+.seg button{position:relative;z-index:1;background:none;border:0;padding:11px;font-weight:700;font-size:14px;border-radius:10px;cursor:pointer;transition:color .2s}
+.seg .ind{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:10px;background:linear-gradient(135deg,#8B4DFF,#6A1FB0);transition:transform .35s cubic-bezier(.2,.8,.2,1);box-shadow:0 6px 20px rgba(139,77,255,.45)}
+.seg.r .ind{transform:translateX(100%)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid #2A1F3E}
+.row:last-child{border-bottom:0}
+.row b{font-size:15px}.row small{display:block;color:var(--m);font-size:12.5px;margin-top:2px}
+.row .v{font-weight:900;color:#C9A6FF;white-space:nowrap}
+.pk{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.pk div{padding:12px 10px;border-radius:14px;background:#160F24;border:1px solid var(--line);text-align:center}
+.pk div.hi{background:var(--a2);border-color:var(--a);animation:glow 2s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 22px rgba(160,107,255,.6)}}
+.pk small{display:block;font-size:12px;color:var(--m)}.pk div.hi small{color:#EDE3FF}
+.pk b{font-size:15px}
+video{width:100%;border-radius:18px;border:1px solid var(--line);display:block}
+.mock{height:110px;border-radius:14px;position:relative;overflow:hidden;margin-bottom:10px}
+.mock.s{background:#120D1C;border:1px solid #3A2A57}
+.mock.p{background:#120D1C;border:1px solid #6A1FB0}
+.mock.x{background:#0B0710;border:1px solid #5A2A6E}
+.mock i{position:absolute;display:block;border-radius:4px}
+.mock .glo{border-radius:50%;width:120px;height:120px;right:-30px;top:-40px;background:radial-gradient(circle,rgba(255,80,200,.7),rgba(255,80,200,0) 65%);animation:float1 4s ease-in-out infinite}
+.bar{animation:grow 1.6s ease-in-out infinite alternate;transform-origin:bottom}
+@keyframes grow{from{transform:scaleY(.4)}to{transform:scaleY(1)}}
+label{display:block;font-size:13px;font-weight:700;color:var(--m);margin:14px 0 6px}
+input,textarea,select{width:100%;background:#160F24;border:1px solid var(--line);border-radius:14px;padding:13px 14px;font-size:15px;outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus,textarea:focus,select:focus{border-color:var(--a);box-shadow:0 0 0 3px rgba(160,107,255,.25)}
+textarea{min-height:80px;resize:vertical}
+.opts{display:grid;gap:8px}
+.opt{display:flex;justify-content:space-between;align-items:center;padding:13px 14px;border-radius:14px;background:#160F24;border:1px solid var(--line);cursor:pointer;transition:all .2s}
+.opt.on{border-color:var(--a);background:#24173A;box-shadow:0 0 0 3px rgba(160,107,255,.2)}
+.opt .v{font-weight:800;color:#C9A6FF;white-space:nowrap}
+.total{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#6A1FB0,#3B0F6E)}
+.total b{font-size:24px;font-weight:900}
+.btn{width:100%;margin-top:14px;padding:16px;border:0;border-radius:16px;background:linear-gradient(135deg,#9B5CFF,#6A1FB0);font-weight:800;font-size:16px;cursor:pointer;box-shadow:0 10px 30px rgba(139,77,255,.45);transition:transform .15s}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:#1C1430;box-shadow:none;border:1px solid var(--line)}
+nav{position:fixed;left:12px;right:12px;bottom:12px;z-index:5;max-width:536px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);background:rgba(20,14,32,.9);border:1px solid var(--line);border-radius:22px;padding:6px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+nav button{background:none;border:0;padding:8px 0 6px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:700;color:var(--m);cursor:pointer;border-radius:16px;transition:color .2s,background .25s}
+nav button svg{width:22px;height:22px;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+nav button.on{color:#fff;background:linear-gradient(135deg,rgba(139,77,255,.5),rgba(106,31,176,.5))}
+nav button.on svg{transform:translateY(-2px) scale(1.12)}
+.toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-80px);background:#24173A;border:1px solid var(--a);padding:12px 16px;border-radius:14px;font-weight:700;font-size:14px;z-index:9;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.toast.show{transform:translate(-50%,0)}
+.spark{position:absolute;width:14px;height:14px;animation:tw 1.8s ease-in-out infinite}
+@keyframes tw{50%{transform:scale(.4) rotate(90deg);opacity:.4}}
+</style>
+</head>
+<body>
+<div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+<div class="toast" id="toast"></div>
+<main>
+
+<!-- HOME -->
+<section class="page on" id="p-home">
+  <div class="brand"><div class="logo">B</div><div><div class="k">Birzumda</div><div style="font-weight:800">Taqdimot</div></div></div>
+  <div class="card hero">
+    <div class="ring"></div>
+    <svg class="spark" style="left:62%;top:18px" viewBox="0 0 24 24"><path d="M12 0L14 10 24 12 14 14 12 24 10 14 0 12 10 10Z" fill="#FF8FDA"/></svg>
+    <svg class="spark" style="left:85%;top:62%;animation-delay:.6s" viewBox="0 0 24 24"><path d="M12 0L14 10 24 12 14 14 12 24 10 14 0 12 10 10Z" fill="#fff"/></svg>
+    <div class="k">Professional dizayn</div>
+    <h1>Chiroyli ishlar<br><span class="grad">bir zumda</span></h1>
+    <p class="m"><span class="rot" id="rot">Taqdimot</span> — o'z vaqtida, bepul tuzatish bilan.</p>
+    <div class="chips"><span class="chip hot">40 000 so'mdan</span><span class="chip">⚡ Tez</span><span class="chip">🔁 Bepul tuzatish</span></div>
+    <svg class="sticker" viewBox="0 0 100 100"><polygon points="50,2 61,30 92,22 72,47 96,68 64,70 60,98 46,74 20,92 28,62 2,50 30,38 18,10 44,24" fill="#FF5FC8" stroke="#fff" stroke-width="3"/><text x="50" y="58" text-anchor="middle" font-size="20" font-weight="900" fill="#fff">TOP</text></svg>
+  </div>
+  <div class="grid2 stag" id="homeTiles"></div>
+  <button class="btn" onclick="go('order')">🛒 Buyurtma berish</button>
+</section>
+
+<!-- PRICES -->
+<section class="page" id="p-prices">
+  <h2>Narxlar</h2>
+  <div class="seg" id="seg"><div class="ind"></div><button data-a="s">🎓 Talabalar</button><button data-a="t">👩‍🏫 Ustozlar</button></div>
+  <div class="card" id="priceList"></div>
+  <div class="card" style="margin-top:12px"><div class="k" id="pkTitle">Paketlar</div><div class="pk" id="pkRow"></div></div>
+  <p class="m" style="margin-top:12px;text-align:center">⚡ Shoshilinch: +50% · 🔁 Tuzatish bepul</p>
+</section>
+
+<!-- SAMPLES -->
+<section class="page" id="p-samples">
+  <h2>Namunalar</h2>
+  <video src="samples/4_Reklama.mp4" autoplay muted loop playsinline></video>
+  <div class="grid2 stag" style="margin-top:12px">
+    <div class="card"><div class="mock s"><i style="left:14px;top:16px;width:70px;height:9px;background:#C9A6FF"></i><i style="left:14px;top:34px;width:110px;height:6px;background:#4B3A66"></i><i class="bar" style="right:44px;bottom:14px;width:12px;height:50px;background:#6A1FB0"></i><i class="bar" style="right:24px;bottom:14px;width:12px;height:70px;background:#A06BFF;animation-delay:.3s"></i></div><b>Start</b><p class="m" style="font-size:13px">Zamonaviy dizayn</p></div>
+    <div class="card"><div class="mock p"><i style="left:14px;top:16px;width:90px;height:9px;background:#fff"></i><i style="left:14px;top:40px;width:14px;height:14px;border-radius:50%;background:#6A1FB0"></i><i style="left:34px;top:44px;width:70px;height:6px;background:#4B3A66"></i><i style="left:14px;top:62px;width:14px;height:14px;border-radius:50%;background:#6A1FB0"></i><i style="left:34px;top:66px;width:56px;height:6px;background:#4B3A66"></i><i class="bar" style="right:20px;bottom:14px;width:12px;height:66px;background:#A06BFF"></i></div><b>Professional</b><p class="m" style="font-size:13px">Animatsiya + diagramma</p></div>
+    <div class="card" style="grid-column:1/-1"><div class="mock x" style="height:130px"><i class="glo"></i><i style="left:16px;top:22px;width:120px;height:14px;background:#FF8FDA;box-shadow:0 0 16px #FF4FD8"></i><i style="left:16px;top:50px;width:150px;height:7px;background:#5A4570"></i><i style="left:16px;top:66px;width:110px;height:7px;background:#5A4570"></i></div><b>Premium</b><p class="m" style="font-size:13px">Neon nur, Morph o'tishlari, nutq matni, video</p></div>
+  </div>
+  <button class="btn ghost" onclick="sendCmd('samples')">📎 PPTX namunalarni chatga yuborish</button>
+</section>
+
+<!-- ORDER -->
+<section class="page" id="p-order">
+  <h2>Buyurtma</h2>
+  <div class="seg" id="seg2"><div class="ind"></div><button data-a="s">🎓 Talabalar</button><button data-a="t">👩‍🏫 Ustozlar</button></div>
+  <label>Xizmat</label><div class="opts" id="svcOpts"></div>
+  <div id="pkgWrap" style="display:none"><label>Paket</label><div class="opts" id="pkgOpts"></div></div>
+  <label>Mavzu</label><input id="topic" maxlength="300" placeholder="Masalan: Sun'iy intellekt ta'limda">
+  <label>Qo'shimcha talablar</label><textarea id="details" maxlength="1000" placeholder="Fan, o'qituvchi, slayd soni, ism-familiya…"></textarea>
+  <label>Muddat</label><div class="opts" id="dlOpts"></div>
+  <div class="total"><span>Jami</span><b id="total">—</b></div>
+  <button class="btn" id="sendBtn">✅ Buyurtmani yuborish</button>
+  <p class="m" style="margin-top:10px;font-size:13px;text-align:center">Fayllarni buyurtmadan so'ng chatga yuborasiz</p>
+</section>
+</main>
+
+<nav id="nav">
+  <button data-p="home" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Asosiy</button>
+  <button data-p="prices"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Narxlar</button>
+  <button data-p="samples"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Namuna</button>
+  <button data-p="order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1.5 4M18 2l-1.5 4M3 6h18l-2 14H5z"/><path d="M9 10a3 3 0 0 0 6 0"/></svg>Buyurtma</button>
+</nav>
+
+<script>
+const tg = window.Telegram ? Telegram.WebApp : null;
+if (tg) { tg.ready(); tg.expand(); try { tg.setHeaderColor('#0B0812'); tg.setBackgroundColor('#0B0812'); } catch (e) {} }
+const hap = t => { try { tg && tg.HapticFeedback.impactOccurred(t || 'light'); } catch (e) {} };
+const fmt = n => n.toLocaleString('ru-RU').replace(/ /g, ' ') + " so'm";
+const ICONS = {
+  taqdimot: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8M7 12l3-3 3 2 4-4"/>',
+  dars: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8M7 12l3-3 3 2 4-4"/>',
+  mustaqil: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
+  kurs: '<path d="M4 19V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2z"/><path d="M4 17a2 2 0 0 1 2-2h12M8 7h6M8 11h6"/>',
+  portfolio: '<path d="M4 7h16v12H4z"/><path d="M9 7V5h6v2M4 12h16"/>',
+  oum: '<path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2zM22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8z"/>',
+  tadbir: '<path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/>'
+};
+const svg = k => `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[k] || ICONS.taqdimot}</svg>`;
+let CAT = null, aud = 's', order = { aud: 's', svc: null, pkg: '', deadline: 'normal' };
+const minPrice = s => s.packages ? Math.min(...Object.values(s.packages).map(p => p[1])) : s.price;
+
+function toast(t) { const el = document.getElementById('toast'); el.textContent = t; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2200); }
+function go(p) {
+  document.querySelectorAll('.page').forEach(x => x.classList.toggle('on', x.id === 'p-' + p));
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
+  window.scrollTo({ top: 0, behavior: 'smooth' }); hap();
+  if (p === 'prices') renderPrices(); if (p === 'order') renderOrder();
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => go(b.dataset.p));
+
+const words = ['Taqdimot', 'Portfolio', 'Mustaqil ish', 'Kurs ishi', "O'quv-uslubiy majmua"]; let wi = 0;
+setInterval(() => { const r = document.getElementById('rot'); wi = (wi + 1) % words.length; r.textContent = words[wi]; r.style.animation = 'none'; r.offsetHeight; r.style.animation = ''; }, 2200);
+
+function renderHome() {
+  const s = CAT.s.services;
+  document.getElementById('homeTiles').innerHTML = Object.entries(s).map(([k, v]) =>
+    `<div class="card tile" onclick="pick('s','${k}')"><div class="ico">${svg(k)}</div><b>${v.name}</b><span>${v.desc || 'Start · Professional · Premium'}</span><div class="pr">${fmt(minPrice(v))}dan</div></div>`).join('');
+}
+function bindSeg(id, cb) {
+  const seg = document.getElementById(id);
+  seg.querySelectorAll('button').forEach(b => b.onclick = () => { aud = b.dataset.a; hap(); cb(); });
+}
+function syncSeg(id) {
+  const seg = document.getElementById(id); seg.classList.toggle('r', aud === 't');
+  seg.querySelectorAll('button').forEach(b => b.style.color = b.dataset.a === aud ? '#fff' : 'var(--m)');
+}
+function renderPrices() {
+  syncSeg('seg'); const A = CAT[aud].services;
+  const list = document.getElementById('priceList'); list.classList.remove('stag'); list.offsetHeight; list.classList.add('stag');
+  list.innerHTML = Object.entries(A).map(([k, v]) => `<div class="row"><div style="display:flex;gap:12px;align-items:center"><div class="ico" style="width:36px;height:36px;margin:0">${svg(k)}</div><div><b>${v.name}</b><small>${v.desc || 'Paketlar pastda'}</small></div></div><div class="v">${fmt(minPrice(v))}dan</div></div>`).join('');
+  const pk = Object.values(A).find(v => v.packages);
+  document.getElementById('pkTitle').textContent = pk.name + ' paketlari';
+  document.getElementById('pkRow').innerHTML = Object.entries(pk.packages).map(([k, p]) => `<div class="${k === 'pro' ? 'hi' : ''}"><small>${p[0]}</small><b>${fmt(p[1]).replace(" so'm", '')}</b></div>`).join('');
+}
+function pick(a, svc) { aud = a; order = { aud: a, svc, pkg: '', deadline: 'normal' }; go('order'); }
+function price() {
+  const s = CAT[order.aud].services[order.svc]; if (!s) return 0;
+  let p = s.packages ? (order.pkg ? s.packages[order.pkg][1] : 0) : s.price;
+  if (order.deadline === 'urgent') p = Math.round(p * (1 + CAT.urgent) / 1000) * 1000;
+  return p;
+}
+function renderOrder() {
+  if (order.aud !== aud) order = { aud, svc: null, pkg: '', deadline: order.deadline };
+  syncSeg('seg2'); const A = CAT[aud].services;
+  document.getElementById('svcOpts').innerHTML = Object.entries(A).map(([k, v]) =>
+    `<div class="opt ${order.svc === k ? 'on' : ''}" onclick="order.svc='${k}';order.pkg='';hap();renderOrder()"><span>${v.name}</span><span class="v">${fmt(minPrice(v))}${v.packages ? 'dan' : ''}</span></div>`).join('');
+  const s = A[order.svc];
+  document.getElementById('pkgWrap').style.display = s && s.packages ? 'block' : 'none';
+  if (s && s.packages) document.getElementById('pkgOpts').innerHTML = Object.entries(s.packages).map(([k, p]) =>
+    `<div class="opt ${order.pkg === k ? 'on' : ''}" onclick="order.pkg='${k}';hap();renderOrder()"><span><b>${p[0]}</b><br><small style="color:var(--m)">${p[2]}</small></span><span class="v">${fmt(p[1])}</span></div>`).join('');
+  document.getElementById('dlOpts').innerHTML = [['normal', 'Oddiy muddat', ''], ['urgent', '⚡ Shoshilinch', '+50%']].map(([k, n, x]) =>
+    `<div class="opt ${order.deadline === k ? 'on' : ''}" onclick="order.deadline='${k}';hap();renderOrder()"><span>${n}</span><span class="v">${x}</span></div>`).join('');
+  const p = price(); document.getElementById('total').textContent = p ? fmt(p) : '—';
+}
+bindSeg('seg', renderPrices); bindSeg('seg2', renderOrder);
+
+function sendCmd(cmd) {
+  if (!tg || !tg.sendData) return toast('Telegram ichida oching');
+  hap('medium'); tg.sendData(JSON.stringify({ cmd }));
+}
+document.getElementById('sendBtn').onclick = () => {
+  const s = CAT[order.aud].services[order.svc];
+  const topic = document.getElementById('topic').value.trim();
+  if (!s) return toast('Xizmatni tanlang');
+  if (s.packages && !order.pkg) return toast('Paketni tanlang');
+  if (topic.length < 2) return toast('Mavzuni yozing');
+  const data = { cmd: 'order', aud: order.aud, svc: order.svc, pkg: order.pkg, deadline: order.deadline, topic, details: document.getElementById('details').value.trim() };
+  if (!tg || !tg.sendData) return toast('Telegram ichida oching');
+  try { tg.HapticFeedback.notificationOccurred('success'); } catch (e) {}
+  tg.sendData(JSON.stringify(data));
+};
+
+fetch('api/catalog').then(r => r.json()).then(c => { CAT = c; renderHome(); }).catch(() => toast("Narxlar yuklanmadi"));
+</script>
+</body>
+</html>
