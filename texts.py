@@ -65,8 +65,8 @@ CAT_TR = {
         "s": {"title": "🎓 Для студентов", "services": {
             "taqdimot": {"name": "Слайды (презентация)", "packages": {
                 "start": ("Start", "10–12 слайдов, современный дизайн, 1 день"),
-                "pro": ("Professional", "15–20 слайдов, анимация, диаграммы, 🐢 Черепаха-учитель, 1–2 дня"),
-                "premium": ("Premium", "20–25 слайдов, Morph, неон, 🐢 Черепаха-учитель, текст речи, 2–3 дня")}},
+                "pro": ("Professional", "15–20 слайдов, анимация, диаграммы, 1–2 дня"),
+                "premium": ("Premium", "20–25 слайдов, Morph, неон, текст речи, 2–3 дня")}},
             "mustaqil": {"name": "Самостоятельная работа", "desc": "В Word, с красивой обложкой"},
             "kurs": {"name": "Курсовая работа", "desc": "План, главы, заключение, список литературы"},
             "maqola": {"name": "Статья / тезисы", "desc": "Научная статья или тезисы конференции"},
@@ -93,8 +93,8 @@ CAT_TR = {
         "s": {"title": "🎓 For students", "services": {
             "taqdimot": {"name": "Slides (presentation)", "packages": {
                 "start": ("Start", "10–12 slides, modern design, 1 day"),
-                "pro": ("Professional", "15–20 slides, animation, charts, 🐢 Turtle teacher, 1–2 days"),
-                "premium": ("Premium", "20–25 slides, Morph, neon design, 🐢 Turtle teacher, speech text, 2–3 days")}},
+                "pro": ("Professional", "15–20 slides, animation, charts, 1–2 days"),
+                "premium": ("Premium", "20–25 slides, Morph, neon design, speech text, 2–3 days")}},
             "mustaqil": {"name": "Independent work", "desc": "In Word, with a nice cover page"},
             "kurs": {"name": "Term paper", "desc": "Outline, chapters, conclusion, references"},
             "maqola": {"name": "Article / abstract", "desc": "Research article or conference abstract"},
@@ -138,7 +138,7 @@ TX = {
                "{e[edit]} Ro'yxatda yo'q bo'lsa — o'zingiz yozasiz\n\n"
                "{e[heart]} <b>Siz nima olasiz?</b>\n"
                "{e[ok]} Tayyor fayl (PPTX / Word / PDF) shu chatga keladi\n"
-               "{e[image]} Professional dizayn · 🐢 Toshbaqa o'qituvchi (Pro va Premium)\n"
+               "{e[image]} Professional dizayn · 🐢 Toshbaqa o'qituvchi\n"
                "{e[fire]} O'z vaqtida va bepul tuzatish\n\n"
                "{e[orders]} <b>Qanday ishlaydi?</b>\n"
                "{e[n1]} «Buyurtma berish» → talaba yoki ustoz\n"
@@ -155,7 +155,7 @@ TX = {
                "{e[edit]} Нет в списке — напишите сами\n\n"
                "{e[heart]} <b>Что вы получите?</b>\n"
                "{e[ok]} Готовый файл (PPTX / Word / PDF) прямо в чат\n"
-               "{e[image]} Профессиональный дизайн · 🐢 Черепаха-учитель (Pro и Premium)\n"
+               "{e[image]} Профессиональный дизайн · 🐢 Черепаха-учитель\n"
                "{e[fire]} Вовремя и бесплатные правки\n\n"
                "{e[orders]} <b>Как это работает?</b>\n"
                "{e[n1]} «Заказать» → студент или преподаватель\n"
@@ -172,7 +172,7 @@ TX = {
                "{e[edit]} Not on the list — just describe it\n\n"
                "{e[heart]} <b>What you get</b>\n"
                "{e[ok]} A ready file (PPTX / Word / PDF) right in this chat\n"
-               "{e[image]} Professional design · 🐢 Turtle teacher (Pro and Premium)\n"
+               "{e[image]} Professional design · 🐢 Turtle teacher\n"
                "{e[fire]} On time, free revisions\n\n"
                "{e[orders]} <b>How it works</b>\n"
                "{e[n1]} «Place an order» → student or teacher\n"
@@ -203,9 +203,9 @@ TX = {
     "cancelled": {"uz": "Buyurtma bekor qilindi.", "ru": "Заказ отменён.", "en": "Order cancelled."},
     "cancel_cmd": {"uz": "Bekor qilindi.", "ru": "Отменено.", "en": "Cancelled."},
     "prices_footer": {
-        "uz": "⚡ Shoshilinch buyurtma: <b>+{pct}%</b>\n🔁 Tuzatishlar bepul\n🐢 Pro va Premium paketlarda — Toshbaqa o'qituvchi\n\nBuyurtma berish uchun tugmani bosing 👇",
-        "ru": "⚡ Срочный заказ: <b>+{pct}%</b>\n🔁 Правки бесплатно\n🐢 В пакетах Pro и Premium — Черепаха-учитель\n\nНажмите кнопку, чтобы заказать 👇",
-        "en": "⚡ Urgent order: <b>+{pct}%</b>\n🔁 Free revisions\n🐢 Pro and Premium include the Turtle teacher\n\nTap the button to order 👇"},
+        "uz": "⚡ Shoshilinch buyurtma: <b>+{pct}%</b>\n🔁 Tuzatishlar bepul\n🐢 Toshbaqa o'qituvchi: ustozlarga Pro va Premium'da, talabalarga +{turtle}\n\nBuyurtma berish uchun tugmani bosing 👇",
+        "ru": "⚡ Срочный заказ: <b>+{pct}%</b>\n🔁 Правки бесплатно\n🐢 Черепаха-учитель: преподавателям в Pro и Premium, студентам +{turtle}\n\nНажмите кнопку, чтобы заказать 👇",
+        "en": "⚡ Urgent order: <b>+{pct}%</b>\n🔁 Free revisions\n🐢 Turtle teacher: included for teachers in Pro & Premium, +{turtle} for students\n\nTap the button to order 👇"},
     "samples_soon": {"uz": "Namunalar tez orada qo'shiladi 🙂", "ru": "Примеры скоро появятся 🙂", "en": "Samples coming soon 🙂"},
     "samples_intro": {
         "uz": "Mana ishlarimdan namunalar 👇\n<i>Animatsiyalar kompyuterdagi PowerPoint'da to'liq ko'rinadi.</i>",
@@ -361,9 +361,10 @@ TX = {
                "{e[edit]} Ro'yxatda yo'q ish — yozasiz, narxni kelishamiz\n\n"
                "{e[image]} <b>Slayd paketlari</b>\n"
                "• <b>Start</b> — zamonaviy, toza dizayn\n"
-               "• <b>Professional</b> — animatsiya, diagrammalar, 🐢\n"
-               "• <b>Premium</b> — Morph, neon dizayn, nutq matni, 🐢\n"
-               "🐢 <b>Toshbaqa o'qituvchi</b> — slaydda gapirib, mavzuni tushuntiradi (Pro va Premium)\n\n"
+               "• <b>Professional</b> — animatsiya, diagrammalar\n"
+               "• <b>Premium</b> — Morph, neon dizayn, nutq matni\n"
+               "🐢 <b>Toshbaqa o'qituvchi</b> — slaydda gapirib, mavzuni tushuntiradi\n"
+               "    👩‍🏫 ustozlarga — Pro va Premium'da bepul · 🎓 talabalarga — +{turtle}\n\n"
                "{e[orders]} <b>Qanday ishlaydi?</b>\n"
                "{e[n1]} Ish va paketni tanlaysiz, mavzuni yozasiz\n"
                "{e[n2]} Kartaga to'lab, chek rasmini yuborasiz\n"
@@ -385,9 +386,10 @@ TX = {
                "{e[edit]} Нет в списке — напишите, цену согласуем\n\n"
                "{e[image]} <b>Пакеты слайдов</b>\n"
                "• <b>Start</b> — современный чистый дизайн\n"
-               "• <b>Professional</b> — анимация, диаграммы, 🐢\n"
-               "• <b>Premium</b> — Morph, неон, текст речи, 🐢\n"
-               "🐢 <b>Черепаха-учитель</b> — говорит на слайдах и объясняет тему (Pro и Premium)\n\n"
+               "• <b>Professional</b> — анимация, диаграммы\n"
+               "• <b>Premium</b> — Morph, неон, текст речи\n"
+               "🐢 <b>Черепаха-учитель</b> — говорит на слайдах и объясняет тему\n"
+               "    👩‍🏫 преподавателям — бесплатно в Pro и Premium · 🎓 студентам — +{turtle}\n\n"
                "{e[orders]} <b>Как это работает?</b>\n"
                "{e[n1]} Выбираете работу и пакет, пишете тему\n"
                "{e[n2]} Оплачиваете на карту и отправляете фото чека\n"
@@ -409,9 +411,10 @@ TX = {
                "{e[edit]} Not on the list — describe it and we'll agree on a price\n\n"
                "{e[image]} <b>Slide packages</b>\n"
                "• <b>Start</b> — modern, clean design\n"
-               "• <b>Professional</b> — animation, charts, 🐢\n"
-               "• <b>Premium</b> — Morph, neon design, speech text, 🐢\n"
-               "🐢 <b>Turtle teacher</b> — talks on the slides and explains the topic (Pro and Premium)\n\n"
+               "• <b>Professional</b> — animation, charts\n"
+               "• <b>Premium</b> — Morph, neon design, speech text\n"
+               "🐢 <b>Turtle teacher</b> — talks on the slides and explains the topic\n"
+               "    👩‍🏫 teachers — free in Pro & Premium · 🎓 students — +{turtle}\n\n"
                "{e[orders]} <b>How it works</b>\n"
                "{e[n1]} Pick the work and package, write the topic\n"
                "{e[n2]} Pay by card and send a photo of the receipt\n"
@@ -447,7 +450,7 @@ DESCRIPTION = {
     "uz": ("🎓 Talabalar va 👩‍🏫 ustozlar uchun tez va chiroyli tayyorlaymiz: slayd, mustaqil ish, kurs ishi, "
            "maqola, referat, portfolio, O'UM, dars ishlanmasi, testlar.\n\n"
            "📦 Start · Professional · Premium\n"
-           "🐢 Toshbaqa o'qituvchi — slaydda gapirib tushuntiradi (Pro, Premium)\n"
+           "🐢 Toshbaqa o'qituvchi — slaydda gapirib tushuntiradi\n"
            "⚡ Shoshilinch · 🔁 Bepul tuzatish\n"
            "🎁 Do'st taklif qiling — bonus oling · 🎟 promokodlar\n"
            "🌐 O'zbekcha · Русский · English\n\n{channel_line}"
@@ -456,7 +459,7 @@ DESCRIPTION = {
     "ru": ("🎓 Студентам и 👩‍🏫 преподавателям быстро и красиво: слайды, самостоятельные, курсовые, "
            "статьи, рефераты, портфолио, УМК, разработки уроков, тесты.\n\n"
            "📦 Start · Professional · Premium\n"
-           "🐢 Черепаха-учитель — объясняет тему голосом (Pro, Premium)\n"
+           "🐢 Черепаха-учитель — объясняет тему голосом\n"
            "⚡ Срочно · 🔁 Бесплатные правки\n"
            "🎁 Приглашайте друзей — бонусы · 🎟 промокоды\n"
            "🌐 O'zbekcha · Русский · English\n\n{channel_line}"
@@ -465,7 +468,7 @@ DESCRIPTION = {
     "en": ("🎓 For students and 👩‍🏫 teachers: slides, independent work, term papers, articles, essays, "
            "portfolios, teaching materials, lesson plans, tests — fast and beautiful.\n\n"
            "📦 Start · Professional · Premium\n"
-           "🐢 Turtle teacher — explains the topic out loud (Pro, Premium)\n"
+           "🐢 Turtle teacher — explains the topic out loud\n"
            "⚡ Urgent orders · 🔁 Free revisions\n"
            "🎁 Invite friends — earn bonuses · 🎟 promo codes\n"
            "🌐 O'zbekcha · Русский · English\n\n{channel_line}"
@@ -559,4 +562,16 @@ BRIEF_LABEL_TR = {
     "en": {"subject": "Subject", "slides": "Slides", "pages": "Pages", "wlang": "Language", "title": "Title page",
            "plan": "Outline", "style": "Design", "format": "Formatting", "who": "For", "sections": "Sections",
            "grade": "Year / grade", "count": "Size", "free": "Details", "date": "Deadline", "extra": "Extra"},
+}
+
+TURTLE_ADDON_TX = {
+    "btn_add": {"uz": "🐢 Toshbaqa o'qituvchi qo'shish (+{sum})", "ru": "🐢 Добавить черепаху-учителя (+{sum})",
+                "en": "🐢 Add the Turtle teacher (+{sum})"},
+    "btn_off": {"uz": "🐢 Toshbaqani olib tashlash", "ru": "🐢 Убрать черепаху", "en": "🐢 Remove the turtle"},
+    "line_in": {"uz": "🐢 Toshbaqa o'qituvchi — paketga kiradi", "ru": "🐢 Черепаха-учитель — входит в пакет",
+                "en": "🐢 Turtle teacher — included in the package"},
+    "line_add": {"uz": "🐢 Toshbaqa o'qituvchi: +{sum}", "ru": "🐢 Черепаха-учитель: +{sum}", "en": "🐢 Turtle teacher: +{sum}"},
+    "hint": {"uz": "<i>🐢 Xohlasangiz — Toshbaqa o'qituvchi slaydda gapirib, mavzuni tushuntiradi (+{sum}).</i>",
+             "ru": "<i>🐢 По желанию — черепаха-учитель голосом объяснит тему на слайдах (+{sum}).</i>",
+             "en": "<i>🐢 Optional — the Turtle teacher explains the topic out loud on the slides (+{sum}).</i>"},
 }

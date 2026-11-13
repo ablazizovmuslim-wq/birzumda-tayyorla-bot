@@ -53,6 +53,7 @@ BOT_USERNAME = os.getenv("BOT_USERNAME", "Birzumda_Tayyorla_bot")
 REF_BONUS = int(os.getenv("REF_BONUS", "5000"))       # taklif qilganga: do'sti birinchi to'lovni qilganda
 REF_WELCOME = int(os.getenv("REF_WELCOME", "5000"))   # taklif qilinganga: birinchi buyurtmaga chegirma
 BONUS_MAX_PCT = int(os.getenv("BONUS_MAX_PCT", "30"))  # bonus bilan buyurtmaning ko'pi bilan 30% to'lanadi
+TURTLE_ADDON = int(os.getenv("TURTLE_ADDON", "10000"))  # talabalar uchun 🐢 qo'shimcha narxi
 MAX_DISCOUNT_PCT = 50                                   # barcha chegirmalar jami ko'pi bilan 50%
 WEBAPP_URL = os.getenv("WEBAPP_URL", "").rstrip("/")
 if WEBAPP_URL and not WEBAPP_URL.startswith("http"):
@@ -89,7 +90,7 @@ def pe(key: str, fallback: str) -> str:
 logging.basicConfig(level=logging.INFO)
 
 from texts import (BRIEF_GROUPS, BRIEF_LABEL, BRIEF_LABEL_TR, BRIEF_Q, BRIEF_TX, SVC_GROUP,  # noqa: E402
-                   BTN, CAT_TR, CHANNEL_LINE, COMMANDS, CURRENCY, DESCRIPTION, SHORT_DESC, DEFAULT_LANG, FROM, LANGS, NEGOTIABLE, TURTLE_LONG, TX,  # noqa: E402
+                   BTN, CAT_TR, CHANNEL_LINE, COMMANDS, CURRENCY, DESCRIPTION, SHORT_DESC, DEFAULT_LANG, FROM, LANGS, NEGOTIABLE, TURTLE_ADDON_TX, TX,  # noqa: E402
                    DEADLINES as DL_TR, STATUS as ST_TR)
 
 # Matnlardagi {e[kalit]} uchun premium emoji (ID bo'lmasa oddiy emoji)
@@ -117,8 +118,8 @@ CATALOG = {
         "services": {
             "taqdimot": {"name": "Slayd (taqdimot)", "packages": {
                 "start": ("Start", 20000, "10–12 slayd, zamonaviy dizayn, 1 kun"),
-                "pro": ("Professional", 25000, "15–20 slayd, animatsiya, diagrammalar, 🐢 Toshbaqa o'qituvchi, 1–2 kun"),
-                "premium": ("Premium", 30000, "20–25 slayd, Morph, neon dizayn, 🐢 Toshbaqa o'qituvchi, nutq matni, 2–3 kun"),
+                "pro": ("Professional", 25000, "15–20 slayd, animatsiya, diagrammalar, 1–2 kun"),
+                "premium": ("Premium", 30000, "20–25 slayd, Morph, neon dizayn, nutq matni, 2–3 kun"),
             }},
             "mustaqil": {"name": "Mustaqil ish", "price": 25000, "desc": "Word formatda, chiroyli muqova bilan"},
             "kurs": {"name": "Kurs ishi", "price": 30000, "desc": "Reja, boblar, xulosa, adabiyotlar ro'yxati"},
@@ -227,7 +228,7 @@ def init_db():
             ("users", "ref_rewarded", "INTEGER DEFAULT 0"), ("users", "welcome_used", "INTEGER DEFAULT 0"), ("users", "lang", "TEXT"),
             ("orders", "full_price", "INTEGER DEFAULT 0"), ("orders", "discount", "INTEGER DEFAULT 0"),
             ("orders", "promo", "TEXT DEFAULT ''"), ("orders", "bonus_used", "INTEGER DEFAULT 0"),
-            ("orders", "welcome", "INTEGER DEFAULT 0"), ("orders", "brief", "TEXT DEFAULT '[]'")]:
+            ("orders", "welcome", "INTEGER DEFAULT 0"), ("orders", "brief", "TEXT DEFAULT '[]'"), ("orders", "turtle", "INTEGER DEFAULT 0")]:
             cols = {r["name"] for r in con.execute(f"PRAGMA table_info({table})")}
             if col not in cols:
                 con.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
@@ -293,13 +294,14 @@ def create_order(data: dict, user) -> int:
     with db() as con:
         cur = con.execute(
             """INSERT INTO orders(user_id, username, full_name, phone, audience, service, package, price,
-               topic, details, deadline, files, status, created_at, full_price, discount, promo, bonus_used, welcome, brief)
-               VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               topic, details, deadline, files, status, created_at, full_price, discount, promo, bonus_used, welcome, brief,
+               turtle) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (user.id, user.username or "", user.full_name, data.get("phone", ""), data["aud"], data["svc"],
              data.get("pkg", ""), data["price"], data["topic"], data.get("details", ""), data["deadline"],
              json.dumps(data.get("files", [])), "new", datetime.now().strftime("%Y-%m-%d %H:%M"),
              data.get("full_price", data["price"]), data.get("discount", 0), data.get("promo", ""),
-             data.get("bonus_used", 0), data.get("welcome", 0), json.dumps(data.get("brief", []), ensure_ascii=False)))
+             data.get("bonus_used", 0), data.get("welcome", 0), json.dumps(data.get("brief", []), ensure_ascii=False),
+             turtle_kind(data.get("aud"), data.get("svc"), data.get("pkg"), data.get("turtle")) or ""))
         return cur.lastrowid
 
 
@@ -431,9 +433,11 @@ def service_label(o, lang: str = "uz") -> str:
 def order_text(o, for_admin=False, lang: str = "uz") -> str:
     if for_admin:
         lang = "uz"
+    tk = o["turtle"] if "turtle" in o.keys() else ""
     t = (f"<b>{tr(lang, 'f_order')} #{o['id']}</b>\n"
          f"📦 {service_label(o, lang)}\n"
-         f"{tr(lang, 'f_topic')}: {html.escape(o['topic'])}\n")
+         + (ttr(lang, "line_in" if tk == "in" else "line_add", sum=money(TURTLE_ADDON, lang)) + "\n" if tk else "")
+         + f"{tr(lang, 'f_topic')}: {html.escape(o['topic'])}\n")
     if o["details"]:
         t += f"{tr(lang, 'f_details')}: {html.escape(o['details'])}\n"
     t += (f"{tr(lang, 'f_deadline')}: {dl_name(o['deadline'], lang)}\n"
@@ -548,14 +552,32 @@ def packages_kb(aud, svc, lang: str = DEFAULT_LANG):
     pk = CATALOG[aud]["services"][svc]["packages"]
     styles = {"start": None, "pro": "primary", "premium": "success"}
     icons = {"start": "star", "pro": "fire", "premium": "heart"}
-    rows = [[(f"{pkg_tr(aud, svc, k, lang)[0]} — {money(v[1], lang)}" + (" · 🐢" if k in TURTLE_PKGS else ""),
+    rows = [[(f"{pkg_tr(aud, svc, k, lang)[0]} — {money(v[1], lang)}" + (" · 🐢" if turtle_kind(aud, svc, k) else ""),
               f"pkg:{aud}:{svc}:{k}", styles.get(k), icons.get(k))] for k, v in pk.items()]
     rows.append([(b(lang, "see_samples"), "samples", None, "samples")])
     rows.append([(b(lang, "back"), f"aud:{aud}", "danger")])
     return ikb(rows)
 
 
-TURTLE_PKGS = {"pro", "premium"}  # 🐢 Toshbaqa o'qituvchi — faqat Professional va Premium
+TURTLE_PKGS = {"pro", "premium"}  # 🐢 ustozlar uchun Professional va Premium'ga kiradi
+
+
+def turtle_kind(aud, svc, pkg, chosen=False):
+    """'in' — paketga kiradi (ustozlar Pro/Premium), 'add' — talaba qo'shimcha tanlagan, None — yo'q."""
+    if aud == "t" and svc == "dars" and pkg in TURTLE_PKGS:
+        return "in"
+    if aud == "s" and svc == "taqdimot" and chosen:
+        return "add"
+    return None
+
+
+def turtle_available(aud, svc) -> bool:
+    """Talaba slaydiga 🐢 qo'shimcha sifatida qo'shish mumkinmi."""
+    return aud == "s" and svc == "taqdimot"
+
+
+def ttr(lang, key, **kw):
+    return (TURTLE_ADDON_TX[key].get(lang) or TURTLE_ADDON_TX[key]["uz"]).format(**kw)
 
 
 def skip_kb(lang):
@@ -567,8 +589,12 @@ def deadline_kb(lang):
                 [(dl_name("urgent", lang), "dl:urgent", "danger", "fire")]])
 
 
-def confirm_kb(has_price: bool, promo: str, balance: int, use_bonus: bool, lang: str = DEFAULT_LANG):
+def confirm_kb(has_price: bool, promo: str, balance: int, use_bonus: bool, lang: str = DEFAULT_LANG,
+               turtle: str | None = None):
     rows = [[(b(lang, "confirm"), "confirm", "success", "ok")]]
+    if turtle is not None:  # None — mumkin emas; "" — tanlanmagan; "on" — tanlangan
+        rows.append([(ttr(lang, "btn_off") if turtle else ttr(lang, "btn_add", sum=money(TURTLE_ADDON, lang)),
+                      "turtle:toggle", None if turtle else "danger")])
     if has_price:
         extra = [(b(lang, "promo") if not promo else b(lang, "promo_off"), "promo" if not promo else "promo:off",
                   "primary", "star")]
@@ -712,7 +738,7 @@ async def prices(m: Message):
         await m.answer_media_group([InputMediaPhoto(media=FSInputFile(p)) for p in imgs])
     else:
         await m.answer(prices_text(lang))
-    await m.answer(tr(lang, "prices_footer", pct=int(URGENT_EXTRA * 100)),
+    await m.answer(tr(lang, "prices_footer", pct=int(URGENT_EXTRA * 100), turtle=money(TURTLE_ADDON, lang)),
                    reply_markup=ikb([[(b(lang, "order"), "go_order", "success", "order")]]))
 
 
@@ -957,12 +983,15 @@ def tz_text(o) -> str:
     except (TypeError, json.JSONDecodeError):
         brief = []
     files = len(json.loads(o["files"] or "[]"))
+    tk = o["turtle"] if "turtle" in o.keys() else ""
     lines = [f"Buyurtma #{o['id']}: {service_label(o)}",
              f"Kim uchun: {'Talabalar' if o['audience'] == 's' else 'Ustozlar'}",
              f"Mavzu: {o['topic']}"]
     if o["details"]:
         lines.append(f"Qo'shimcha: {o['details']}")
     lines += [f"{brief_label(k)}: {v}" for k, v in brief]
+    if tk:
+        lines.append("🐢 Toshbaqa o'qituvchi: HA" + (" (paketga kiradi)" if tk == "in" else f" (+{money(TURTLE_ADDON)})"))
     lines += [f"Muddat turi: {DEADLINES.get(o['deadline'], o['deadline'])}",
               f"Mijoz tili: {LANGS.get(L(o['user_id']), '')}",
               f"Fayllar: {files} ta" + (" (yuqorida yuborildi)" if files else "")]
@@ -1035,6 +1064,9 @@ async def show_confirm(m: Message, state: FSMContext):
         price = round(price / 1000) * 1000
     else:
         price = 0
+    tk = turtle_kind(data["aud"], data["svc"], data.get("pkg"), data.get("turtle"))
+    if price and tk == "add":
+        price += TURTLE_ADDON  # 🐢 talaba tanlagan qo'shimcha
     uid = data.get("uid") or m.chat.id
     lang = L(uid)
     promo = data.get("promo", "")
@@ -1048,8 +1080,10 @@ async def show_confirm(m: Message, state: FSMContext):
     label = svc_tr(data["aud"], data["svc"], lang)[0]
     if data.get("pkg"):
         label += f" — {pkg_tr(data['aud'], data['svc'], data['pkg'], lang)[0]}"
-        if data["pkg"] in TURTLE_PKGS and data["svc"] in ("taqdimot", "dars"):
-            label += f"\n{TURTLE_LONG[lang]}"
+    if tk == "in":
+        label += f"\n{ttr(lang, 'line_in')}"
+    elif tk == "add":
+        label += f"\n{ttr(lang, 'line_add', sum=money(TURTLE_ADDON, lang))}"
     lines = []
     if calc["discount"]:
         lines.append(f"{tr(lang, 'f_price')}: <s>{money(calc['full_price'], lang)}</s>")
@@ -1067,10 +1101,21 @@ async def show_confirm(m: Message, state: FSMContext):
            + (btr(lang, "summary") + "\n" + "\n".join(brief_lines(data["brief"], lang)) + "\n" if data.get("brief") else "")
            + f"{tr(lang, 'f_files', n=len(data.get('files', [])))}\n"
            f"{tr(lang, 'f_deadline')}: {dl_name(dl, lang)}\n\n{price_block}")
+    can_turtle = bool(price) and turtle_available(data["aud"], data["svc"])
     if not price:
         txt += "\n" + tr(lang, "admin_price")
-    await m.answer(txt, reply_markup=confirm_kb(bool(price), promo, bonus_balance(uid),
-                                                data.get("use_bonus", False), lang))
+    elif can_turtle and tk != "add":
+        txt += "\n\n" + ttr(lang, "hint", sum=money(TURTLE_ADDON, lang))
+    await m.answer(txt, reply_markup=confirm_kb(bool(price), promo, bonus_balance(uid), data.get("use_bonus", False),
+                                                lang, ("on" if tk == "add" else "") if can_turtle else None))
+
+
+@router.callback_query(Order.confirm, F.data == "turtle:toggle")
+async def turtle_toggle(c: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    await state.update_data(turtle=not data.get("turtle", False))
+    await c.answer("🐢")
+    await show_confirm(c.message, state)
 
 
 @router.callback_query(Order.confirm, F.data == "promo")
@@ -1139,7 +1184,7 @@ async def webapp_data(m: Message, state: FSMContext):
     base = s["packages"][pkg][1] if "packages" in s else s["price"]
     await state.clear()
     await state.update_data(aud=aud, svc=svc, pkg=pkg if "packages" in s else "", base_price=base, topic=topic,
-                            details=str(d.get("details", "")).strip()[:1000], uid=uid,
+                            details=str(d.get("details", "")).strip()[:1000], uid=uid, turtle=bool(d.get("turtle")),
                             deadline="urgent" if d.get("deadline") == "urgent" else "normal")
     await m.answer(tr(lang, "wa_ok"), reply_markup=MAIN_KBS[lang])
     code = str(d.get("promo", "")).strip().upper()[:32]
@@ -1310,7 +1355,8 @@ async def info_cmd(m: Message):
     lang = L(m.from_user.id)
     txt = tr(lang, "info", bot=BOT_NAME, min_s=price_from(min_price("s"), lang), min_t=price_from(min_price("t"), lang),
              urgent=int(URGENT_EXTRA * 100), welcome=money(REF_WELCOME, lang), bonus=money(REF_BONUS, lang),
-             pct=BONUS_MAX_PCT, channel=channel_name(), contact=CONTACT, yukla=OTHER_BOTS)
+             pct=BONUS_MAX_PCT, channel=channel_name(), contact=CONTACT, yukla=OTHER_BOTS,
+             turtle=money(TURTLE_ADDON, lang))
     await m.answer(txt, reply_markup=channel_kb(lang), link_preview_options=LinkPreviewOptions(is_disabled=True))
 
 
@@ -1651,7 +1697,7 @@ async def fallback(m: Message, state: FSMContext):
 # ------------------------------------------------------------------ veb-server (Mini ilova)
 def catalog_json():
     """Mini ilova uchun: s/t — o'zbekcha (eski versiya bilan mos), i18n — ru/en tarjimalar."""
-    return {"urgent": URGENT_EXTRA,
+    return {"urgent": URGENT_EXTRA, "turtle": TURTLE_ADDON,
             **{a: {"title": v["title"], "services": v["services"]} for a, v in CATALOG.items()},
             "i18n": CAT_TR}
 

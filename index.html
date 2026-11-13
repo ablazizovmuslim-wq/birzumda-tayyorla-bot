@@ -222,7 +222,7 @@ nav button.on svg{animation:navBounce .5s cubic-bezier(.2,1.6,.4,1)}
 <g class="teye"><circle cx="93" cy="55" r="3.2" fill="#1C1430"/><circle cx="102" cy="55" r="3.2" fill="#1C1430"/></g>
 <ellipse class="tmouth" cx="98" cy="65" rx="4" ry="2.5" fill="#1C1430"/></g>
 <g class="tsound" stroke="#FF8FDA" stroke-width="2.5" fill="none" stroke-linecap="round"><path d="M114 58 q4 4 0 8"/><path d="M118 54 q7 8 0 16"/></g>
-</svg><div><b data-i="turtleT">Toshbaqa o'qituvchi</b><span class="badge">Pro · Premium</span><div class="say" style="margin-top:8px" data-i="turtleSay">Salom! Men slayd ichida gapirib, mavzuni sodda qilib tushuntiraman 🎙</div></div></div>
+</svg><div><b data-i="turtleT">Toshbaqa o'qituvchi</b><span class="badge" data-i="turtleBadge">👩‍🏫 Pro · Premium · 🎓 +10 000</span><div class="say" style="margin-top:8px" data-i="turtleSay">Salom! Men slayd ichida gapirib, mavzuni sodda qilib tushuntiraman 🎙</div></div></div>
   <button class="btn ghost" onclick="sendCmd('samples')" data-i="sendSamples">📎 PPTX namunalarni chatga yuborish</button>
 </section>
 
@@ -243,6 +243,7 @@ nav button.on svg{animation:navBounce .5s cubic-bezier(.2,1.6,.4,1)}
   <div class="seg" id="seg2"><div class="ind"></div><button data-a="s" data-i="students">🎓 Talabalar</button><button data-a="t" data-i="teachers">👩‍🏫 Ustozlar</button></div>
   <label data-i="lService">Xizmat</label><div class="opts" id="svcOpts"></div>
   <div id="pkgWrap" style="display:none"><label data-i="lPkg">Paket</label><div class="opts" id="pkgOpts"></div></div>
+  <div id="turtleWrap" style="display:none;margin-top:10px"><div class="opt" id="turtleOpt" onclick="order.turtle=!order.turtle;hap();renderOrder()"><span id="turtleTxt"></span><span class="v" id="turtleV"></span></div></div>
   <label data-i="lTopic">Mavzu</label><input id="topic" maxlength="300" data-p="phTopic" placeholder="Masalan: Sun'iy intellekt ta'limda">
   <label data-i="lDetails">Qo'shimcha talablar</label><textarea id="details" maxlength="1000" data-p="phDetails" placeholder="Fan, o'qituvchi, slayd soni, ism-familiya…"></textarea>
   <label data-h="lPromo">🎟 Promokod <span style="opacity:.6;font-weight:400">(ixtiyoriy)</span></label><input id="promo" maxlength="32" data-p="phPromo" placeholder="Masalan: YANGI20" style="text-transform:uppercase">
@@ -265,10 +266,10 @@ const tg = window.Telegram ? Telegram.WebApp : null;
 if (tg) { tg.ready(); tg.expand(); try { tg.setHeaderColor('#0B0812'); tg.setBackgroundColor('#0B0812'); } catch (e) {} }
 const hap = t => { try { tg && tg.HapticFeedback.impactOccurred(t || 'light'); } catch (e) {} };
 const T = {
-  uz: { close: 'Yopish', heroK: 'Professional dizayn', heroH: 'Chiroyli ishlar<br><span class="grad">bir zumda</span>', heroP: "— o'z vaqtida, bepul tuzatish bilan.",
+  uz: { turtleAdd: "🐢 Toshbaqa o'qituvchi qo'shish", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +10 000', close: 'Yopish', heroK: 'Professional dizayn', heroH: 'Chiroyli ishlar<br><span class="grad">bir zumda</span>', heroP: "— o'z vaqtida, bepul tuzatish bilan.",
     chipAud: '🎓 Talaba · 👩‍🏫 Ustoz ›', chipFast: '⚡ Tez ›', chipFix: '🔁 Bepul tuzatish ›', chipTurtle: "🐢 Toshbaqa o'qituvchi ›", orderBtn: '🛒 Buyurtma berish',
-    prices: 'Narxlar', students: '🎓 Talabalar', teachers: '👩‍🏫 Ustozlar', priceNote: '⚡ Shoshilinch: +50% · 🔁 Tuzatish bepul · 🐢 Pro va Premium',
-    samples: 'Namunalar', mS: 'Zamonaviy dizayn', mP: 'Animatsiya + diagramma + 🐢', mX: "Neon nur, Morph o'tishlari, nutq matni, video, 🐢",
+    prices: 'Narxlar', students: '🎓 Talabalar', teachers: '👩‍🏫 Ustozlar', priceNote: '⚡ Shoshilinch: +50% · 🔁 Tuzatish bepul · 🐢 ustozlarga Pro/Premium, talabalarga +10 000',
+    samples: 'Namunalar', mS: 'Zamonaviy dizayn', mP: 'Animatsiya + diagramma', mX: "Neon nur, Morph o'tishlari, nutq matni, video",
     turtleT: "Toshbaqa o'qituvchi", turtleSay: 'Salom! Men slayd ichida gapirib, mavzuni sodda qilib tushuntiraman 🎙', sendSamples: '📎 PPTX namunalarni chatga yuborish',
     order: 'Buyurtma', lService: 'Xizmat', lPkg: 'Paket', lTopic: 'Mavzu', phTopic: "Masalan: Sun'iy intellekt ta'limda", lDetails: "Qo'shimcha talablar",
     phDetails: "Fan, o'qituvchi, slayd soni, ism-familiya…", lPromo: '🎟 Promokod <span style="opacity:.6;font-weight:400">(ixtiyoriy)</span>', phPromo: 'Masalan: YANGI20',
@@ -278,15 +279,15 @@ const T = {
     normal: 'Oddiy muddat', urgent: '⚡ Shoshilinch', adminSays: 'Admin aytadi', openTg: 'Telegram ichida oching', chooseSvc: 'Xizmatni tanlang', choosePkg: 'Paketni tanlang',
     writeTopic: 'Mavzuni yozing', noPrices: 'Narxlar yuklanmadi', pkgDef: 'Start · Professional · Premium',
     words: ['Slayd', 'Mustaqil ish', 'Kurs ishi', 'Maqola', 'Amaliy ish', 'Portfolio', "O'quv-uslubiy majmua"],
-    pkd: { 1: 'Start — zamonaviy dizayn, toza va tushunarli', 2: "Professional — animatsiya, diagrammalar, 🐢 Toshbaqa o'qituvchi", 3: "Premium — neon nur, Morph, nutq matni, 🐢 Toshbaqa o'qituvchi" },
+    pkd: { 1: 'Start — zamonaviy dizayn, toza va tushunarli', 2: "Professional — animatsiya, diagrammalar", 3: "Premium — neon nur, Morph, nutq matni" },
     sheets: {
       tez: { t: '⚡ Tez tayyorlash', b: "<p><b>Oddiy muddat:</b> Start — 1 kun, Professional — 1–2 kun, Premium — 2–3 kun.</p><p><b>Shoshilinch (+50%):</b> ishni shu kunning o'zida tayyorlaymiz. Buyurtmada «⚡ Shoshilinch» ni tanlang.</p>" },
       fix: { t: '🔁 Bepul tuzatish', b: "<p>Ish tayyor bo'lgach, nimanidir o'zgartirmoqchi bo'lsangiz — bepul tuzatamiz.</p><p><b>Start</b> — 1 marta, <b>Professional</b> — 2 marta, <b>Premium</b> — 3 marta. Boshqa xizmatlarda — 1 marta.</p>" },
-      turtle: { t: "🐢 Toshbaqa o'qituvchi", b: "<p>Slaydda animatsion toshbaqa o'qituvchi paydo bo'ladi va <b>gapirib</b>, mavzuni sodda tilda tushuntiradi.</p><p>Talabalar va ustozlar uchun — <b>Professional</b> va <b>Premium</b> paketlarda. Start paketida yo'q.</p>" } } },
-  ru: { close: 'Закрыть', heroK: 'Профессиональный дизайн', heroH: 'Красивые работы<br><span class="grad">в один миг</span>', heroP: '— вовремя, с бесплатными правками.',
+      turtle: { t: "🐢 Toshbaqa o'qituvchi", b: "<p>Slaydda animatsion toshbaqa o'qituvchi paydo bo'ladi va <b>gapirib</b>, mavzuni sodda tilda tushuntiradi.</p><p>👩‍🏫 <b>Ustozlarga</b> — Professional va Premium paketlarga kiradi.<br>🎓 <b>Talabalarga</b> — xohlasangiz, buyurtmada qo'shasiz: <b>+10 000 so'm</b>.</p>" } } },
+  ru: { turtleAdd: "🐢 Добавить черепаху-учителя", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +10 000', close: 'Закрыть', heroK: 'Профессиональный дизайн', heroH: 'Красивые работы<br><span class="grad">в один миг</span>', heroP: '— вовремя, с бесплатными правками.',
     chipAud: '🎓 Студент · 👩‍🏫 Преподаватель ›', chipFast: '⚡ Срочно ›', chipFix: '🔁 Бесплатные правки ›', chipTurtle: '🐢 Черепаха-учитель ›', orderBtn: '🛒 Заказать',
-    prices: 'Цены', students: '🎓 Студентам', teachers: '👩‍🏫 Преподавателям', priceNote: '⚡ Срочно: +50% · 🔁 Правки бесплатно · 🐢 Pro и Premium',
-    samples: 'Примеры', mS: 'Современный дизайн', mP: 'Анимация + диаграммы + 🐢', mX: 'Неон, Morph-переходы, текст речи, видео, 🐢',
+    prices: 'Цены', students: '🎓 Студентам', teachers: '👩‍🏫 Преподавателям', priceNote: '⚡ Срочно: +50% · 🔁 Правки бесплатно · 🐢 учителям Pro/Premium, студентам +10 000',
+    samples: 'Примеры', mS: 'Современный дизайн', mP: 'Анимация + диаграммы', mX: "Неон, Morph-переходы, текст речи, видео",
     turtleT: 'Черепаха-учитель', turtleSay: 'Привет! Я говорю прямо на слайдах и просто объясняю тему 🎙', sendSamples: '📎 Отправить PPTX-примеры в чат',
     order: 'Заказ', lService: 'Услуга', lPkg: 'Пакет', lTopic: 'Тема', phTopic: 'Например: Искусственный интеллект в образовании', lDetails: 'Доп. требования',
     phDetails: 'Предмет, преподаватель, число слайдов, ФИО…', lPromo: '🎟 Промокод <span style="opacity:.6;font-weight:400">(необязательно)</span>', phPromo: 'Например: YANGI20',
@@ -296,15 +297,15 @@ const T = {
     normal: 'Обычный срок', urgent: '⚡ Срочно', adminSays: 'Назначит админ', openTg: 'Откройте в Telegram', chooseSvc: 'Выберите услугу', choosePkg: 'Выберите пакет',
     writeTopic: 'Напишите тему', noPrices: 'Цены не загрузились', pkgDef: 'Start · Professional · Premium',
     words: ['Слайды', 'Самостоятельная', 'Курсовая', 'Статья', 'Практическая', 'Портфолио', 'УМК'],
-    pkd: { 1: 'Start — современный дизайн, чисто и понятно', 2: 'Professional — анимация, диаграммы, 🐢 Черепаха-учитель', 3: 'Premium — неон, Morph, текст речи, 🐢 Черепаха-учитель' },
+    pkd: { 1: 'Start — современный дизайн, чисто и понятно', 2: "Professional — анимация, диаграммы", 3: "Premium — неон, Morph, текст речи" },
     sheets: {
       tez: { t: '⚡ Срочно', b: '<p><b>Обычный срок:</b> Start — 1 день, Professional — 1–2 дня, Premium — 2–3 дня.</p><p><b>Срочно (+50%):</b> сделаем в тот же день. Выберите «⚡ Срочно» в заказе.</p>' },
       fix: { t: '🔁 Бесплатные правки', b: '<p>Если после сдачи захотите что-то изменить — поправим бесплатно.</p><p><b>Start</b> — 1 раз, <b>Professional</b> — 2 раза, <b>Premium</b> — 3 раза. В остальных услугах — 1 раз.</p>' },
-      turtle: { t: '🐢 Черепаха-учитель', b: '<p>На слайдах появляется анимированная черепаха-учитель и <b>голосом</b> простыми словами объясняет тему.</p><p>Для студентов и преподавателей — в пакетах <b>Professional</b> и <b>Premium</b>. В Start её нет.</p>' } } },
-  en: { close: 'Close', heroK: 'Professional design', heroH: 'Beautiful work<br><span class="grad">in a flash</span>', heroP: '— on time, with free revisions.',
+      turtle: { t: '🐢 Черепаха-учитель', b: '<p>На слайдах появляется анимированная черепаха-учитель и <b>голосом</b> простыми словами объясняет тему.</p><p>👩‍🏫 <b>Преподавателям</b> — входит в пакеты Professional и Premium.<br>🎓 <b>Студентам</b> — по желанию при заказе: <b>+10 000 сум</b>.</p>' } } },
+  en: { turtleAdd: "🐢 Add the Turtle teacher", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +10 000', close: 'Close', heroK: 'Professional design', heroH: 'Beautiful work<br><span class="grad">in a flash</span>', heroP: '— on time, with free revisions.',
     chipAud: '🎓 Student · 👩‍🏫 Teacher ›', chipFast: '⚡ Fast ›', chipFix: '🔁 Free revisions ›', chipTurtle: '🐢 Turtle teacher ›', orderBtn: '🛒 Place an order',
-    prices: 'Prices', students: '🎓 Students', teachers: '👩‍🏫 Teachers', priceNote: '⚡ Urgent: +50% · 🔁 Free revisions · 🐢 Pro & Premium',
-    samples: 'Samples', mS: 'Modern design', mP: 'Animation + charts + 🐢', mX: 'Neon glow, Morph transitions, speech text, video, 🐢',
+    prices: 'Prices', students: '🎓 Students', teachers: '👩‍🏫 Teachers', priceNote: '⚡ Urgent: +50% · 🔁 Free revisions · 🐢 teachers Pro/Premium, students +10 000',
+    samples: 'Samples', mS: 'Modern design', mP: 'Animation + charts', mX: "Neon glow, Morph transitions, speech text, video",
     turtleT: 'Turtle teacher', turtleSay: 'Hi! I talk right on the slides and explain the topic simply 🎙', sendSamples: '📎 Send PPTX samples to the chat',
     order: 'Order', lService: 'Service', lPkg: 'Package', lTopic: 'Topic', phTopic: 'E.g. Artificial intelligence in education', lDetails: 'Extra requirements',
     phDetails: 'Subject, teacher, number of slides, full name…', lPromo: '🎟 Promo code <span style="opacity:.6;font-weight:400">(optional)</span>', phPromo: 'E.g. YANGI20',
@@ -314,11 +315,11 @@ const T = {
     normal: 'Standard time', urgent: '⚡ Urgent', adminSays: 'Set by admin', openTg: 'Open inside Telegram', chooseSvc: 'Choose a service', choosePkg: 'Choose a package',
     writeTopic: 'Write the topic', noPrices: "Prices didn't load", pkgDef: 'Start · Professional · Premium',
     words: ['Slides', 'Independent work', 'Term paper', 'Article', 'Lab work', 'Portfolio', 'Teaching materials'],
-    pkd: { 1: 'Start — modern design, clean and clear', 2: 'Professional — animation, charts, 🐢 Turtle teacher', 3: 'Premium — neon, Morph, speech text, 🐢 Turtle teacher' },
+    pkd: { 1: 'Start — modern design, clean and clear', 2: "Professional — animation, charts", 3: "Premium — neon, Morph, speech text" },
     sheets: {
       tez: { t: '⚡ Fast delivery', b: '<p><b>Standard:</b> Start — 1 day, Professional — 1–2 days, Premium — 2–3 days.</p><p><b>Urgent (+50%):</b> ready the same day. Choose «⚡ Urgent» when ordering.</p>' },
       fix: { t: '🔁 Free revisions', b: '<p>Want something changed after delivery? We fix it for free.</p><p><b>Start</b> — 1 time, <b>Professional</b> — 2 times, <b>Premium</b> — 3 times. Other services — 1 time.</p>' },
-      turtle: { t: '🐢 Turtle teacher', b: '<p>An animated turtle teacher appears on the slides and <b>explains the topic out loud</b> in simple words.</p><p>For students and teachers — in the <b>Professional</b> and <b>Premium</b> packages. Not in Start.</p>' } } }
+      turtle: { t: '🐢 Turtle teacher', b: '<p>An animated turtle teacher appears on the slides and <b>explains the topic out loud</b> in simple words.</p><p>👩‍🏫 <b>Teachers</b> — included in Professional and Premium.<br>🎓 <b>Students</b> — optional when ordering: <b>+10 000 UZS</b>.</p>' } } }
 };
 const qs = new URLSearchParams(location.search);
 let lang = qs.get('lang') || (() => { try { return localStorage.getItem('lang'); } catch (e) { return null; } })()
@@ -386,7 +387,7 @@ setInterval(() => { const r = document.getElementById('rot'); const words = t('w
 function renderHome() {
   const s = CAT.s.services;
   document.getElementById('homeTiles').innerHTML = Object.entries(s).map(([k, v]) =>
-    `<div class="card tile" onclick="pick('s','${k}')"><div class="ico">${svg(k)}</div><b>${sName('s', k)}</b><span>${sDesc('s', k) || t('pkgDef') + ' · 🐢'}</span><div class="pr">${fromP(minPrice(v))}</div></div>`).join('');
+    `<div class="card tile" onclick="pick('s','${k}')"><div class="ico">${svg(k)}</div><b>${sName('s', k)}</b><span>${sDesc('s', k) || t('pkgDef')}</span><div class="pr">${fromP(minPrice(v))}</div></div>`).join('');
 }
 function bindSeg(id, cb) {
   const seg = document.getElementById(id);
@@ -402,14 +403,16 @@ function renderPrices() {
   list.innerHTML = Object.entries(A).map(([k, v]) => `<div class="row tap" onclick="pick('${aud}','${k}')"><div style="display:flex;gap:12px;align-items:center"><div class="ico" style="width:36px;height:36px;margin:0">${svg(k)}</div><div><b>${sName(aud, k)}</b><small>${sDesc(aud, k) || t('pkgsBelow')}</small></div></div><div class="v">${fromP(minPrice(v))}<span class="go">›</span></div></div>`).join('');
   const pkKey = Object.keys(A).find(k => A[k].packages); const pk = A[pkKey];
   document.getElementById('pkTitle').textContent = t('pkgs')(sName(aud, pkKey));
-  document.getElementById('pkRow').innerHTML = Object.entries(pk.packages).map(([k, p]) => `<div class="tap ${k === 'pro' ? 'hi' : ''}" onclick="pickPkg('${aud}','${pkKey}','${k}')"><small>${pName(aud, pkKey, k)}${k !== 'start' ? ' 🐢' : ''}</small><b>${fmt(p[1]).replace(' ' + t('cur'), '')}</b><em>${t('pick')}</em></div>`).join('');
+  document.getElementById('pkRow').innerHTML = Object.entries(pk.packages).map(([k, p]) => `<div class="tap ${k === 'pro' ? 'hi' : ''}" onclick="pickPkg('${aud}','${pkKey}','${k}')"><small>${pName(aud, pkKey, k)}${aud === 't' && k !== 'start' ? ' 🐢' : ''}</small><b>${fmt(p[1]).replace(' ' + t('cur'), '')}</b><em>${t('pick')}</em></div>`).join('');
 }
 function pickPkg(a, svc, pkg) { aud = a; order = { aud: a, svc, pkg, deadline: 'normal' }; go('order'); setTimeout(() => document.getElementById('topic').scrollIntoView({ behavior: 'smooth', block: 'center' }), 350); toast(t('picked')(pName(a, svc, pkg))); }
 function pick(a, svc) { aud = a; order = { aud: a, svc, pkg: '', deadline: 'normal' }; go('order'); setTimeout(() => document.getElementById(CAT[a].services[svc].packages ? 'pkgWrap' : 'topic').scrollIntoView({ behavior: 'smooth', block: 'center' }), 350); toast(t('picked')(sName(a, svc))); }
+const turtleAvail = () => order.aud === 's' && order.svc === 'taqdimot';
 function price() {
   const s = CAT[order.aud].services[order.svc]; if (!s) return 0;
   let p = s.packages ? (order.pkg ? s.packages[order.pkg][1] : 0) : s.price;
   if (order.deadline === 'urgent') p = Math.round(p * (1 + CAT.urgent) / 1000) * 1000;
+  if (p && order.turtle && turtleAvail()) p += CAT.turtle || 0;
   return p;
 }
 function renderOrder() {
@@ -421,6 +424,12 @@ function renderOrder() {
   document.getElementById('pkgWrap').style.display = s && s.packages ? 'block' : 'none';
   if (s && s.packages) document.getElementById('pkgOpts').innerHTML = Object.entries(s.packages).map(([k, p]) =>
     `<div class="opt ${order.pkg === k ? 'on' : ''}" onclick="order.pkg='${k}';hap();renderOrder()"><span><b>${pName(aud, order.svc, k)}</b><br><small style="color:var(--m)">${pDesc(aud, order.svc, k)}</small></span><span class="v">${fmt(p[1])}</span></div>`).join('');
+  const tw = document.getElementById('turtleWrap'); tw.style.display = turtleAvail() ? 'block' : 'none';
+  if (turtleAvail()) {
+    document.getElementById('turtleOpt').classList.toggle('on', !!order.turtle);
+    document.getElementById('turtleTxt').innerHTML = (order.turtle ? '✅ ' : '⬜ ') + t('turtleAdd');
+    document.getElementById('turtleV').textContent = '+' + fmt(CAT.turtle || 0);
+  }
   document.getElementById('dlOpts').innerHTML = [['normal', t('normal'), ''], ['urgent', t('urgent'), '+' + Math.round(CAT.urgent * 100) + '%']].map(([k, n, x]) =>
     `<div class="opt ${order.deadline === k ? 'on' : ''}" onclick="order.deadline='${k}';hap();renderOrder()"><span>${n}</span><span class="v">${x}</span></div>`).join('');
   const p = price(); const sv = CAT[order.aud].services[order.svc]; const tot = document.getElementById('total');
@@ -439,7 +448,7 @@ document.getElementById('sendBtn').onclick = () => {
   if (!s) return toast(t('chooseSvc'));
   if (s.packages && !order.pkg) return toast(t('choosePkg'));
   if (topic.length < 2) return toast(t('writeTopic'));
-  const data = { cmd: 'order', aud: order.aud, svc: order.svc, pkg: order.pkg, deadline: order.deadline, topic, details: document.getElementById('details').value.trim(), promo: document.getElementById('promo').value.trim(), lang };
+  const data = { cmd: 'order', aud: order.aud, svc: order.svc, pkg: order.pkg, deadline: order.deadline, turtle: !!(order.turtle && turtleAvail()), topic, details: document.getElementById('details').value.trim(), promo: document.getElementById('promo').value.trim(), lang };
   if (!tg || !tg.sendData) return toast(t('openTg'));
   try { tg.HapticFeedback.notificationOccurred('success'); } catch (e) {}
   confetti(); setTimeout(() => tg.sendData(JSON.stringify(data)), 750);
