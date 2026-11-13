@@ -575,3 +575,34 @@ TURTLE_ADDON_TX = {
              "ru": "<i>🐢 По желанию — черепаха-учитель голосом объяснит тему на слайдах (+{sum}).</i>",
              "en": "<i>🐢 Optional — the Turtle teacher explains the topic out loud on the slides (+{sum}).</i>"},
 }
+
+# ------------------------------------------------------------------ namunalar karuseli
+SAMPLE_PKG = {
+    1: {"uz": "Zamonaviy, toza dizayn · ikonkalar · tushunarli tuzilma",
+        "ru": "Современный чистый дизайн · иконки · понятная структура",
+        "en": "Modern, clean design · icons · clear structure"},
+    2: {"uz": "Animatsiya · diagrammalar · reja va bosqichlar · infografika",
+        "ru": "Анимация · диаграммы · план и этапы · инфографика",
+        "en": "Animation · charts · outline and steps · infographics"},
+    3: {"uz": "Neon nur · Morph o'tishlari · nutq matni · eng chiroyli dizayn",
+        "ru": "Неоновое свечение · Morph-переходы · текст речи · самый красивый дизайн",
+        "en": "Neon glow · Morph transitions · speech text · our most beautiful design"},
+}
+SAMPLE_TX = {
+    "title": {"uz": "{e[samples]} <b>Namunalar — {pkg}</b>", "ru": "{e[samples]} <b>Примеры — {pkg}</b>",
+              "en": "{e[samples]} <b>Samples — {pkg}</b>"},
+    "prices": {"uz": "{e[student]} Talabalar: <b>{s}</b>\n{e[teacher]} Ustozlar: <b>{t}</b>",
+               "ru": "{e[student]} Студентам: <b>{s}</b>\n{e[teacher]} Преподавателям: <b>{t}</b>",
+               "en": "{e[student]} Students: <b>{s}</b>\n{e[teacher]} Teachers: <b>{t}</b>"},
+    "turtle_in": {"uz": "🐢 Ustozlarga Toshbaqa o'qituvchi bilan · talabalarga +{sum}",
+                  "ru": "🐢 Преподавателям с черепахой-учителем · студентам +{sum}",
+                  "en": "🐢 Teachers get the Turtle teacher · students +{sum}"},
+    "turtle_add": {"uz": "🐢 Toshbaqa o'qituvchi — talabalarga +{sum}", "ru": "🐢 Черепаха-учитель — студентам +{sum}",
+                   "en": "🐢 Turtle teacher — students +{sum}"},
+    "slide": {"uz": "Slayd {i} / {n} · ◀️ ▶️ bilan varaqlang", "ru": "Слайд {i} / {n} · листайте ◀️ ▶️",
+              "en": "Slide {i} / {n} · flip with ◀️ ▶️"},
+    "download": {"uz": "📥 PPTX faylni olish", "ru": "📥 Скачать PPTX", "en": "📥 Get the PPTX"},
+    "pptx_cap": {"uz": "{pkg} namunasi 🎨\n<i>Animatsiyalar kompyuterdagi PowerPoint'da to'liq ko'rinadi.</i>",
+                 "ru": "Пример {pkg} 🎨\n<i>Анимации полностью видны в PowerPoint на компьютере.</i>",
+                 "en": "{pkg} sample 🎨\n<i>Animations play fully in PowerPoint on a computer.</i>"},
+}

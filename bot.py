@@ -89,14 +89,14 @@ def pe(key: str, fallback: str) -> str:
 
 logging.basicConfig(level=logging.INFO)
 
-from texts import (BRIEF_GROUPS, BRIEF_LABEL, BRIEF_LABEL_TR, BRIEF_Q, BRIEF_TX, SVC_GROUP,  # noqa: E402
+from texts import (SAMPLE_PKG, SAMPLE_TX, BRIEF_GROUPS, BRIEF_LABEL, BRIEF_LABEL_TR, BRIEF_Q, BRIEF_TX, SVC_GROUP,  # noqa: E402
                    BTN, CAT_TR, CHANNEL_LINE, COMMANDS, CURRENCY, DESCRIPTION, SHORT_DESC, DEFAULT_LANG, FROM, LANGS, NEGOTIABLE, TURTLE_ADDON_TX, TX,  # noqa: E402
                    DEADLINES as DL_TR, STATUS as ST_TR)
 
 # Matnlardagi {e[kalit]} uchun premium emoji (ID bo'lmasa oddiy emoji)
 E_FALLBACK = {"hi": "👋", "star": "✨", "bot": "🤖", "student": "🎓", "teacher": "👩‍🏫", "edit": "✍️",
               "heart": "🎁", "ok": "✅", "image": "🎨", "fire": "⚡", "orders": "📋", "contact": "💜",
-              "down": "👇", "money": "💰", "check": "📋", "globe": "🌐", "app": "✨", "channel": "📢",
+              "down": "👇", "money": "💰", "check": "📋", "globe": "🌐", "app": "✨", "channel": "📢", "samples": "🎨",
               "n1": "1️⃣", "n2": "2️⃣", "n3": "3️⃣", "n4": "4️⃣"}
 E = {k: pe(k, v) for k, v in E_FALLBACK.items()}
 
@@ -784,20 +784,99 @@ def sample_files():
     return sorted(p for p in SAMPLES.glob("[0-9]_*") if p.is_file())
 
 
+# ------------------------------------------------------------------ namunalar karuseli
+SAMPLE_NAMES = {1: "Start", 2: "Professional", 3: "Premium"}
+SAMPLE_PKG_KEY = {1: "start", 2: "pro", 3: "premium"}
+SAMPLE_STYLE = {1: None, 2: "primary", 3: "danger"}
+PHOTO_CACHE: dict[str, str] = {}  # rasm yo'li -> Telegram file_id (qayta yuklamaslik uchun)
+
+
+def sample_count(k: int) -> int:
+    return len(list(SAMPLES.glob(f"sx{k}-*.jpg")))
+
+
+def sample_pptx(k: int):
+    found = sorted(SAMPLES.glob(f"{k}_*.pptx"))
+    return found[0] if found else None
+
+
+def stx(lang, key, **kw):
+    return (SAMPLE_TX[key].get(lang) or SAMPLE_TX[key]["uz"]).format(e=E, **kw)
+
+
+def sample_caption(k: int, i: int, lang: str) -> str:
+    pk = SAMPLE_PKG_KEY[k]
+    s_price = CATALOG["s"]["services"]["taqdimot"]["packages"][pk][1]
+    t_price = CATALOG["t"]["services"]["dars"]["packages"][pk][1]
+    turtle = stx(lang, "turtle_in" if pk in TURTLE_PKGS else "turtle_add", sum=money(TURTLE_ADDON, lang))
+    return (f"{stx(lang, 'title', pkg=SAMPLE_NAMES[k])}\n<i>{SAMPLE_PKG[k][lang]}</i>\n\n"
+            f"{stx(lang, 'prices', s=money(s_price, lang), t=money(t_price, lang))}\n{turtle}\n\n"
+            f"<i>{stx(lang, 'slide', i=i, n=sample_count(k))}</i>")
+
+
+def sample_kb(k: int, i: int, lang: str):
+    n = sample_count(k)
+    rows = [[("◀️", f"smp:{k}:{(i - 2) % n + 1}", "primary"), (f"{i} / {n}", "smp:noop", None),
+             ("▶️", f"smp:{k}:{i % n + 1}", "primary")],
+            [(("✅ " if j == k else "") + SAMPLE_NAMES[j], f"smp:{j}:1", "success" if j == k else SAMPLE_STYLE[j])
+             for j in SAMPLE_NAMES]]
+    if sample_pptx(k):
+        rows.append([(stx(lang, "download"), f"smp:dl:{k}", None, "down")])
+    rows.append([(b(lang, "order"), "go_order", "success", "order")])
+    return ikb(rows)
+
+
+def sample_photo(k: int, i: int):
+    path = str(SAMPLES / f"sx{k}-{i}.jpg")
+    return PHOTO_CACHE.get(path) or FSInputFile(path), path
+
+
+def remember_photo(path: str, msg):
+    if isinstance(msg, Message) and msg.photo:
+        PHOTO_CACHE[path] = msg.photo[-1].file_id
+
+
 async def send_samples(m: Message, lang: str = DEFAULT_LANG):
-    files = sample_files()
-    if not files:
-        await m.answer(tr(lang, "samples_soon"))
+    if not sample_count(1):  # karusel rasmlari yo'q — eski usul: fayllarni yuborish
+        files = [f for f in sample_files() if f.suffix.lower() == ".pptx"]
+        if not files:
+            await m.answer(tr(lang, "samples_soon"))
+            return
+        await m.answer(tr(lang, "samples_intro"))
+        for f in files:
+            await m.answer_document(FSInputFile(f))
         return
-    await m.answer(tr(lang, "samples_intro"))
-    for p in files:
-        try:
-            if p.suffix.lower() == ".mp4":
-                await m.answer_video(FSInputFile(p))
-            else:
-                await m.answer_document(FSInputFile(p))
-        except Exception as e:
-            logging.warning("Namuna yuborilmadi %s: %s", p, e)
+    media, path = sample_photo(1, 1)
+    msg = await m.answer_photo(media, caption=sample_caption(1, 1, lang), reply_markup=sample_kb(1, 1, lang))
+    remember_photo(path, msg)
+
+
+@router.callback_query(F.data.startswith("smp:"))
+async def sample_nav(c: CallbackQuery, bot: Bot):
+    lang = L(c.from_user.id)
+    parts = c.data.split(":")
+    if parts[1] == "noop":
+        await c.answer()
+        return
+    if parts[1] == "dl":
+        k = int(parts[2])
+        f = sample_pptx(k)
+        await c.answer("📥")
+        if f:
+            await c.message.answer_document(FSInputFile(f), caption=stx(lang, "pptx_cap", pkg=SAMPLE_NAMES[k]))
+        return
+    k, i = int(parts[1]), int(parts[2])
+    if k not in SAMPLE_NAMES or not 1 <= i <= sample_count(k):
+        await c.answer()
+        return
+    await c.answer()
+    media, path = sample_photo(k, i)
+    try:
+        msg = await c.message.edit_media(InputMediaPhoto(media=media, caption=sample_caption(k, i, lang)),
+                                         reply_markup=sample_kb(k, i, lang))
+        remember_photo(path, msg)
+    except Exception as e:  # xabar juda eski yoki o'zgarmagan bo'lsa
+        logging.info("Namuna tahrirlanmadi: %s", e)
 
 
 @router.message(F.text.in_(btn_texts("orders")))
