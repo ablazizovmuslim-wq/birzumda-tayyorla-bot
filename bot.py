@@ -51,9 +51,21 @@ if WEBAPP_URL and not WEBAPP_URL.startswith("http"):
 PORT = int(os.getenv("PORT", "8080"))
 WEBAPP_DIR = BASE
 # Premium emoji: {"kalit": "emoji_id"}. Faqat bot egasida Telegram Premium bo'lsa ishlaydi.
+DEFAULT_EMOJI_IDS = {
+    "hi": "5215248074498128418", "star": "5211057719720561874", "student": "5373012449597335010",
+    "teacher": "5372926953978341366", "order": "5443127283898405358", "prices": "5188208446461188962",
+    "samples": "5431456208487716895", "app": "5176998281170911817", "ok": "4956672355876209142",
+    "check": "4956672355876209142", "money": "5188208446461188962", "down": "5470177992950946662",
+    "orders": "5188311512791393083", "contact": "5933749305155260825", "cancel": "5210952531676504517",
+    "globe": "5447410659077661506", "bot": "5244983043621411868", "music": "5213323516832667837",
+    "image": "5375074927252621134", "channel": "5370599459661045441", "edit": "5237808360882977239",
+    "heart": "5345961113479572537", "fire": "5176998281170911817",
+}
 try:
-    EMOJI_IDS = json.loads(os.getenv("EMOJI_IDS", "{}"))
+    EMOJI_IDS = {**DEFAULT_EMOJI_IDS, **json.loads(os.getenv("EMOJI_IDS", "{}"))}
 except json.JSONDecodeError:
+    EMOJI_IDS = dict(DEFAULT_EMOJI_IDS)
+if os.getenv("PREMIUM_EMOJI", "1") == "0":
     EMOJI_IDS = {}
 
 
@@ -185,6 +197,12 @@ def order_text(o, for_admin=False) -> str:
 
 
 # ------------------------------------------------------------------ klaviaturalar
+def _strip_emoji(text: str) -> str:
+    """Premium ikonka qo'yilganda boshidagi oddiy emojini olib tashlaydi."""
+    head, _, rest = text.partition(" ")
+    return rest if rest and not any(ch.isalnum() for ch in head) else text
+
+
 def kbtn(text, style=None, icon=None, **kw):
     """Rangli pastki tugma. style: primary (ko'k), success (yashil), danger (qizil)."""
     extra = {}
@@ -192,6 +210,7 @@ def kbtn(text, style=None, icon=None, **kw):
         extra["style"] = style
     if icon and EMOJI_IDS.get(icon):
         extra["icon_custom_emoji_id"] = EMOJI_IDS[icon]
+        text = _strip_emoji(text)
     return KeyboardButton(text=text, **extra, **kw)
 
 
@@ -216,6 +235,7 @@ def ibtn(text, data, style=None, icon=None):
         extra["style"] = style
     if icon and EMOJI_IDS.get(icon):
         extra["icon_custom_emoji_id"] = EMOJI_IDS[icon]
+        text = _strip_emoji(text)
     return InlineKeyboardButton(text=text, callback_data=data, **extra)
 
 
@@ -229,33 +249,39 @@ def audience_kb(prefix="aud"):
                 [(CATALOG["t"]["title"], f"{prefix}:t", "success", "teacher")]])
 
 
+SVC_ICON = {"taqdimot": "image", "dars": "image", "mustaqil": "edit", "kurs": "channel",
+            "portfolio": "star", "oum": "bot", "tadbir": "fire"}
+
+
 def services_kb(aud):
     rows = []
     for key, s in CATALOG[aud]["services"].items():
         price = min(p[1] for p in s["packages"].values()) if "packages" in s else s["price"]
-        rows.append([(f"{s['name']} — {money(price)}dan" if "packages" in s else f"{s['name']} — {money(price)}", f"svc:{aud}:{key}")])
-    rows.append([("⬅️ Orqaga", "back:aud", "danger")])
+        rows.append([(f"{s['name']} — {money(price)}dan" if "packages" in s else f"{s['name']} — {money(price)}",
+                      f"svc:{aud}:{key}", None, SVC_ICON.get(key))])
+    rows.append([("⬅️ Orqaga", "back:aud", "danger", "cancel")])
     return ikb(rows)
 
 
 def packages_kb(aud, svc):
     pk = CATALOG[aud]["services"][svc]["packages"]
     styles = {"start": None, "pro": "primary", "premium": "success"}
-    rows = [[(f"{v[0]} — {money(v[1])}", f"pkg:{aud}:{svc}:{k}", styles.get(k))] for k, v in pk.items()]
-    rows.append([("🎨 Namunalarni ko'rish", "samples")])
+    icons = {"start": "star", "pro": "fire", "premium": "heart"}
+    rows = [[(f"{v[0]} — {money(v[1])}", f"pkg:{aud}:{svc}:{k}", styles.get(k), icons.get(k))] for k, v in pk.items()]
+    rows.append([("🎨 Namunalarni ko'rish", "samples", None, "samples")])
     rows.append([("⬅️ Orqaga", f"aud:{aud}", "danger")])
     return ikb(rows)
 
 
 SKIP_KB = ikb([[("⏭ O'tkazib yuborish", "skip", "primary")]])
-DEADLINE_KB = ikb([[(DEADLINES["normal"], "dl:normal", "primary")], [(DEADLINES["urgent"], "dl:urgent", "danger")]])
+DEADLINE_KB = ikb([[(DEADLINES["normal"], "dl:normal", "primary", "orders")], [(DEADLINES["urgent"], "dl:urgent", "danger", "fire")]])
 CONFIRM_KB = ikb([[("✅ Tasdiqlash", "confirm", "success", "ok")],
-                  [("✏️ Qaytadan", "restart", "primary"), ("❌ Bekor qilish", "cancel", "danger")]])
+                  [("✏️ Qaytadan", "restart", "primary", "edit"), ("❌ Bekor qilish", "cancel", "danger", "cancel")]])
 
 
 def admin_kb(oid, status):
     if status == "paid":
-        return ikb([[("✅ To'lov tasdiqlandi", f"adm:ok:{oid}", "success"), ("❌ Rad etish", f"adm:no:{oid}", "danger")]])
+        return ikb([[("✅ To'lov tasdiqlandi", f"adm:ok:{oid}", "success", "ok"), ("❌ Rad etish", f"adm:no:{oid}", "danger", "cancel")]])
     if status == "work":
         return ikb([[("📤 Tayyor ishni yuborish", f"adm:send:{oid}", "primary")]])
     return None
@@ -313,14 +339,14 @@ async def start(m: Message, state: FSMContext):
         await m.answer(text, reply_markup=MAIN_KB)
 
 
-@router.message(F.text == "🛒 Buyurtma berish")
+@router.message(F.text.in_({"🛒 Buyurtma berish", "Buyurtma berish"}))
 @router.message(Command("order"))
 async def order_start(m: Message, state: FSMContext):
     await state.clear()
     await m.answer("Kim uchun buyurtma? 👇", reply_markup=audience_kb())
 
 
-@router.message(F.text == "💰 Narxlar")
+@router.message(F.text.in_({"💰 Narxlar", "Narxlar"}))
 async def prices(m: Message):
     imgs = [ASSETS / "prices_students.png", ASSETS / "prices_teachers.png"]
     if all(p.exists() for p in imgs):
@@ -353,7 +379,7 @@ async def go_order(c: CallbackQuery, state: FSMContext):
     await c.answer()
 
 
-@router.message(F.text == "🎨 Namunalar")
+@router.message(F.text.in_({"🎨 Namunalar", "Namunalar"}))
 async def samples_msg(m: Message):
     await send_samples(m)
 
@@ -385,7 +411,7 @@ async def send_samples(m: Message):
             logging.warning("Namuna yuborilmadi %s: %s", p, e)
 
 
-@router.message(F.text == "📦 Buyurtmalarim")
+@router.message(F.text.in_({"📦 Buyurtmalarim", "Buyurtmalarim"}))
 async def my_orders(m: Message):
     rows = user_orders(m.from_user.id)
     if not rows:
@@ -394,7 +420,7 @@ async def my_orders(m: Message):
     await m.answer("\n\n".join(order_text(o) for o in rows))
 
 
-@router.message(F.text == "📞 Aloqa")
+@router.message(F.text.in_({"📞 Aloqa", "Aloqa"}))
 async def contact(m: Message):
     await m.answer(f"Savollar bo'lsa yozing: {CONTACT}")
 
