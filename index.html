@@ -110,6 +110,48 @@ button.chip{cursor:pointer;color:var(--t);transition:transform .15s}button.chip:
 .sheet .sh{width:100%;max-width:560px;margin:0 auto;background:#160F24;border:1px solid var(--line);border-bottom:0;border-radius:24px 24px 0 0;padding:12px 20px 26px;transform:translateY(100%);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
 .sheet.on .sh{transform:none}.sheet h3{font-size:22px;margin:10px 0}.sheet .m p{margin:8px 0}
 .grab{width:44px;height:5px;border-radius:3px;background:#3A2A57;margin:0 auto}
+/* ---------- jonli tugmalar */
+.btn{position:relative;overflow:hidden;animation:breathe 3s ease-in-out infinite}
+.btn::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-20deg);animation:shimmer 3.2s ease-in-out infinite}
+.btn.ghost{animation:none}.btn.ghost::after{animation-duration:4.5s;opacity:.5}
+@keyframes shimmer{0%,55%{left:-60%}100%{left:130%}}
+@keyframes breathe{50%{box-shadow:0 10px 38px rgba(255,95,200,.55),0 0 0 1px rgba(255,255,255,.08) inset}}
+.opt,.tile,.chip,.row.tap,.pk div,nav button,.fl,.seg button{position:relative;overflow:hidden}
+.rip{position:absolute;border-radius:50%;background:rgba(255,255,255,.35);transform:scale(0);animation:rip .6s ease-out forwards;pointer-events:none}
+@keyframes rip{to{transform:scale(1);opacity:0}}
+.opt.on{animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{0%{transform:scale(.96)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
+.tile{animation:float3 5s ease-in-out infinite}.tile:nth-child(2n){animation-delay:-2.5s}
+@keyframes float3{50%{transform:translateY(-4px)}}
+.tile .ico{transition:transform .3s}.tile:active .ico{transform:rotate(-12deg) scale(1.15)}
+.ico svg{animation:icoPulse 2.8s ease-in-out infinite}
+@keyframes icoPulse{50%{transform:scale(1.12)}}
+.chip{animation:chipIn .5s cubic-bezier(.2,1.4,.4,1) backwards}.chip:nth-child(2){animation-delay:.08s}.chip:nth-child(3){animation-delay:.16s}.chip:nth-child(4){animation-delay:.24s}
+@keyframes chipIn{from{opacity:0;transform:translateY(10px) scale(.9)}}
+.chip.hot{animation:chipIn .5s backwards,hotGlow 2.2s ease-in-out .6s infinite}
+@keyframes hotGlow{50%{box-shadow:0 0 18px rgba(160,107,255,.75)}}
+nav button.on svg{animation:navBounce .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes navBounce{0%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.2)}100%{transform:translateY(-2px) scale(1.12)}}
+.total b{display:inline-block}.total b.bump{animation:pop .4s cubic-bezier(.2,1.6,.4,1)}
+.total{background-size:200% 200%;animation:grad 6s ease infinite;background-image:linear-gradient(135deg,#6A1FB0,#3B0F6E,#9B2FB0,#6A1FB0)}
+@keyframes grad{50%{background-position:100% 100%}}
+/* ---------- toshbaqa o'qituvchi (o'zimizning SVG) */
+.tsvg{width:96px;height:80px;flex:none;overflow:visible}
+.tsvg .thead{transform-origin:96px 58px;animation:nod 2.6s ease-in-out infinite}
+@keyframes nod{50%{transform:rotate(-6deg) translateY(-2px)}}
+.tsvg .teye{transform-origin:97px 55px;animation:blink 4s infinite}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.tsvg .tmouth{transform-origin:98px 65px;animation:talk .35s ease-in-out infinite alternate}
+@keyframes talk{to{transform:scaleY(.25)}}
+.tsvg .tsound path{animation:snd 1.2s ease-out infinite}.tsvg .tsound path:nth-child(2){animation-delay:.3s}
+@keyframes snd{0%{opacity:0}40%{opacity:1}100%{opacity:0;transform:translateX(4px)}}
+.tsvg .tlegs ellipse{animation:paddle 1.4s ease-in-out infinite}.tsvg .tlegs ellipse:nth-child(2){animation-delay:-.7s}
+@keyframes paddle{50%{transform:translateY(-2px)}}
+.peek{position:absolute;right:6px;top:-6px;width:70px;height:58px}
+/* ---------- konfetti */
+.cf{position:fixed;top:-12px;width:9px;height:14px;border-radius:2px;z-index:30;pointer-events:none;animation:fall 1.1s cubic-bezier(.2,.6,.4,1) forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:.9}}
+@media (prefers-reduced-motion:reduce){*,*::after{animation:none!important;transition:none!important}}
 .langs{margin-left:auto;display:flex;gap:6px}
 .fl{width:40px;height:34px;border-radius:11px;border:1px solid var(--line);background:#160F24;display:grid;place-items:center;cursor:pointer;font-size:20px;transition:transform .15s,border-color .2s,background .2s}
 .fl span{display:inline-block;transform-origin:10% 90%;animation:wave 2.2s ease-in-out infinite}
@@ -169,13 +211,35 @@ button.chip{cursor:pointer;color:var(--t);transition:transform .15s}button.chip:
     <div class="card"><div class="mock p"><i style="left:14px;top:16px;width:90px;height:9px;background:#fff"></i><i style="left:14px;top:40px;width:14px;height:14px;border-radius:50%;background:#6A1FB0"></i><i style="left:34px;top:44px;width:70px;height:6px;background:#4B3A66"></i><i style="left:14px;top:62px;width:14px;height:14px;border-radius:50%;background:#6A1FB0"></i><i style="left:34px;top:66px;width:56px;height:6px;background:#4B3A66"></i><i class="bar" style="right:20px;bottom:14px;width:12px;height:66px;background:#A06BFF"></i></div><b>Professional</b><p class="m" style="font-size:13px" data-i="mP">Animatsiya + diagramma + 🐢</p></div>
     <div class="card" style="grid-column:1/-1"><div class="mock x" style="height:130px"><i class="glo"></i><i style="left:16px;top:22px;width:120px;height:14px;background:#FF8FDA;box-shadow:0 0 16px #FF4FD8"></i><i style="left:16px;top:50px;width:150px;height:7px;background:#5A4570"></i><i style="left:16px;top:66px;width:110px;height:7px;background:#5A4570"></i></div><b>Premium</b><p class="m" style="font-size:13px" data-i="mX">Neon nur, Morph o'tishlari, nutq matni, video, 🐢</p></div>
   </div>
-  <div class="card turtle"><div class="t">🐢</div><div><b data-i="turtleT">Toshbaqa o'qituvchi</b><span class="badge">Pro · Premium</span><div class="say" style="margin-top:8px" data-i="turtleSay">Salom! Men slayd ichida gapirib, mavzuni sodda qilib tushuntiraman 🎙</div></div></div>
+  <div class="card turtle"><svg class="tsvg" viewBox="0 0 120 100" aria-hidden="true">
+<ellipse cx="60" cy="92" rx="40" ry="5" fill="rgba(0,0,0,.35)"/>
+<g class="tlegs" fill="#7BD88F"><ellipse cx="34" cy="80" rx="9" ry="7"/><ellipse cx="78" cy="80" rx="9" ry="7"/></g>
+<path d="M20 70 Q22 34 56 30 Q90 34 92 70 Z" fill="#6A1FB0"/>
+<path d="M30 66 Q34 42 56 40 Q78 42 82 66 Z" fill="#A06BFF"/>
+<path d="M56 40 L56 66 M38 52 L74 52" stroke="#6A1FB0" stroke-width="3"/>
+<g class="thead"><circle cx="96" cy="58" r="15" fill="#7BD88F"/>
+<rect x="84" y="40" width="22" height="5" rx="2" fill="#1C1430"/><rect x="88" y="30" width="14" height="11" rx="2" fill="#1C1430"/><path d="M106 42 l8 8" stroke="#FF8FDA" stroke-width="2"/>
+<g class="teye"><circle cx="93" cy="55" r="3.2" fill="#1C1430"/><circle cx="102" cy="55" r="3.2" fill="#1C1430"/></g>
+<ellipse class="tmouth" cx="98" cy="65" rx="4" ry="2.5" fill="#1C1430"/></g>
+<g class="tsound" stroke="#FF8FDA" stroke-width="2.5" fill="none" stroke-linecap="round"><path d="M114 58 q4 4 0 8"/><path d="M118 54 q7 8 0 16"/></g>
+</svg><div><b data-i="turtleT">Toshbaqa o'qituvchi</b><span class="badge">Pro · Premium</span><div class="say" style="margin-top:8px" data-i="turtleSay">Salom! Men slayd ichida gapirib, mavzuni sodda qilib tushuntiraman 🎙</div></div></div>
   <button class="btn ghost" onclick="sendCmd('samples')" data-i="sendSamples">📎 PPTX namunalarni chatga yuborish</button>
 </section>
 
 <!-- ORDER -->
 <section class="page" id="p-order">
-  <h2 data-i="order">Buyurtma</h2>
+  <div style="position:relative"><h2 data-i="order">Buyurtma</h2><svg class="tsvg peek" viewBox="0 0 120 100" aria-hidden="true">
+<ellipse cx="60" cy="92" rx="40" ry="5" fill="rgba(0,0,0,.35)"/>
+<g class="tlegs" fill="#7BD88F"><ellipse cx="34" cy="80" rx="9" ry="7"/><ellipse cx="78" cy="80" rx="9" ry="7"/></g>
+<path d="M20 70 Q22 34 56 30 Q90 34 92 70 Z" fill="#6A1FB0"/>
+<path d="M30 66 Q34 42 56 40 Q78 42 82 66 Z" fill="#A06BFF"/>
+<path d="M56 40 L56 66 M38 52 L74 52" stroke="#6A1FB0" stroke-width="3"/>
+<g class="thead"><circle cx="96" cy="58" r="15" fill="#7BD88F"/>
+<rect x="84" y="40" width="22" height="5" rx="2" fill="#1C1430"/><rect x="88" y="30" width="14" height="11" rx="2" fill="#1C1430"/><path d="M106 42 l8 8" stroke="#FF8FDA" stroke-width="2"/>
+<g class="teye"><circle cx="93" cy="55" r="3.2" fill="#1C1430"/><circle cx="102" cy="55" r="3.2" fill="#1C1430"/></g>
+<ellipse class="tmouth" cx="98" cy="65" rx="4" ry="2.5" fill="#1C1430"/></g>
+<g class="tsound" stroke="#FF8FDA" stroke-width="2.5" fill="none" stroke-linecap="round"><path d="M114 58 q4 4 0 8"/><path d="M118 54 q7 8 0 16"/></g>
+</svg></div>
   <div class="seg" id="seg2"><div class="ind"></div><button data-a="s" data-i="students">🎓 Talabalar</button><button data-a="t" data-i="teachers">👩‍🏫 Ustozlar</button></div>
   <label data-i="lService">Xizmat</label><div class="opts" id="svcOpts"></div>
   <div id="pkgWrap" style="display:none"><label data-i="lPkg">Paket</label><div class="opts" id="pkgOpts"></div></div>
@@ -359,7 +423,9 @@ function renderOrder() {
     `<div class="opt ${order.pkg === k ? 'on' : ''}" onclick="order.pkg='${k}';hap();renderOrder()"><span><b>${pName(aud, order.svc, k)}</b><br><small style="color:var(--m)">${pDesc(aud, order.svc, k)}</small></span><span class="v">${fmt(p[1])}</span></div>`).join('');
   document.getElementById('dlOpts').innerHTML = [['normal', t('normal'), ''], ['urgent', t('urgent'), '+' + Math.round(CAT.urgent * 100) + '%']].map(([k, n, x]) =>
     `<div class="opt ${order.deadline === k ? 'on' : ''}" onclick="order.deadline='${k}';hap();renderOrder()"><span>${n}</span><span class="v">${x}</span></div>`).join('');
-  const p = price(); const sv = CAT[order.aud].services[order.svc]; document.getElementById('total').textContent = p ? fmt(p) : (sv && !sv.packages && sv.price == null ? t('adminSays') : '—');
+  const p = price(); const sv = CAT[order.aud].services[order.svc]; const tot = document.getElementById('total');
+  const nv = p ? fmt(p) : (sv && !sv.packages && sv.price == null ? t('adminSays') : '—');
+  if (tot.textContent !== nv) { tot.textContent = nv; tot.classList.remove('bump'); tot.offsetHeight; tot.classList.add('bump'); }
 }
 bindSeg('seg', renderPrices); bindSeg('seg2', renderOrder);
 
@@ -376,7 +442,7 @@ document.getElementById('sendBtn').onclick = () => {
   const data = { cmd: 'order', aud: order.aud, svc: order.svc, pkg: order.pkg, deadline: order.deadline, topic, details: document.getElementById('details').value.trim(), promo: document.getElementById('promo').value.trim(), lang };
   if (!tg || !tg.sendData) return toast(t('openTg'));
   try { tg.HapticFeedback.notificationOccurred('success'); } catch (e) {}
-  tg.sendData(JSON.stringify(data));
+  confetti(); setTimeout(() => tg.sendData(JSON.stringify(data)), 750);
 };
 
 
@@ -397,7 +463,22 @@ setInterval(() => { if (document.getElementById('p-samples').classList.contains(
 showPk(1);
 
 applyLang();
-fetch('catalog.json?v=' + Date.now()).then(r => r.json()).then(c => { CAT = c; renderHome(); }).catch(() => toast(t('noPrices')));
+document.addEventListener('pointerdown', e => {
+  const el = e.target.closest('.btn,.opt,.tile,.chip,.row.tap,.pk div,nav button,.fl,.seg button'); if (!el) return;
+  const r = el.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2, sp = document.createElement('span');
+  sp.className = 'rip'; sp.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX - r.left - d / 2}px;top:${e.clientY - r.top - d / 2}px`;
+  el.appendChild(sp); setTimeout(() => sp.remove(), 650);
+});
+function confetti() {
+  const cols = ['#A06BFF', '#FF5FC8', '#FFFFFF', '#7BD88F', '#FFD166'];
+  for (let i = 0; i < 60; i++) {
+    const c = document.createElement('i'); c.className = 'cf';
+    c.style.cssText = `left:${Math.random() * 100}vw;background:${cols[i % cols.length]};animation-delay:${Math.random() * .25}s;animation-duration:${.8 + Math.random() * .6}s`;
+    document.body.appendChild(c); setTimeout(() => c.remove(), 1700);
+  }
+}
+const startPage = qs.get('page');
+fetch('catalog.json?v=' + Date.now()).then(r => r.json()).then(c => { CAT = c; renderHome(); if (['order', 'prices', 'samples'].includes(startPage)) go(startPage); }).catch(() => toast(t('noPrices')));
 </script>
 </body>
 </html>

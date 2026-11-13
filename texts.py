@@ -478,3 +478,85 @@ SHORT_DESC = {
     "ru": "Слайды, самостоятельные, курсовые и другое — быстро и красиво. 🐢 Черепаха-учитель, бонусы. 💜 {contact}",
     "en": "Slides, papers, term papers and more — fast and beautiful. 🐢 Turtle teacher, bonuses. 💜 {contact}",
 }
+
+# ------------------------------------------------------------------ batafsil so'rovnoma (texnik topshiriq)
+# Har bir xizmat turi uchun savollar ketma-ketligi
+BRIEF_GROUPS = {
+    "slides": ["subject", "slides", "wlang", "title", "plan", "style", "date", "extra"],
+    "paper": ["subject", "pages", "wlang", "title", "plan", "format", "date", "extra"],
+    "portfolio": ["who", "sections", "style", "date", "extra"],
+    "teach": ["subject", "grade", "count", "wlang", "plan", "date", "extra"],
+    "other": ["free", "date"],
+}
+SVC_GROUP = {"taqdimot": "slides", "dars": "slides", "tadbir": "slides",
+             "mustaqil": "paper", "kurs": "paper", "maqola": "paper", "amaliy": "paper", "referat": "paper",
+             "portfolio": "portfolio", "oum": "teach", "ishlanma": "teach", "test": "teach", "boshqa": "other"}
+
+# Savol matni va tezkor javob tugmalari (opts)
+BRIEF_Q = {
+    "subject": {"uz": "📚 <b>Fan nomi</b> (yoki tadbir nomi)?", "ru": "📚 <b>Название предмета</b> (или мероприятия)?",
+                "en": "📚 <b>Subject</b> (or event name)?"},
+    "slides": {"uz": "🖼 <b>Nechta slayd</b> kerak?", "ru": "🖼 <b>Сколько слайдов</b> нужно?", "en": "🖼 <b>How many slides?</b>",
+               "opts": {"uz": ["10", "15", "20", "25"], "ru": ["10", "15", "20", "25"], "en": ["10", "15", "20", "25"]}},
+    "pages": {"uz": "📄 <b>Hajmi</b> — necha bet?", "ru": "📄 <b>Объём</b> — сколько страниц?", "en": "📄 <b>Length</b> — how many pages?",
+              "opts": {"uz": ["10", "15", "20", "30"], "ru": ["10", "15", "20", "30"], "en": ["10", "15", "20", "30"]}},
+    "wlang": {"uz": "🌐 Ish <b>qaysi tilda</b> bo'lsin?", "ru": "🌐 На <b>каком языке</b> работа?", "en": "🌐 <b>Which language</b> should the work be in?",
+              "opts": {"uz": ["O'zbekcha", "Ruscha", "Inglizcha"], "ru": ["Узбекский", "Русский", "Английский"],
+                       "en": ["Uzbek", "Russian", "English"]}},
+    "title": {"uz": "🎓 <b>Titul (muqova) uchun</b>: F.I.Sh, guruh, OTM, o'qituvchi\n<i>Masalan: Aliyev Ali, 101-guruh, ADPI, o'qituvchi Karimova N.</i>",
+              "ru": "🎓 <b>Для титульного листа</b>: ФИО, группа, вуз, преподаватель\n<i>Например: Алиев Али, группа 101, АДПИ, преподаватель Каримова Н.</i>",
+              "en": "🎓 <b>For the title page</b>: full name, group, university, teacher\n<i>E.g. Ali Aliyev, group 101, ADPI, teacher N. Karimova</i>"},
+    "plan": {"uz": "🗂 <b>Reja yoki bo'limlar</b> bormi? Yozing yoki tugmani bosing",
+             "ru": "🗂 Есть <b>план или разделы</b>? Напишите или нажмите кнопку",
+             "en": "🗂 Do you have an <b>outline or sections</b>? Write them or tap the button",
+             "opts": {"uz": ["O'zingiz tuzing"], "ru": ["Составьте сами"], "en": ["You make it"]}},
+    "style": {"uz": "🎨 <b>Rang yoki dizayn</b> istagi?", "ru": "🎨 Пожелания по <b>цвету и дизайну</b>?", "en": "🎨 <b>Colour or design</b> preference?",
+              "opts": {"uz": ["Binafsha-qora", "Ko'k-oq", "Rasmiy / klassik", "Farqi yo'q"],
+                       "ru": ["Фиолетово-чёрный", "Сине-белый", "Строгий / классика", "Неважно"],
+                       "en": ["Purple & black", "Blue & white", "Formal / classic", "No preference"]}},
+    "format": {"uz": "📐 <b>Rasmiylashtirish talablari</b>? (shrift, interval, adabiyotlar soni)",
+               "ru": "📐 <b>Требования к оформлению</b>? (шрифт, интервал, количество источников)",
+               "en": "📐 <b>Formatting requirements</b>? (font, spacing, number of references)",
+               "opts": {"uz": ["Standart: Times New Roman 14, 1.5"], "ru": ["Стандарт: Times New Roman 14, 1.5"],
+                        "en": ["Standard: Times New Roman 14, 1.5"]}},
+    "who": {"uz": "👤 <b>Kim uchun</b>: F.I.Sh, lavozim, ish joyi?", "ru": "👤 <b>Для кого</b>: ФИО, должность, место работы?",
+            "en": "👤 <b>Who is it for</b>: full name, position, workplace?"},
+    "sections": {"uz": "🗂 <b>Qaysi bo'limlar</b> bo'lsin? (yutuqlar, sertifikatlar, ochiq darslar…)",
+                 "ru": "🗂 <b>Какие разделы</b> нужны? (достижения, сертификаты, открытые уроки…)",
+                 "en": "🗂 <b>Which sections</b>? (achievements, certificates, open lessons…)",
+                 "opts": {"uz": ["Standart bo'limlar"], "ru": ["Стандартные разделы"], "en": ["Standard sections"]}},
+    "grade": {"uz": "🏫 <b>Kurs / sinf</b> va yo'nalish?", "ru": "🏫 <b>Курс / класс</b> и направление?", "en": "🏫 <b>Year / grade</b> and field?"},
+    "count": {"uz": "🔢 <b>Hajm</b>: necha soat yoki nechta savol?", "ru": "🔢 <b>Объём</b>: сколько часов или вопросов?",
+              "en": "🔢 <b>Size</b>: how many hours or questions?"},
+    "free": {"uz": "✍️ <b>Ishni batafsil yozing</b>: nima kerak, hajmi, talablar",
+             "ru": "✍️ <b>Опишите подробно</b>: что нужно, объём, требования",
+             "en": "✍️ <b>Describe it in detail</b>: what you need, size, requirements"},
+    "date": {"uz": "📅 <b>Aniq qachongacha</b> kerak?", "ru": "📅 <b>К какому сроку</b> нужно?", "en": "📅 <b>When exactly</b> do you need it?",
+             "opts": {"uz": ["Bugun", "Ertaga", "2–3 kunda", "Farqi yo'q"], "ru": ["Сегодня", "Завтра", "Через 2–3 дня", "Неважно"],
+                      "en": ["Today", "Tomorrow", "In 2–3 days", "No rush"]}},
+    "extra": {"uz": "💬 <b>Yana istaklar</b> bormi?", "ru": "💬 <b>Ещё пожелания</b>?", "en": "💬 <b>Anything else</b>?"},
+}
+# Admin uchun texnik topshiriqdagi nomlar (o'zbekcha)
+BRIEF_LABEL = {"subject": "Fan", "slides": "Slaydlar soni", "pages": "Hajmi (bet)", "wlang": "Ish tili",
+               "title": "Titul ma'lumotlari", "plan": "Reja / bo'limlar", "style": "Dizayn", "format": "Rasmiylashtirish",
+               "who": "Kim uchun", "sections": "Bo'limlar", "grade": "Kurs / sinf", "count": "Hajm",
+               "free": "Batafsil", "date": "Qachongacha", "extra": "Qo'shimcha istaklar"}
+BRIEF_TX = {
+    "intro": {"uz": "{e[edit]} <b>Endi bir nechta savol</b> — ishni aynan siz xohlagandek qilishimiz uchun.\nJavob yozing yoki tugmani bosing. Bilmasangiz — «O'tkazish».",
+              "ru": "{e[edit]} <b>Теперь несколько вопросов</b> — чтобы сделать работу точно как вы хотите.\nНапишите ответ или нажмите кнопку. Не знаете — «Пропустить».",
+              "en": "{e[edit]} <b>Now a few questions</b> — so we make it exactly the way you want.\nType an answer or tap a button. Not sure — «Skip»."},
+    "step": {"uz": "Savol {i}/{n}", "ru": "Вопрос {i}/{n}", "en": "Question {i}/{n}"},
+    "skip": {"uz": "⏭ O'tkazish", "ru": "⏭ Пропустить", "en": "⏭ Skip"},
+    "finish": {"uz": "✅ Qolganini o'tkazish", "ru": "✅ Остальное пропустить", "en": "✅ Skip the rest"},
+    "done": {"uz": "{e[ok]} Rahmat! Hammasi yozib olindi.", "ru": "{e[ok]} Спасибо! Всё записали.", "en": "{e[ok]} Thanks! Got everything."},
+    "too_long": {"uz": "Juda uzun — 500 belgigacha yozing.", "ru": "Слишком длинно — до 500 символов.", "en": "Too long — up to 500 characters."},
+    "summary": {"uz": "🗒 <b>Talablaringiz:</b>", "ru": "🗒 <b>Ваши требования:</b>", "en": "🗒 <b>Your requirements:</b>"},
+}
+BRIEF_LABEL_TR = {
+    "ru": {"subject": "Предмет", "slides": "Слайдов", "pages": "Страниц", "wlang": "Язык работы", "title": "Титул",
+           "plan": "План", "style": "Дизайн", "format": "Оформление", "who": "Для кого", "sections": "Разделы",
+           "grade": "Курс / класс", "count": "Объём", "free": "Подробно", "date": "Срок", "extra": "Пожелания"},
+    "en": {"subject": "Subject", "slides": "Slides", "pages": "Pages", "wlang": "Language", "title": "Title page",
+           "plan": "Outline", "style": "Design", "format": "Formatting", "who": "For", "sections": "Sections",
+           "grade": "Year / grade", "count": "Size", "free": "Details", "date": "Deadline", "extra": "Extra"},
+}

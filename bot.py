@@ -88,7 +88,8 @@ def pe(key: str, fallback: str) -> str:
 
 logging.basicConfig(level=logging.INFO)
 
-from texts import (BTN, CAT_TR, CHANNEL_LINE, COMMANDS, CURRENCY, DESCRIPTION, SHORT_DESC, DEFAULT_LANG, FROM, LANGS, NEGOTIABLE, TURTLE_LONG, TX,  # noqa: E402
+from texts import (BRIEF_GROUPS, BRIEF_LABEL, BRIEF_LABEL_TR, BRIEF_Q, BRIEF_TX, SVC_GROUP,  # noqa: E402
+                   BTN, CAT_TR, CHANNEL_LINE, COMMANDS, CURRENCY, DESCRIPTION, SHORT_DESC, DEFAULT_LANG, FROM, LANGS, NEGOTIABLE, TURTLE_LONG, TX,  # noqa: E402
                    DEADLINES as DL_TR, STATUS as ST_TR)
 
 # Matnlardagi {e[kalit]} uchun premium emoji (ID bo'lmasa oddiy emoji)
@@ -226,7 +227,7 @@ def init_db():
             ("users", "ref_rewarded", "INTEGER DEFAULT 0"), ("users", "welcome_used", "INTEGER DEFAULT 0"), ("users", "lang", "TEXT"),
             ("orders", "full_price", "INTEGER DEFAULT 0"), ("orders", "discount", "INTEGER DEFAULT 0"),
             ("orders", "promo", "TEXT DEFAULT ''"), ("orders", "bonus_used", "INTEGER DEFAULT 0"),
-            ("orders", "welcome", "INTEGER DEFAULT 0")]:
+            ("orders", "welcome", "INTEGER DEFAULT 0"), ("orders", "brief", "TEXT DEFAULT '[]'")]:
             cols = {r["name"] for r in con.execute(f"PRAGMA table_info({table})")}
             if col not in cols:
                 con.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
@@ -292,13 +293,13 @@ def create_order(data: dict, user) -> int:
     with db() as con:
         cur = con.execute(
             """INSERT INTO orders(user_id, username, full_name, phone, audience, service, package, price,
-               topic, details, deadline, files, status, created_at, full_price, discount, promo, bonus_used, welcome)
-               VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               topic, details, deadline, files, status, created_at, full_price, discount, promo, bonus_used, welcome, brief)
+               VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (user.id, user.username or "", user.full_name, data.get("phone", ""), data["aud"], data["svc"],
              data.get("pkg", ""), data["price"], data["topic"], data.get("details", ""), data["deadline"],
              json.dumps(data.get("files", [])), "new", datetime.now().strftime("%Y-%m-%d %H:%M"),
              data.get("full_price", data["price"]), data.get("discount", 0), data.get("promo", ""),
-             data.get("bonus_used", 0), data.get("welcome", 0)))
+             data.get("bonus_used", 0), data.get("welcome", 0), json.dumps(data.get("brief", []), ensure_ascii=False)))
         return cur.lastrowid
 
 
@@ -470,7 +471,8 @@ def main_kb(lang: str = DEFAULT_LANG):
     if WEBAPP_URL:
         rows.append([kbtn(b(lang, "app"), "primary", "app", web_app=WebAppInfo(url=f"{WEBAPP_URL}/?lang={lang}"))])
     rows += [
-        [kbtn(b(lang, "order"), "success", "order")],
+        [kbtn(b(lang, "order"), "success", "order",
+              **({"web_app": WebAppInfo(url=f"{WEBAPP_URL}/?lang={lang}&page=order")} if WEBAPP_URL else {}))],
         [kbtn(b(lang, "prices"), "primary", "prices"), kbtn(b(lang, "samples"), "primary", "samples")],
         [kbtn(b(lang, "bonus"), "danger", "heart")],
         [kbtn(b(lang, "info"), "primary", "book"), kbtn(b(lang, "channel"), "success", "channel")],
@@ -598,6 +600,10 @@ class Order(StatesGroup):
     confirm = State()
     promo = State()
     cheque = State()
+
+
+class Brief(StatesGroup):
+    q = State()
 
 
 class AdminSend(StatesGroup):
@@ -846,8 +852,7 @@ async def got_topic(m: Message, state: FSMContext):
         await m.answer(tr(lang, "topic_long"))
         return
     await state.update_data(topic=m.text.strip())
-    await state.set_state(Order.details)
-    await m.answer(tr(lang, "details_ask"), reply_markup=skip_kb(lang))
+    await start_brief(m, state, lang)
 
 
 @router.message(Order.details, F.text)
@@ -860,6 +865,125 @@ async def got_details(m: Message, state: FSMContext):
 async def skip_details(c: CallbackQuery, state: FSMContext):
     await c.answer()
     await ask_files(c.message, state, L(c.from_user.id))
+
+
+# ------------------------------------------------------------------ batafsil so'rovnoma
+def btr(lang: str, key: str, **kw) -> str:
+    return (BRIEF_TX[key].get(lang) or BRIEF_TX[key]["uz"]).format(e=E, **kw)
+
+
+def brief_label(key: str, lang: str = "uz") -> str:
+    return BRIEF_LABEL_TR.get(lang, {}).get(key) or BRIEF_LABEL[key]
+
+
+def brief_kb(lang: str, key: str):
+    opts = BRIEF_Q[key].get("opts", {}).get(lang, [])
+    btns = [(o, f"bq:o:{i}", "primary") for i, o in enumerate(opts)]
+    rows = [btns[i:i + 2] for i in range(0, len(btns), 2)]
+    rows.append([(btr(lang, "skip"), "bq:skip", None), (btr(lang, "finish"), "bq:done", "success")])
+    return ikb(rows)
+
+
+async def start_brief(m: Message, state: FSMContext, lang: str):
+    data = await state.get_data()
+    qs = list(BRIEF_GROUPS[SVC_GROUP.get(data.get("svc"), "other")])
+    if data.get("details") and "extra" in qs:  # Mini ilovada qo'shimcha yozilgan
+        qs.remove("extra")
+    await state.update_data(bq=qs, bi=0, brief=[])
+    await state.set_state(Brief.q)
+    await m.answer(btr(lang, "intro"))
+    await ask_brief(m, state, lang)
+
+
+async def ask_brief(m: Message, state: FSMContext, lang: str):
+    data = await state.get_data()
+    qs, i = data["bq"], data["bi"]
+    if i >= len(qs):
+        await m.answer(btr(lang, "done"))
+        await ask_files(m, state, lang)
+        return
+    q = BRIEF_Q[qs[i]]
+    await m.answer(f"<i>{btr(lang, 'step', i=i + 1, n=len(qs))}</i>\n{q.get(lang) or q['uz']}",
+                   reply_markup=brief_kb(lang, qs[i]))
+
+
+async def brief_next(m: Message, state: FSMContext, lang: str, answer: str | None, finish: bool = False):
+    data = await state.get_data()
+    qs, i, brief = data["bq"], data["bi"], data.get("brief", [])
+    if i < len(qs) and answer:
+        brief.append([qs[i], answer.strip()])
+    await state.update_data(brief=brief, bi=len(qs) if finish else i + 1)
+    await ask_brief(m, state, lang)
+
+
+MENU_TEXTS = set().union(*(btn_texts(k) for k in ("app", "order", "prices", "samples", "bonus", "orders",
+                                                    "contact", "lang", "info", "channel")))
+
+
+@router.message(Brief.q, F.text, ~F.text.startswith("/"), ~F.text.in_(MENU_TEXTS))
+async def brief_text_answer(m: Message, state: FSMContext):
+    lang = L(m.from_user.id)
+    if len(m.text) > 500:
+        await m.answer(btr(lang, "too_long"))
+        return
+    await brief_next(m, state, lang, m.text)
+
+
+@router.callback_query(Brief.q, F.data.startswith("bq:"))
+async def brief_button(c: CallbackQuery, state: FSMContext):
+    lang = L(c.from_user.id)
+    await c.answer()
+    parts = c.data.split(":")
+    data = await state.get_data()
+    qs, i = data["bq"], data["bi"]
+    if parts[1] == "o" and i < len(qs):
+        opts = BRIEF_Q[qs[i]].get("opts", {}).get(lang, [])
+        idx = int(parts[2])
+        await brief_next(c.message, state, lang, opts[idx] if idx < len(opts) else None)
+    elif parts[1] == "skip":
+        await brief_next(c.message, state, lang, None)
+    else:  # done
+        await brief_next(c.message, state, lang, None, finish=True)
+
+
+def brief_lines(brief, lang: str) -> list:
+    return [f"• {brief_label(k, lang)}: {html.escape(v[:150])}" for k, v in brief]
+
+
+def tz_text(o) -> str:
+    """Admin uchun texnik topshiriq — oddiy matn, nusxa olib yuborish uchun."""
+    try:
+        brief = json.loads(o["brief"] or "[]")
+    except (TypeError, json.JSONDecodeError):
+        brief = []
+    files = len(json.loads(o["files"] or "[]"))
+    lines = [f"Buyurtma #{o['id']}: {service_label(o)}",
+             f"Kim uchun: {'Talabalar' if o['audience'] == 's' else 'Ustozlar'}",
+             f"Mavzu: {o['topic']}"]
+    if o["details"]:
+        lines.append(f"Qo'shimcha: {o['details']}")
+    lines += [f"{brief_label(k)}: {v}" for k, v in brief]
+    lines += [f"Muddat turi: {DEADLINES.get(o['deadline'], o['deadline'])}",
+              f"Mijoz tili: {LANGS.get(L(o['user_id']), '')}",
+              f"Fayllar: {files} ta" + (" (yuqorida yuborildi)" if files else "")]
+    return "\n".join(lines)
+
+
+async def send_tz(bot: Bot, o):
+    await notify_admins(bot, f"📋 <b>TEXNIK TOPSHIRIQ #{o['id']}</b> — bosib nusxa oling:\n"
+                             f"<pre>{html.escape(tz_text(o))[:3800]}</pre>")
+
+
+@router.message(Command("tz"))
+async def tz_cmd(m: Message, command: CommandObject, bot: Bot):
+    if not is_admin(m.from_user.id):
+        return
+    arg = (command.args or "").strip().lstrip("#")
+    o = get_order(int(arg)) if arg.isdigit() else None
+    if not o:
+        await m.answer("Ishlatish: <code>/tz 12</code> — buyurtma raqami")
+        return
+    await m.answer(f"📋 <b>TEXNIK TOPSHIRIQ #{o['id']}</b>\n<pre>{html.escape(tz_text(o))[:3800]}</pre>")
 
 
 async def ask_files(m: Message, state: FSMContext, lang: str = DEFAULT_LANG):
@@ -940,6 +1064,7 @@ async def show_confirm(m: Message, state: FSMContext):
     txt = (f"{tr(lang, 'confirm_title')}\n\n"
            f"📦 {label}\n{tr(lang, 'f_topic')}: {html.escape(data['topic'])}\n"
            + (f"{tr(lang, 'f_details')}: {html.escape(data['details'])}\n" if data.get("details") else "")
+           + (btr(lang, "summary") + "\n" + "\n".join(brief_lines(data["brief"], lang)) + "\n" if data.get("brief") else "")
            + f"{tr(lang, 'f_files', n=len(data.get('files', [])))}\n"
            f"{tr(lang, 'f_deadline')}: {dl_name(dl, lang)}\n\n{price_block}")
     if not price:
@@ -1024,7 +1149,7 @@ async def webapp_data(m: Message, state: FSMContext):
             await m.answer(tr(lang, "wa_promo_ok", code=html.escape(code)))
         else:
             await m.answer(tr(lang, "wa_promo_bad", code=html.escape(code)))
-    await ask_files(m, state, lang)
+    await start_brief(m, state, lang)
 
 
 @router.callback_query(F.data == "restart")
@@ -1081,6 +1206,7 @@ async def confirm(c: CallbackQuery, state: FSMContext, bot: Bot):
                     await bot.send_document(aid, f["id"], caption=f"#{oid} fayli")
             except Exception as e:
                 logging.warning("Fayl yuborilmadi: %s", e)
+    await send_tz(bot, o)
     await c.answer()
 
 
