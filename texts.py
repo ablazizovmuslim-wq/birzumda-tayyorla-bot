@@ -9,7 +9,7 @@ DEFAULT_LANG = "uz"
 
 # ------------------------------------------------------------------ menyu tugmalari
 BTN = {
-    "app":      {"uz": "✨ Mini ilova", "ru": "✨ Мини-приложение", "en": "✨ Mini App"},
+    "app":      {"uz": "✨ Buyurtmalar uchun", "ru": "✨ Для заказов", "en": "✨ For orders"},
     "order":    {"uz": "🛒 Buyurtma berish", "ru": "🛒 Заказать", "en": "🛒 Place an order"},
     "prices":   {"uz": "💰 Narxlar", "ru": "💰 Цены", "en": "💰 Prices"},
     "samples":  {"uz": "🎨 Namunalar", "ru": "🎨 Примеры", "en": "🎨 Samples"},
@@ -141,7 +141,7 @@ TX = {
                "{e[image]} Professional dizayn · 🐢 Toshbaqa o'qituvchi\n"
                "{e[fire]} O'z vaqtida va bepul tuzatish\n\n"
                "{e[orders]} <b>Qanday ishlaydi?</b>\n"
-               "{e[n1]} «Buyurtma berish» → talaba yoki ustoz\n"
+               "{e[n1]} «✨ Buyurtmalar uchun» → talaba yoki ustoz\n"
                "{e[n2]} Ishni tanlab, mavzuni yozasiz\n"
                "{e[n3]} To'lov qilib, chekni yuborasiz\n"
                "{e[n4]} Tayyor ish shu yerga keladi\n\n"
@@ -158,7 +158,7 @@ TX = {
                "{e[image]} Профессиональный дизайн · 🐢 Черепаха-учитель\n"
                "{e[fire]} Вовремя и бесплатные правки\n\n"
                "{e[orders]} <b>Как это работает?</b>\n"
-               "{e[n1]} «Заказать» → студент или преподаватель\n"
+               "{e[n1]} «✨ Для заказов» → студент или преподаватель\n"
                "{e[n2]} Выбираете работу и пишете тему\n"
                "{e[n3]} Оплачиваете и отправляете чек\n"
                "{e[n4]} Готовая работа приходит сюда\n\n"
@@ -175,7 +175,7 @@ TX = {
                "{e[image]} Professional design · 🐢 Turtle teacher\n"
                "{e[fire]} On time, free revisions\n\n"
                "{e[orders]} <b>How it works</b>\n"
-               "{e[n1]} «Place an order» → student or teacher\n"
+               "{e[n1]} «✨ For orders» → student or teacher\n"
                "{e[n2]} Pick the work and write the topic\n"
                "{e[n3]} Pay and send the receipt\n"
                "{e[n4]} The finished work arrives here\n\n"
@@ -212,9 +212,9 @@ TX = {
         "ru": "Вот примеры моих работ 👇\n<i>Анимации полностью видны в PowerPoint на компьютере.</i>",
         "en": "Here are samples of my work 👇\n<i>Animations play fully in PowerPoint on a computer.</i>"},
     "no_orders": {
-        "uz": "Sizda hali buyurtma yo'q. «🛒 Buyurtma berish» tugmasini bosing.",
-        "ru": "У вас пока нет заказов. Нажмите «🛒 Заказать».",
-        "en": "You have no orders yet. Tap «🛒 Place an order»."},
+        "uz": "Sizda hali buyurtma yo'q. «✨ Buyurtmalar uchun» tugmasini bosing.",
+        "ru": "У вас пока нет заказов. Нажмите «✨ Для заказов».",
+        "en": "You have no orders yet. Tap «✨ For orders»."},
     "contact": {"uz": "Savollar bo'lsa yozing: {contact}", "ru": "По вопросам пишите: {contact}",
                 "en": "Questions? Write to: {contact}"},
     "choose_service": {"uz": "<b>{title}</b>\nXizmatni tanlang 👇", "ru": "<b>{title}</b>\nВыберите услугу 👇",
@@ -306,9 +306,9 @@ TX = {
              "ru": "🎉 Заказ #{oid} готов! Спасибо 🙏\nНужны правки — пишите: {contact}",
              "en": "🎉 Order #{oid} is ready! Thank you 🙏\nNeed changes? Write to: {contact}"},
     "file_cap": {"uz": "📦 Buyurtma #{oid}", "ru": "📦 Заказ #{oid}", "en": "📦 Order #{oid}"},
-    "loose_file": {"uz": "Fayl qabul qilindi. Buyurtma berish uchun «🛒 Buyurtma berish» tugmasini bosing.",
-                   "ru": "Файл получен. Чтобы заказать, нажмите «🛒 Заказать».",
-                   "en": "File received. To order, tap «🛒 Place an order»."},
+    "loose_file": {"uz": "Fayl qabul qilindi. Buyurtma berish uchun «✨ Buyurtmalar uchun» tugmasini bosing.",
+                   "ru": "Файл получен. Чтобы заказать, нажмите «✨ Для заказов».",
+                   "en": "File received. To order, tap «✨ For orders»."},
     "menu": {"uz": "Menyudan tanlang 👇", "ru": "Выберите в меню 👇", "en": "Choose from the menu 👇"},
     "privacy": {"uz": "🔒 Maxfiylik siyosati: {url}", "ru": "🔒 Политика конфиденциальности: {url}", "en": "🔒 Privacy policy: {url}"},
     "myid": {"uz": "Sizning ID: <code>{id}</code>", "ru": "Ваш ID: <code>{id}</code>", "en": "Your ID: <code>{id}</code>"},

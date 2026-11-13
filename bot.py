@@ -471,12 +471,12 @@ def kbtn(text, style=None, icon=None, **kw):
 
 
 def main_kb(lang: str = DEFAULT_LANG):
-    rows = []
+    # Mini ilova — buyurtma shu yerdan; Mini ilova bo'lmasa — oddiy «Buyurtma berish» tugmasi
     if WEBAPP_URL:
-        rows.append([kbtn(b(lang, "app"), "primary", "app", web_app=WebAppInfo(url=f"{WEBAPP_URL}/?lang={lang}"))])
+        rows = [[kbtn(b(lang, "app"), "success", "app", web_app=WebAppInfo(url=f"{WEBAPP_URL}/?lang={lang}"))]]
+    else:
+        rows = [[kbtn(b(lang, "order"), "success", "order")]]
     rows += [
-        [kbtn(b(lang, "order"), "success", "order",
-              **({"web_app": WebAppInfo(url=f"{WEBAPP_URL}/?lang={lang}&page=order")} if WEBAPP_URL else {}))],
         [kbtn(b(lang, "prices"), "primary", "prices"), kbtn(b(lang, "samples"), "primary", "samples")],
         [kbtn(b(lang, "bonus"), "danger", "heart")],
         [kbtn(b(lang, "info"), "primary", "book"), kbtn(b(lang, "channel"), "success", "channel")],
