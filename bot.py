@@ -1744,6 +1744,21 @@ def make_web_app():
     return app
 
 
+class RetryMiddleware:
+    """Telegram'ga ulanish uzilsa (Connection reset), so'rovni 3 martagacha qayta yuboradi."""
+
+    async def __call__(self, make_request, bot, method):
+        from aiogram.exceptions import TelegramNetworkError
+        for attempt in range(3):
+            try:
+                return await make_request(bot, method)
+            except TelegramNetworkError as e:
+                if attempt == 2:
+                    raise
+                logging.warning("Tarmoq xatosi, qayta urinish %s: %s", attempt + 1, e)
+                await asyncio.sleep(1 + attempt * 2)
+
+
 async def set_commands(bot: Bot):
     """Chap pastdagi «Menu» ro'yxati — har bir til uchun alohida."""
     from aiogram.types import BotCommand
@@ -1773,6 +1788,7 @@ async def main():
         raise SystemExit("BOT_TOKEN o'rnatilmagan")
     init_db()
     bot = Bot(BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    bot.session.middleware(RetryMiddleware())
     dp = Dispatcher()
 
     @dp.update.outer_middleware()
@@ -1796,7 +1812,7 @@ async def main():
     await runner.setup()
     await web.TCPSite(runner, "0.0.0.0", PORT).start()
     logging.info("Mini ilova serveri %s portda ishga tushdi", PORT)
-    await bot.delete_webhook(drop_pending_updates=True)
+    await bot.delete_webhook(drop_pending_updates=False)  # qayta ishga tushganda xabarlar yo'qolmasin
     try:
         await dp.start_polling(bot)
     finally:
