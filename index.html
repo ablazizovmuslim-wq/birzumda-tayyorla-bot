@@ -95,6 +95,11 @@ nav button.on svg{transform:translateY(-2px) scale(1.12)}
 .toast.show{transform:translate(-50%,0)}
 .spark{position:absolute;width:14px;height:14px;animation:tw 1.8s ease-in-out infinite}
 @keyframes tw{50%{transform:scale(.4) rotate(90deg);opacity:.4}}
+.seg3{grid-template-columns:repeat(3,1fr)}.seg3 .ind{width:calc(33.33% - 2.7px)}
+.slider{position:relative;aspect-ratio:16/9;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#120D1C;box-shadow:0 14px 40px rgba(106,31,176,.35)}
+.slider img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.04);transition:opacity .6s,transform 1.2s}
+.slider img.on{opacity:1;transform:none}
+.dots{display:flex;justify-content:center;gap:6px;margin-top:10px}.dots i{width:7px;height:7px;border-radius:4px;background:#3A2A57;transition:all .3s}.dots i.on{width:22px;background:var(--a)}
 </style>
 </head>
 <body>
@@ -131,7 +136,10 @@ nav button.on svg{transform:translateY(-2px) scale(1.12)}
 <!-- SAMPLES -->
 <section class="page" id="p-samples">
   <h2>Namunalar</h2>
-  <video src="4_Reklama.mp4" autoplay muted loop playsinline></video>
+  <div class="seg seg3" id="seg3"><div class="ind"></div><button data-k="1">Start</button><button data-k="2">Professional</button><button data-k="3">Premium</button></div>
+  <div class="slider" id="slider"><img id="sl0" alt="Namuna slayd"><img id="sl1" alt="Namuna slayd"><img id="sl2" alt="Namuna slayd"></div>
+  <div class="dots" id="dots"><i></i><i></i><i></i></div>
+  <p class="m" id="pkDesc" style="margin-top:10px;text-align:center"></p>
   <div class="grid2 stag" style="margin-top:12px">
     <div class="card"><div class="mock s"><i style="left:14px;top:16px;width:70px;height:9px;background:#C9A6FF"></i><i style="left:14px;top:34px;width:110px;height:6px;background:#4B3A66"></i><i class="bar" style="right:44px;bottom:14px;width:12px;height:50px;background:#6A1FB0"></i><i class="bar" style="right:24px;bottom:14px;width:12px;height:70px;background:#A06BFF;animation-delay:.3s"></i></div><b>Start</b><p class="m" style="font-size:13px">Zamonaviy dizayn</p></div>
     <div class="card"><div class="mock p"><i style="left:14px;top:16px;width:90px;height:9px;background:#fff"></i><i style="left:14px;top:40px;width:14px;height:14px;border-radius:50%;background:#6A1FB0"></i><i style="left:34px;top:44px;width:70px;height:6px;background:#4B3A66"></i><i style="left:14px;top:62px;width:14px;height:14px;border-radius:50%;background:#6A1FB0"></i><i style="left:34px;top:66px;width:56px;height:6px;background:#4B3A66"></i><i class="bar" style="right:20px;bottom:14px;width:12px;height:66px;background:#A06BFF"></i></div><b>Professional</b><p class="m" style="font-size:13px">Animatsiya + diagramma</p></div>
@@ -256,6 +264,24 @@ document.getElementById('sendBtn').onclick = () => {
   try { tg.HapticFeedback.notificationOccurred('success'); } catch (e) {}
   tg.sendData(JSON.stringify(data));
 };
+
+
+const PKD = {1: "Start — zamonaviy dizayn, toza va tushunarli", 2: "Professional — animatsiya, ikonkalar, diagrammalar", 3: "Premium — neon nur, Morph o'tishlari, nutq matni"};
+let pk = 1, si = 0;
+function showPk(k) {
+  pk = k; si = 0; hap();
+  const seg = document.getElementById('seg3'); seg.querySelector('.ind').style.transform = `translateX(${(k - 1) * 100}%)`;
+  seg.querySelectorAll('button').forEach(b => b.style.color = +b.dataset.k === k ? '#fff' : 'var(--m)');
+  for (let i = 0; i < 3; i++) document.getElementById('sl' + i).src = `ns${k}-${i + 1}.jpg`;
+  document.getElementById('pkDesc').textContent = PKD[k]; slide(0);
+}
+function slide(i) {
+  si = i; for (let j = 0; j < 3; j++) { document.getElementById('sl' + j).classList.toggle('on', j === i); document.querySelectorAll('#dots i')[j].classList.toggle('on', j === i); }
+}
+document.querySelectorAll('#seg3 button').forEach(b => b.onclick = () => showPk(+b.dataset.k));
+document.getElementById('slider').onclick = () => slide((si + 1) % 3);
+setInterval(() => { if (document.getElementById('p-samples').classList.contains('on')) slide((si + 1) % 3); }, 2600);
+showPk(1);
 
 fetch('catalog.json?v=' + Date.now()).then(r => r.json()).then(c => { CAT = c; renderHome(); }).catch(() => toast("Narxlar yuklanmadi"));
 </script>
