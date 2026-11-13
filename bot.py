@@ -26,7 +26,7 @@ from aiohttp import web
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.filters import Command, CommandStart
+from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import (CallbackQuery, FSInputFile, InlineKeyboardButton,
@@ -82,27 +82,35 @@ CATALOG = {
     "s": {
         "title": "🎓 Talabalar uchun",
         "services": {
-            "taqdimot": {"name": "Taqdimot", "packages": {
+            "taqdimot": {"name": "Slayd (taqdimot)", "packages": {
                 "start": ("Start", 40000, "10–12 slayd, zamonaviy dizayn, 1 kun"),
                 "pro": ("Professional", 70000, "15–20 slayd, animatsiya, diagrammalar, 1–2 kun"),
                 "premium": ("Premium", 95000, "20–25 slayd, Morph, neon dizayn, nutq matni, 2–3 kun"),
             }},
             "mustaqil": {"name": "Mustaqil ish", "price": 60000, "desc": "Word formatda, chiroyli muqova bilan"},
-            "kurs": {"name": "Kurs ishi", "price": 95000, "desc": "Reja, boblar, adabiyotlar, rasmiylashtirish"},
+            "kurs": {"name": "Kurs ishi", "price": 95000, "desc": "Reja, boblar, xulosa, adabiyotlar ro'yxati"},
+            "maqola": {"name": "Maqola / tezis", "price": 70000, "desc": "Ilmiy maqola yoki konferensiya tezisi"},
+            "amaliy": {"name": "Amaliy / laboratoriya ishi", "price": 40000, "desc": "Topshiriq sharti asosida, hisobot bilan"},
+            "referat": {"name": "Referat", "price": 40000, "desc": "Reja, matn, adabiyotlar, chiroyli muqova"},
             "portfolio": {"name": "Portfolio", "price": 50000, "desc": "Talaba portfoliosi va rezyume"},
+            "boshqa": {"name": "Boshqa — o'zingiz yozing", "price": None, "desc": "Ro'yxatda yo'q ishni yozing, narxni kelishamiz"},
         },
     },
     "t": {
         "title": "👩‍🏫 Ustozlar uchun",
         "services": {
-            "dars": {"name": "Dars taqdimoti", "packages": {
+            "dars": {"name": "Taqdimot (slayd)", "packages": {
                 "start": ("Start", 60000, "12–15 slayd, ochiq dars uchun"),
                 "pro": ("Professional", 110000, "15–20 slayd, animatsiya, diagrammalar"),
                 "premium": ("Premium", 180000, "20–25 slayd, Morph, nutq matni, video"),
             }},
             "portfolio": {"name": "Portfolio", "price": 120000, "desc": "Attestatsiya va «Eng yaxshi tyutor» tanlovi"},
             "oum": {"name": "O'quv-uslubiy majmua", "price": 250000, "desc": "Ma'ruza, amaliy mashg'ulot, testlar"},
+            "ishlanma": {"name": "Dars ishlanmasi", "price": 60000, "desc": "Ochiq dars yoki kundalik dars rejasi"},
+            "maqola": {"name": "Ilmiy maqola / tezis", "price": 120000, "desc": "Jurnal yoki konferensiya uchun"},
+            "test": {"name": "Test va topshiriqlar", "price": 50000, "desc": "Fan bo'yicha test, savollar, keyslar"},
             "tadbir": {"name": "Tadbir taqdimoti", "price": 80000, "desc": "Konferensiya, tadbir, hisobot"},
+            "boshqa": {"name": "Boshqa — o'zingiz yozing", "price": None, "desc": "Kerakli ishni yozing, narxni kelishamiz"},
         },
     },
 }
@@ -110,6 +118,7 @@ CATALOG = {
 DEADLINES = {"normal": "Oddiy muddat", "urgent": "⚡ Shoshilinch (+50%)"}
 
 STATUS = {
+    "quote": "💬 Narx kelishilmoqda",
     "new": "🕐 To'lov kutilmoqda",
     "paid": "🧾 Chek tekshirilmoqda",
     "work": "🛠 Tayyorlanmoqda",
@@ -118,7 +127,9 @@ STATUS = {
 }
 
 
-def money(n: int) -> str:
+def money(n) -> str:
+    if not n:
+        return "kelishiladi"
     return f"{n:,}".replace(",", " ") + " so'm"
 
 
@@ -250,14 +261,16 @@ def audience_kb(prefix="aud"):
 
 
 SVC_ICON = {"taqdimot": "image", "dars": "image", "mustaqil": "edit", "kurs": "channel",
-            "portfolio": "star", "oum": "bot", "tadbir": "fire"}
+            "portfolio": "star", "oum": "bot", "tadbir": "fire", "maqola": "globe", "amaliy": "orders",
+            "referat": "music", "ishlanma": "check", "test": "ok", "boshqa": "heart"}
 
 
 def services_kb(aud):
     rows = []
     for key, s in CATALOG[aud]["services"].items():
         price = min(p[1] for p in s["packages"].values()) if "packages" in s else s["price"]
-        rows.append([(f"{s['name']} — {money(price)}dan" if "packages" in s else f"{s['name']} — {money(price)}",
+        label = f"{s['name']} — {money(price)}dan" if price else s["name"]
+        rows.append([(label,
                       f"svc:{aud}:{key}", None, SVC_ICON.get(key))])
     rows.append([("⬅️ Orqaga", "back:aud", "danger", "cancel")])
     return ikb(rows)
@@ -280,6 +293,9 @@ CONFIRM_KB = ikb([[("✅ Tasdiqlash", "confirm", "success", "ok")],
 
 
 def admin_kb(oid, status):
+    if status == "quote":
+        return ikb([[("💰 Narx belgilash", f"adm:price:{oid}", "success", "money")],
+                    [("❌ Rad etish", f"adm:no:{oid}", "danger", "cancel")]])
     if status == "paid":
         return ikb([[("✅ To'lov tasdiqlandi", f"adm:ok:{oid}", "success", "ok"), ("❌ Rad etish", f"adm:no:{oid}", "danger", "cancel")]])
     if status == "work":
@@ -299,6 +315,7 @@ class Order(StatesGroup):
 
 class AdminSend(StatesGroup):
     file = State()
+    price = State()
 
 
 router = Router()
@@ -326,12 +343,22 @@ async def notify_admins(bot: Bot, text: str, kb=None, photo=None, document=None)
 async def start(m: Message, state: FSMContext):
     await state.clear()
     text = (f"Assalomu alaykum, <b>{html.escape(m.from_user.first_name)}</b>! {pe('hi', '👋')}\n\n"
-            f"{pe('star', '✨')} <b>{BOT_NAME}</b> — taqdimot, portfolio, mustaqil ish va kurs ishlarini "
-            "chiroyli dizaynda, o'z vaqtida tayyorlab beradi.\n\n"
-            f"{pe('student', '🎓')} Talabalar uchun — <b>40 000 so'mdan</b>\n"
-            f"{pe('teacher', '👩‍🏫')} Ustozlar uchun — <b>60 000 so'mdan</b>\n\n"
-            + (f"{pe('app', '📱')} <b>«✨ Mini ilova»</b> tugmasini bosib, hammasini chiroyli ko'rinishda ko'ring!\n\n" if WEBAPP_URL else "")
-            + f"Quyidagi menyudan tanlang {pe('down', '👇')}")
+            f"{pe('star', '✨')} <b>{BOT_NAME}</b> — o'qish va ish uchun kerakli ishlarni "
+            "tez, chiroyli va o'z vaqtida tayyorlab beradi.\n\n"
+            f"{pe('bot', '🤖')} <b>Bot nima qila oladi?</b>\n"
+            f"{pe('student', '🎓')} <b>Talabalarga:</b> slayd, mustaqil ish, kurs ishi, maqola, amaliy ish, referat, portfolio\n"
+            f"{pe('teacher', '👩‍🏫')} <b>Ustozlarga:</b> taqdimot, portfolio, o'quv-uslubiy majmua, dars ishlanmasi, maqola, testlar\n"
+            f"{pe('edit', '✍️')} Ro'yxatda yo'q bo'lsa — o'zingiz yozasiz\n\n"
+            f"{pe('heart', '🎁')} <b>Siz nima olasiz?</b>\n"
+            f"{pe('ok', '✅')} Tayyor fayl (PPTX / Word / PDF) shu chatga keladi\n"
+            f"{pe('image', '🎨')} Professional dizayn\n"
+            f"{pe('fire', '⚡')} O'z vaqtida va bepul tuzatish\n\n"
+            f"{pe('orders', '📋')} <b>Qanday ishlaydi?</b>\n"
+            "1️⃣ «Buyurtma berish» → kim uchun: talaba yoki ustoz\n"
+            "2️⃣ Kerakli ishni tanlaysiz va mavzuni yozasiz\n"
+            "3️⃣ To'lov qilib, chekni yuborasiz\n"
+            "4️⃣ Tayyor ish shu yerga keladi\n\n"
+            f"Boshlash uchun menyudan tanlang {pe('down', '👇')}")
     banner = ASSETS / "banner.png"
     if banner.exists():
         await m.answer_photo(FSInputFile(banner), caption=text, reply_markup=MAIN_KB)
@@ -367,7 +394,8 @@ def prices_text() -> str:
                 for name, price, desc in s["packages"].values():
                     lines.append(f"    ◦ {name} — <b>{money(price)}</b>\n       <i>{desc}</i>")
             else:
-                lines.append(f"• {s['name']} — <b>{money(s['price'])}</b>dan\n    <i>{s['desc']}</i>")
+                p = f"<b>{money(s['price'])}</b>dan" if s["price"] else "<b>narx kelishiladi</b>"
+                lines.append(f"• {s['name']} — {p}\n    <i>{s['desc']}</i>")
         parts.append("\n".join(lines))
     return "\n\n".join(parts)
 
@@ -452,7 +480,13 @@ async def choose_svc(c: CallbackQuery, state: FSMContext):
         await c.message.edit_text("\n".join(txt), reply_markup=packages_kb(aud, svc))
     else:
         await state.update_data(base_price=s["price"])
-        await ask_topic(c.message, state, f"<b>{s['name']}</b> — {money(s['price'])}dan\n<i>{s['desc']}</i>")
+        if s["price"] is None:
+            await state.set_state(Order.topic)
+            await c.message.answer(f"{pe('edit', '✍️')} <b>Qanday ish kerak?</b>\n"
+                                   "Ish turini va mavzuni yozing (masalan: «Diplom ishi — Raqamli iqtisodiyot»).\n"
+                                   "<i>Narxni admin ko'rib chiqib, sizga yuboradi.</i>")
+        else:
+            await ask_topic(c.message, state, f"<b>{s['name']}</b> — {money(s['price'])}dan\n<i>{s['desc']}</i>")
     await c.answer()
 
 
@@ -538,8 +572,12 @@ async def got_deadline(c: CallbackQuery, state: FSMContext):
 async def show_confirm(m: Message, state: FSMContext):
     data = await state.get_data()
     dl = data["deadline"]
-    price = int(data["base_price"] * (1 + URGENT_EXTRA)) if dl == "urgent" else data["base_price"]
-    price = round(price / 1000) * 1000
+    base = data.get("base_price")
+    if base:
+        price = int(base * (1 + URGENT_EXTRA)) if dl == "urgent" else base
+        price = round(price / 1000) * 1000
+    else:
+        price = 0
     await state.update_data(price=price)
     await state.set_state(Order.confirm)
     s = CATALOG[data["aud"]]["services"][data["svc"]]
@@ -600,17 +638,24 @@ async def cancel(c: CallbackQuery, state: FSMContext):
 @router.callback_query(Order.confirm, F.data == "confirm")
 async def confirm(c: CallbackQuery, state: FSMContext, bot: Bot):
     data = await state.get_data()
+    quote = not data.get("price")
+    if quote:
+        data["price"] = 0
     oid = create_order(data, c.from_user)
-    await state.set_state(Order.cheque)
-    await state.update_data(order_id=oid)
-    await c.message.answer(
-        f"✅ <b>Buyurtma #{oid} qabul qilindi!</b>\n\n"
-        f"💳 To'lov uchun karta:\n<code>{CARD_NUMBER}</code>\n👤 {CARD_OWNER}\n\n"
-        f"💰 Summa: <b>{money(data['price'])}</b>\n\n"
-        "To'lovdan so'ng <b>chek rasmini (skrinshot)</b> shu yerga yuboring 📸",
-        reply_markup=MAIN_KB)
+    if quote:
+        set_status(oid, "quote")
+        await state.clear()
+        await c.message.answer(
+            f"{pe('ok', '✅')} <b>So'rov #{oid} qabul qilindi!</b>\n\n"
+            f"{pe('orders', '🔎')} Admin ishingizni ko'rib chiqib, <b>narx va muddatni</b> shu yerga yuboradi.\n"
+            "Odatda 10–30 daqiqa ichida javob beramiz.", reply_markup=MAIN_KB)
+    else:
+        await state.set_state(Order.cheque)
+        await state.update_data(order_id=oid)
+        await c.message.answer(payment_text(oid, data["price"]), reply_markup=MAIN_KB)
     o = get_order(oid)
-    await notify_admins(bot, "🆕 Yangi buyurtma (to'lov kutilmoqda)\n\n" + order_text(o, True))
+    head = "🆕 Yangi so'rov — NARX BELGILANG" if quote else "🆕 Yangi buyurtma (to'lov kutilmoqda)"
+    await notify_admins(bot, head + "\n\n" + order_text(o, True), admin_kb(oid, o["status"]))
     for f in data.get("files", []):
         for aid in ADMIN_IDS:
             try:
@@ -623,13 +668,16 @@ async def confirm(c: CallbackQuery, state: FSMContext, bot: Bot):
     await c.answer()
 
 
-@router.message(Order.cheque, F.photo | F.document)
-async def got_cheque(m: Message, state: FSMContext, bot: Bot):
-    data = await state.get_data()
-    oid = data["order_id"]
+def payment_text(oid: int, price: int) -> str:
+    return (f"{pe('ok', '✅')} <b>Buyurtma #{oid} qabul qilindi!</b>\n\n"
+            f"💳 To'lov uchun karta:\n<code>{CARD_NUMBER}</code>\n👤 {CARD_OWNER}\n\n"
+            f"{pe('money', '💰')} Summa: <b>{money(price)}</b>\n\n"
+            f"To'lovdan so'ng <b>chek rasmini (skrinshot)</b> shu yerga yuboring {pe('down', '👇')}")
+
+
+async def accept_cheque(m: Message, bot: Bot, oid: int):
     set_status(oid, "paid")
-    await state.clear()
-    await m.answer("🧾 Chek qabul qilindi! Tekshirib, tez orada ishni boshlaymiz. "
+    await m.answer(f"{pe('check', '🧾')} Chek qabul qilindi! Tekshirib, tez orada ishni boshlaymiz. "
                    "Holatini «📦 Buyurtmalarim» bo'limida ko'rasiz.", reply_markup=MAIN_KB)
     o = get_order(oid)
     text = "🧾 Chek keldi!\n\n" + order_text(o, True)
@@ -637,6 +685,19 @@ async def got_cheque(m: Message, state: FSMContext, bot: Bot):
         await notify_admins(bot, text, admin_kb(oid, "paid"), photo=m.photo[-1].file_id)
     else:
         await notify_admins(bot, text, admin_kb(oid, "paid"), document=m.document.file_id)
+
+
+def awaiting_payment(uid: int):
+    with db() as con:
+        return con.execute("SELECT id FROM orders WHERE user_id=? AND status='new' ORDER BY id DESC LIMIT 1",
+                           (uid,)).fetchone()
+
+
+@router.message(Order.cheque, F.photo | F.document)
+async def got_cheque(m: Message, state: FSMContext, bot: Bot):
+    oid = (await state.get_data())["order_id"]
+    await state.clear()
+    await accept_cheque(m, bot, oid)
 
 
 @router.message(Order.cheque)
@@ -665,12 +726,32 @@ async def admin_action(c: CallbackQuery, state: FSMContext, bot: Bot):
         await bot.send_message(o["user_id"], f"❌ Buyurtma #{oid} bo'yicha to'lov tasdiqlanmadi.\n"
                                              f"Savol bo'lsa: {CONTACT}")
         await c.message.answer(f"#{oid} — rad etildi.")
+    elif act == "price":
+        await state.set_state(AdminSend.price)
+        await state.update_data(price_oid=oid)
+        await c.message.answer(f"#{oid} uchun narxni yozing (faqat raqam, masalan 150000):")
     elif act == "send":
         await state.set_state(AdminSend.file)
         await state.update_data(send_oid=oid)
         await c.message.answer(f"#{oid} uchun tayyor faylni yuboring (bir nechta bo'lishi mumkin). "
                                "Tugatgach /done yozing.")
     await c.answer()
+
+
+@router.message(AdminSend.price, F.text)
+async def admin_price(m: Message, state: FSMContext, bot: Bot):
+    digits = "".join(ch for ch in m.text if ch.isdigit())
+    if not digits:
+        await m.answer("Faqat raqam yozing, masalan 150000")
+        return
+    price = int(digits)
+    oid = (await state.get_data())["price_oid"]
+    await state.clear()
+    with db() as con:
+        con.execute("UPDATE orders SET price=?, status='new' WHERE id=?", (price, oid))
+    o = get_order(oid)
+    await bot.send_message(o["user_id"], f"{pe('money', '💰')} So'rovingiz #{oid} narxi belgilandi.\n\n" + payment_text(oid, price))
+    await m.answer(f"#{oid} — narx {money(price)} mijozga yuborildi ✅")
 
 
 @router.message(AdminSend.file, Command("done"))
@@ -696,6 +777,15 @@ async def admin_file(m: Message, state: FSMContext, bot: Bot):
     else:
         await bot.send_photo(o["user_id"], m.photo[-1].file_id, caption=cap)
     await m.answer("Yuborildi. Yana fayl bo'lsa yuboring yoki /done.")
+
+
+@router.message(StateFilter(None), F.photo | F.document)
+async def loose_cheque(m: Message, bot: Bot):
+    row = awaiting_payment(m.from_user.id)
+    if row:
+        await accept_cheque(m, bot, row["id"])
+    else:
+        await m.answer("Fayl qabul qilindi. Buyurtma berish uchun «🛒 Buyurtma berish» tugmasini bosing.", reply_markup=MAIN_KB)
 
 
 @router.message(Command("orders"))

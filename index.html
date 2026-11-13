@@ -104,7 +104,7 @@ nav button.on svg{transform:translateY(-2px) scale(1.12)}
 
 <!-- HOME -->
 <section class="page on" id="p-home">
-  <div class="brand"><div class="logo">B</div><div><div class="k">Birzumda</div><div style="font-weight:800">Taqdimot</div></div></div>
+  <div class="brand"><div class="logo">B</div><div><div class="k">Birzumda</div><div style="font-weight:800">Tayyorla</div></div></div>
   <div class="card hero">
     <div class="ring"></div>
     <svg class="spark" style="left:62%;top:18px" viewBox="0 0 24 24"><path d="M12 0L14 10 24 12 14 14 12 24 10 14 0 12 10 10Z" fill="#FF8FDA"/></svg>
@@ -112,7 +112,7 @@ nav button.on svg{transform:translateY(-2px) scale(1.12)}
     <div class="k">Professional dizayn</div>
     <h1>Chiroyli ishlar<br><span class="grad">bir zumda</span></h1>
     <p class="m"><span class="rot" id="rot">Taqdimot</span> — o'z vaqtida, bepul tuzatish bilan.</p>
-    <div class="chips"><span class="chip hot">40 000 so'mdan</span><span class="chip">⚡ Tez</span><span class="chip">🔁 Bepul tuzatish</span></div>
+    <div class="chips"><span class="chip hot">🎓 Talaba · 👩‍🏫 Ustoz</span><span class="chip">⚡ Tez</span><span class="chip">🔁 Bepul tuzatish</span></div>
     <svg class="sticker" viewBox="0 0 100 100"><polygon points="50,2 61,30 92,22 72,47 96,68 64,70 60,98 46,74 20,92 28,62 2,50 30,38 18,10 44,24" fill="#FF5FC8" stroke="#fff" stroke-width="3"/><text x="50" y="58" text-anchor="middle" font-size="20" font-weight="900" fill="#fff">TOP</text></svg>
   </div>
   <div class="grid2 stag" id="homeTiles"></div>
@@ -166,7 +166,7 @@ nav button.on svg{transform:translateY(-2px) scale(1.12)}
 const tg = window.Telegram ? Telegram.WebApp : null;
 if (tg) { tg.ready(); tg.expand(); try { tg.setHeaderColor('#0B0812'); tg.setBackgroundColor('#0B0812'); } catch (e) {} }
 const hap = t => { try { tg && tg.HapticFeedback.impactOccurred(t || 'light'); } catch (e) {} };
-const fmt = n => n.toLocaleString('ru-RU').replace(/ /g, ' ') + " so'm";
+const fmt = n => !n ? 'Kelishiladi' : n.toLocaleString('ru-RU').replace(/ /g, ' ') + " so'm";
 const ICONS = {
   taqdimot: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8M7 12l3-3 3 2 4-4"/>',
   dars: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8M7 12l3-3 3 2 4-4"/>',
@@ -174,7 +174,13 @@ const ICONS = {
   kurs: '<path d="M4 19V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2z"/><path d="M4 17a2 2 0 0 1 2-2h12M8 7h6M8 11h6"/>',
   portfolio: '<path d="M4 7h16v12H4z"/><path d="M9 7V5h6v2M4 12h16"/>',
   oum: '<path d="M2 5h7a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H2zM22 5h-7a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h8z"/>',
-  tadbir: '<path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/>'
+  tadbir: '<path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/>',
+  maqola: '<path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  amaliy: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/>',
+  referat: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>',
+  ishlanma: '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  test: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 17h.01"/>',
+  boshqa: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'
 };
 const svg = k => `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[k] || ICONS.taqdimot}</svg>`;
 let CAT = null, aud = 's', order = { aud: 's', svc: null, pkg: '', deadline: 'normal' };
@@ -189,13 +195,13 @@ function go(p) {
 }
 document.querySelectorAll('nav button').forEach(b => b.onclick = () => go(b.dataset.p));
 
-const words = ['Taqdimot', 'Portfolio', 'Mustaqil ish', 'Kurs ishi', "O'quv-uslubiy majmua"]; let wi = 0;
+const words = ['Slayd', 'Mustaqil ish', 'Kurs ishi', 'Maqola', 'Amaliy ish', 'Portfolio', "O'quv-uslubiy majmua"]; let wi = 0;
 setInterval(() => { const r = document.getElementById('rot'); wi = (wi + 1) % words.length; r.textContent = words[wi]; r.style.animation = 'none'; r.offsetHeight; r.style.animation = ''; }, 2200);
 
 function renderHome() {
   const s = CAT.s.services;
   document.getElementById('homeTiles').innerHTML = Object.entries(s).map(([k, v]) =>
-    `<div class="card tile" onclick="pick('s','${k}')"><div class="ico">${svg(k)}</div><b>${v.name}</b><span>${v.desc || 'Start · Professional · Premium'}</span><div class="pr">${fmt(minPrice(v))}dan</div></div>`).join('');
+    `<div class="card tile" onclick="pick('s','${k}')"><div class="ico">${svg(k)}</div><b>${v.name}</b><span>${v.desc || 'Start · Professional · Premium'}</span><div class="pr">${minPrice(v) ? fmt(minPrice(v)) + 'dan' : 'Kelishiladi'}</div></div>`).join('');
 }
 function bindSeg(id, cb) {
   const seg = document.getElementById(id);
@@ -208,7 +214,7 @@ function syncSeg(id) {
 function renderPrices() {
   syncSeg('seg'); const A = CAT[aud].services;
   const list = document.getElementById('priceList'); list.classList.remove('stag'); list.offsetHeight; list.classList.add('stag');
-  list.innerHTML = Object.entries(A).map(([k, v]) => `<div class="row"><div style="display:flex;gap:12px;align-items:center"><div class="ico" style="width:36px;height:36px;margin:0">${svg(k)}</div><div><b>${v.name}</b><small>${v.desc || 'Paketlar pastda'}</small></div></div><div class="v">${fmt(minPrice(v))}dan</div></div>`).join('');
+  list.innerHTML = Object.entries(A).map(([k, v]) => `<div class="row"><div style="display:flex;gap:12px;align-items:center"><div class="ico" style="width:36px;height:36px;margin:0">${svg(k)}</div><div><b>${v.name}</b><small>${v.desc || 'Paketlar pastda'}</small></div></div><div class="v">${minPrice(v) ? fmt(minPrice(v)) + 'dan' : 'Kelishiladi'}</div></div>`).join('');
   const pk = Object.values(A).find(v => v.packages);
   document.getElementById('pkTitle').textContent = pk.name + ' paketlari';
   document.getElementById('pkRow').innerHTML = Object.entries(pk.packages).map(([k, p]) => `<div class="${k === 'pro' ? 'hi' : ''}"><small>${p[0]}</small><b>${fmt(p[1]).replace(" so'm", '')}</b></div>`).join('');
@@ -224,14 +230,14 @@ function renderOrder() {
   if (order.aud !== aud) order = { aud, svc: null, pkg: '', deadline: order.deadline };
   syncSeg('seg2'); const A = CAT[aud].services;
   document.getElementById('svcOpts').innerHTML = Object.entries(A).map(([k, v]) =>
-    `<div class="opt ${order.svc === k ? 'on' : ''}" onclick="order.svc='${k}';order.pkg='';hap();renderOrder()"><span>${v.name}</span><span class="v">${fmt(minPrice(v))}${v.packages ? 'dan' : ''}</span></div>`).join('');
+    `<div class="opt ${order.svc === k ? 'on' : ''}" onclick="order.svc='${k}';order.pkg='';hap();renderOrder()"><span>${v.name}</span><span class="v">${minPrice(v) ? fmt(minPrice(v)) + (v.packages ? 'dan' : '') : 'Kelishiladi'}</span></div>`).join('');
   const s = A[order.svc];
   document.getElementById('pkgWrap').style.display = s && s.packages ? 'block' : 'none';
   if (s && s.packages) document.getElementById('pkgOpts').innerHTML = Object.entries(s.packages).map(([k, p]) =>
     `<div class="opt ${order.pkg === k ? 'on' : ''}" onclick="order.pkg='${k}';hap();renderOrder()"><span><b>${p[0]}</b><br><small style="color:var(--m)">${p[2]}</small></span><span class="v">${fmt(p[1])}</span></div>`).join('');
   document.getElementById('dlOpts').innerHTML = [['normal', 'Oddiy muddat', ''], ['urgent', '⚡ Shoshilinch', '+50%']].map(([k, n, x]) =>
     `<div class="opt ${order.deadline === k ? 'on' : ''}" onclick="order.deadline='${k}';hap();renderOrder()"><span>${n}</span><span class="v">${x}</span></div>`).join('');
-  const p = price(); document.getElementById('total').textContent = p ? fmt(p) : '—';
+  const p = price(); const sv = CAT[order.aud].services[order.svc]; document.getElementById('total').textContent = p ? fmt(p) : (sv && !sv.packages && sv.price == null ? 'Admin aytadi' : '—');
 }
 bindSeg('seg', renderPrices); bindSeg('seg2', renderOrder);
 
