@@ -69,6 +69,9 @@ DEFAULT_EMOJI_IDS = {
     "globe": "5447410659077661506", "bot": "5244983043621411868", "music": "5213323516832667837",
     "image": "5375074927252621134", "channel": "5370599459661045441", "edit": "5237808360882977239",
     "heart": "5345961113479572537", "fire": "5176998281170911817",
+    # animatsion bayroqlar va kitob (Birzumda Yukla bilan bir xil)
+    "flag_uz": "5222404546575219535", "flag_ru": "5449408995691341691", "flag_en": "5224518800061245598",
+    "book": "5226512880362332956",
 }
 try:
     EMOJI_IDS = {**DEFAULT_EMOJI_IDS, **json.loads(os.getenv("EMOJI_IDS", "{}"))}
@@ -470,7 +473,7 @@ def main_kb(lang: str = DEFAULT_LANG):
         [kbtn(b(lang, "order"), "success", "order")],
         [kbtn(b(lang, "prices"), "primary", "prices"), kbtn(b(lang, "samples"), "primary", "samples")],
         [kbtn(b(lang, "bonus"), "danger", "heart")],
-        [kbtn(b(lang, "info"), "primary", "bot"), kbtn(b(lang, "channel"), "success", "channel")],
+        [kbtn(b(lang, "info"), "primary", "book"), kbtn(b(lang, "channel"), "success", "channel")],
         [kbtn(b(lang, "orders"), None, "orders"), kbtn(b(lang, "contact"), None, "contact"),
          kbtn(b(lang, "lang"), None, "globe")],
     ]
