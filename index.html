@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="uz">
+<html lang="uz" id="html">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
@@ -100,81 +100,186 @@ nav button.on svg{transform:translateY(-2px) scale(1.12)}
 .slider img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.04);transition:opacity .6s,transform 1.2s}
 .slider img.on{opacity:1;transform:none}
 .dots{display:flex;justify-content:center;gap:6px;margin-top:10px}.dots i{width:7px;height:7px;border-radius:4px;background:#3A2A57;transition:all .3s}.dots i.on{width:22px;background:var(--a)}
+button.chip{cursor:pointer;color:var(--t);transition:transform .15s}button.chip:active{transform:scale(.95)}
+.tap{cursor:pointer;transition:transform .15s,background .2s}.tap:active{transform:scale(.97)}
+.row.tap{border-radius:12px;margin:0 -8px;padding-left:8px;padding-right:8px}.row.tap:active{background:#24173A}
+.go{margin-left:6px;color:var(--a);font-weight:900}
+.pk div em{display:block;font-style:normal;font-size:11px;font-weight:700;color:var(--a);margin-top:4px}.pk div.hi em{color:#EDE3FF}
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(5,3,10,.6);display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .25s}
+.sheet.on{opacity:1;pointer-events:auto}
+.sheet .sh{width:100%;max-width:560px;margin:0 auto;background:#160F24;border:1px solid var(--line);border-bottom:0;border-radius:24px 24px 0 0;padding:12px 20px 26px;transform:translateY(100%);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.sheet.on .sh{transform:none}.sheet h3{font-size:22px;margin:10px 0}.sheet .m p{margin:8px 0}
+.grab{width:44px;height:5px;border-radius:3px;background:#3A2A57;margin:0 auto}
+.langs{margin-left:auto;display:flex;gap:6px}
+.fl{width:40px;height:34px;border-radius:11px;border:1px solid var(--line);background:#160F24;display:grid;place-items:center;cursor:pointer;font-size:20px;transition:transform .15s,border-color .2s,background .2s}
+.fl span{display:inline-block;transform-origin:10% 90%;animation:wave 2.2s ease-in-out infinite}
+.fl:nth-child(2) span{animation-delay:.35s}.fl:nth-child(3) span{animation-delay:.7s}
+@keyframes wave{0%,100%{transform:rotate(0) skewY(0)}25%{transform:rotate(-8deg) skewY(4deg)}50%{transform:rotate(3deg) skewY(-3deg) scale(1.08)}75%{transform:rotate(-4deg) skewY(2deg)}}
+.fl.on{border-color:var(--a);background:var(--a2);box-shadow:0 0 16px rgba(160,107,255,.55)}
+.fl:active{transform:scale(.9)}
+.turtle{display:flex;gap:12px;align-items:center;margin-top:12px}
+.turtle .t{font-size:40px;animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-6px) rotate(4deg)}}
+.turtle .say{position:relative;background:#24173A;border:1px solid var(--a);border-radius:14px;padding:10px 12px;font-size:13.5px;line-height:1.4}
+.badge{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;background:#2E1F4A;color:#C9A6FF;font-size:11px;font-weight:800}
 </style>
 </head>
 <body>
 <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
 <div class="toast" id="toast"></div>
+<div class="sheet" id="sheet" onclick="if(event.target===this)closeSheet()"><div class="sh"><div class="grab"></div><h3 id="shT"></h3><div id="shB" class="m"></div><button class="btn" id="shC"></button><button class="btn ghost" onclick="closeSheet()" data-i="close">Yopish</button></div></div>
 <main>
 
 <!-- HOME -->
 <section class="page on" id="p-home">
-  <div class="brand"><div class="logo">B</div><div><div class="k">Birzumda</div><div style="font-weight:800">Tayyorla</div></div></div>
+  <div class="brand"><div class="logo">B</div><div><div class="k">Birzumda</div><div style="font-weight:800">Tayyorla</div></div>
+    <div class="langs" id="langs"><button class="fl" data-l="uz" aria-label="O'zbekcha"><span>🇺🇿</span></button><button class="fl" data-l="ru" aria-label="Русский"><span>🇷🇺</span></button><button class="fl" data-l="en" aria-label="English"><span>🇬🇧</span></button></div></div>
   <div class="card hero">
     <div class="ring"></div>
     <svg class="spark" style="left:62%;top:18px" viewBox="0 0 24 24"><path d="M12 0L14 10 24 12 14 14 12 24 10 14 0 12 10 10Z" fill="#FF8FDA"/></svg>
     <svg class="spark" style="left:85%;top:62%;animation-delay:.6s" viewBox="0 0 24 24"><path d="M12 0L14 10 24 12 14 14 12 24 10 14 0 12 10 10Z" fill="#fff"/></svg>
-    <div class="k">Professional dizayn</div>
-    <h1>Chiroyli ishlar<br><span class="grad">bir zumda</span></h1>
-    <p class="m"><span class="rot" id="rot">Taqdimot</span> — o'z vaqtida, bepul tuzatish bilan.</p>
-    <div class="chips"><span class="chip hot">🎓 Talaba · 👩‍🏫 Ustoz</span><span class="chip">⚡ Tez</span><span class="chip">🔁 Bepul tuzatish</span></div>
+    <div class="k" data-i="heroK">Professional dizayn</div>
+    <h1 data-h="heroH">Chiroyli ishlar<br><span class="grad">bir zumda</span></h1>
+    <p class="m"><span class="rot" id="rot">Taqdimot</span> <span data-i="heroP">— o'z vaqtida, bepul tuzatish bilan.</span></p>
+    <div class="chips"><button class="chip hot" onclick="go('prices')" data-i="chipAud">🎓 Talaba · 👩‍🏫 Ustoz ›</button><button class="chip" onclick="sheet('tez')" data-i="chipFast">⚡ Tez ›</button><button class="chip" onclick="sheet('fix')" data-i="chipFix">🔁 Bepul tuzatish ›</button><button class="chip" onclick="sheet('turtle')" data-i="chipTurtle">🐢 Toshbaqa o'qituvchi ›</button></div>
     <svg class="sticker" viewBox="0 0 100 100"><polygon points="50,2 61,30 92,22 72,47 96,68 64,70 60,98 46,74 20,92 28,62 2,50 30,38 18,10 44,24" fill="#FF5FC8" stroke="#fff" stroke-width="3"/><text x="50" y="58" text-anchor="middle" font-size="20" font-weight="900" fill="#fff">TOP</text></svg>
   </div>
   <div class="grid2 stag" id="homeTiles"></div>
-  <button class="btn" onclick="go('order')">🛒 Buyurtma berish</button>
+  <button class="btn" onclick="go('order')" data-i="orderBtn">🛒 Buyurtma berish</button>
 </section>
 
 <!-- PRICES -->
 <section class="page" id="p-prices">
-  <h2>Narxlar</h2>
-  <div class="seg" id="seg"><div class="ind"></div><button data-a="s">🎓 Talabalar</button><button data-a="t">👩‍🏫 Ustozlar</button></div>
+  <h2 data-i="prices">Narxlar</h2>
+  <div class="seg" id="seg"><div class="ind"></div><button data-a="s" data-i="students">🎓 Talabalar</button><button data-a="t" data-i="teachers">👩‍🏫 Ustozlar</button></div>
   <div class="card" id="priceList"></div>
   <div class="card" style="margin-top:12px"><div class="k" id="pkTitle">Paketlar</div><div class="pk" id="pkRow"></div></div>
-  <p class="m" style="margin-top:12px;text-align:center">⚡ Shoshilinch: +50% · 🔁 Tuzatish bepul</p>
+  <p class="m" style="margin-top:12px;text-align:center" data-i="priceNote">⚡ Shoshilinch: +50% · 🔁 Tuzatish bepul · 🐢 Pro va Premium</p>
 </section>
 
 <!-- SAMPLES -->
 <section class="page" id="p-samples">
-  <h2>Namunalar</h2>
+  <h2 data-i="samples">Namunalar</h2>
   <div class="seg seg3" id="seg3"><div class="ind"></div><button data-k="1">Start</button><button data-k="2">Professional</button><button data-k="3">Premium</button></div>
   <div class="slider" id="slider"><img id="sl0" alt="Namuna slayd"><img id="sl1" alt="Namuna slayd"><img id="sl2" alt="Namuna slayd"></div>
   <div class="dots" id="dots"><i></i><i></i><i></i></div>
   <p class="m" id="pkDesc" style="margin-top:10px;text-align:center"></p>
   <div class="grid2 stag" style="margin-top:12px">
-    <div class="card"><div class="mock s"><i style="left:14px;top:16px;width:70px;height:9px;background:#C9A6FF"></i><i style="left:14px;top:34px;width:110px;height:6px;background:#4B3A66"></i><i class="bar" style="right:44px;bottom:14px;width:12px;height:50px;background:#6A1FB0"></i><i class="bar" style="right:24px;bottom:14px;width:12px;height:70px;background:#A06BFF;animation-delay:.3s"></i></div><b>Start</b><p class="m" style="font-size:13px">Zamonaviy dizayn</p></div>
-    <div class="card"><div class="mock p"><i style="left:14px;top:16px;width:90px;height:9px;background:#fff"></i><i style="left:14px;top:40px;width:14px;height:14px;border-radius:50%;background:#6A1FB0"></i><i style="left:34px;top:44px;width:70px;height:6px;background:#4B3A66"></i><i style="left:14px;top:62px;width:14px;height:14px;border-radius:50%;background:#6A1FB0"></i><i style="left:34px;top:66px;width:56px;height:6px;background:#4B3A66"></i><i class="bar" style="right:20px;bottom:14px;width:12px;height:66px;background:#A06BFF"></i></div><b>Professional</b><p class="m" style="font-size:13px">Animatsiya + diagramma</p></div>
-    <div class="card" style="grid-column:1/-1"><div class="mock x" style="height:130px"><i class="glo"></i><i style="left:16px;top:22px;width:120px;height:14px;background:#FF8FDA;box-shadow:0 0 16px #FF4FD8"></i><i style="left:16px;top:50px;width:150px;height:7px;background:#5A4570"></i><i style="left:16px;top:66px;width:110px;height:7px;background:#5A4570"></i></div><b>Premium</b><p class="m" style="font-size:13px">Neon nur, Morph o'tishlari, nutq matni, video</p></div>
+    <div class="card"><div class="mock s"><i style="left:14px;top:16px;width:70px;height:9px;background:#C9A6FF"></i><i style="left:14px;top:34px;width:110px;height:6px;background:#4B3A66"></i><i class="bar" style="right:44px;bottom:14px;width:12px;height:50px;background:#6A1FB0"></i><i class="bar" style="right:24px;bottom:14px;width:12px;height:70px;background:#A06BFF;animation-delay:.3s"></i></div><b>Start</b><p class="m" style="font-size:13px" data-i="mS">Zamonaviy dizayn</p></div>
+    <div class="card"><div class="mock p"><i style="left:14px;top:16px;width:90px;height:9px;background:#fff"></i><i style="left:14px;top:40px;width:14px;height:14px;border-radius:50%;background:#6A1FB0"></i><i style="left:34px;top:44px;width:70px;height:6px;background:#4B3A66"></i><i style="left:14px;top:62px;width:14px;height:14px;border-radius:50%;background:#6A1FB0"></i><i style="left:34px;top:66px;width:56px;height:6px;background:#4B3A66"></i><i class="bar" style="right:20px;bottom:14px;width:12px;height:66px;background:#A06BFF"></i></div><b>Professional</b><p class="m" style="font-size:13px" data-i="mP">Animatsiya + diagramma + 🐢</p></div>
+    <div class="card" style="grid-column:1/-1"><div class="mock x" style="height:130px"><i class="glo"></i><i style="left:16px;top:22px;width:120px;height:14px;background:#FF8FDA;box-shadow:0 0 16px #FF4FD8"></i><i style="left:16px;top:50px;width:150px;height:7px;background:#5A4570"></i><i style="left:16px;top:66px;width:110px;height:7px;background:#5A4570"></i></div><b>Premium</b><p class="m" style="font-size:13px" data-i="mX">Neon nur, Morph o'tishlari, nutq matni, video, 🐢</p></div>
   </div>
-  <button class="btn ghost" onclick="sendCmd('samples')">📎 PPTX namunalarni chatga yuborish</button>
+  <div class="card turtle"><div class="t">🐢</div><div><b data-i="turtleT">Toshbaqa o'qituvchi</b><span class="badge">Pro · Premium</span><div class="say" style="margin-top:8px" data-i="turtleSay">Salom! Men slayd ichida gapirib, mavzuni sodda qilib tushuntiraman 🎙</div></div></div>
+  <button class="btn ghost" onclick="sendCmd('samples')" data-i="sendSamples">📎 PPTX namunalarni chatga yuborish</button>
 </section>
 
 <!-- ORDER -->
 <section class="page" id="p-order">
-  <h2>Buyurtma</h2>
-  <div class="seg" id="seg2"><div class="ind"></div><button data-a="s">🎓 Talabalar</button><button data-a="t">👩‍🏫 Ustozlar</button></div>
-  <label>Xizmat</label><div class="opts" id="svcOpts"></div>
-  <div id="pkgWrap" style="display:none"><label>Paket</label><div class="opts" id="pkgOpts"></div></div>
-  <label>Mavzu</label><input id="topic" maxlength="300" placeholder="Masalan: Sun'iy intellekt ta'limda">
-  <label>Qo'shimcha talablar</label><textarea id="details" maxlength="1000" placeholder="Fan, o'qituvchi, slayd soni, ism-familiya…"></textarea>
-  <label>Muddat</label><div class="opts" id="dlOpts"></div>
-  <div class="total"><span>Jami</span><b id="total">—</b></div>
-  <button class="btn" id="sendBtn">✅ Buyurtmani yuborish</button>
-  <p class="m" style="margin-top:10px;font-size:13px;text-align:center">Fayllarni buyurtmadan so'ng chatga yuborasiz</p>
+  <h2 data-i="order">Buyurtma</h2>
+  <div class="seg" id="seg2"><div class="ind"></div><button data-a="s" data-i="students">🎓 Talabalar</button><button data-a="t" data-i="teachers">👩‍🏫 Ustozlar</button></div>
+  <label data-i="lService">Xizmat</label><div class="opts" id="svcOpts"></div>
+  <div id="pkgWrap" style="display:none"><label data-i="lPkg">Paket</label><div class="opts" id="pkgOpts"></div></div>
+  <label data-i="lTopic">Mavzu</label><input id="topic" maxlength="300" data-p="phTopic" placeholder="Masalan: Sun'iy intellekt ta'limda">
+  <label data-i="lDetails">Qo'shimcha talablar</label><textarea id="details" maxlength="1000" data-p="phDetails" placeholder="Fan, o'qituvchi, slayd soni, ism-familiya…"></textarea>
+  <label data-h="lPromo">🎟 Promokod <span style="opacity:.6;font-weight:400">(ixtiyoriy)</span></label><input id="promo" maxlength="32" data-p="phPromo" placeholder="Masalan: YANGI20" style="text-transform:uppercase">
+  <label data-i="lDeadline">Muddat</label><div class="opts" id="dlOpts"></div>
+  <div class="total"><span data-i="total">Jami</span><b id="total">—</b></div>
+  <button class="btn" id="sendBtn" data-i="send">✅ Buyurtmani yuborish</button>
+  <p class="m" style="margin-top:10px;font-size:13px;text-align:center" data-i="filesNote">Fayllarni buyurtmadan so'ng chatga yuborasiz</p>
 </section>
 </main>
 
 <nav id="nav">
-  <button data-p="home" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Asosiy</button>
-  <button data-p="prices"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Narxlar</button>
-  <button data-p="samples"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Namuna</button>
-  <button data-p="order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1.5 4M18 2l-1.5 4M3 6h18l-2 14H5z"/><path d="M9 10a3 3 0 0 0 6 0"/></svg>Buyurtma</button>
+  <button data-p="home" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span data-i="nav_home">Asosiy</span></button>
+  <button data-p="prices"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12l-8 8-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><span data-i="nav_prices">Narxlar</span></button>
+  <button data-p="samples"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span data-i="nav_samples">Namuna</span></button>
+  <button data-p="order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1.5 4M18 2l-1.5 4M3 6h18l-2 14H5z"/><path d="M9 10a3 3 0 0 0 6 0"/></svg><span data-i="nav_order">Buyurtma</span></button>
 </nav>
 
 <script>
 const tg = window.Telegram ? Telegram.WebApp : null;
 if (tg) { tg.ready(); tg.expand(); try { tg.setHeaderColor('#0B0812'); tg.setBackgroundColor('#0B0812'); } catch (e) {} }
 const hap = t => { try { tg && tg.HapticFeedback.impactOccurred(t || 'light'); } catch (e) {} };
-const fmt = n => !n ? 'Kelishiladi' : n.toLocaleString('ru-RU').replace(/ /g, ' ') + " so'm";
+const T = {
+  uz: { close: 'Yopish', heroK: 'Professional dizayn', heroH: 'Chiroyli ishlar<br><span class="grad">bir zumda</span>', heroP: "— o'z vaqtida, bepul tuzatish bilan.",
+    chipAud: '🎓 Talaba · 👩‍🏫 Ustoz ›', chipFast: '⚡ Tez ›', chipFix: '🔁 Bepul tuzatish ›', chipTurtle: "🐢 Toshbaqa o'qituvchi ›", orderBtn: '🛒 Buyurtma berish',
+    prices: 'Narxlar', students: '🎓 Talabalar', teachers: '👩‍🏫 Ustozlar', priceNote: '⚡ Shoshilinch: +50% · 🔁 Tuzatish bepul · 🐢 Pro va Premium',
+    samples: 'Namunalar', mS: 'Zamonaviy dizayn', mP: 'Animatsiya + diagramma + 🐢', mX: "Neon nur, Morph o'tishlari, nutq matni, video, 🐢",
+    turtleT: "Toshbaqa o'qituvchi", turtleSay: 'Salom! Men slayd ichida gapirib, mavzuni sodda qilib tushuntiraman 🎙', sendSamples: '📎 PPTX namunalarni chatga yuborish',
+    order: 'Buyurtma', lService: 'Xizmat', lPkg: 'Paket', lTopic: 'Mavzu', phTopic: "Masalan: Sun'iy intellekt ta'limda", lDetails: "Qo'shimcha talablar",
+    phDetails: "Fan, o'qituvchi, slayd soni, ism-familiya…", lPromo: '🎟 Promokod <span style="opacity:.6;font-weight:400">(ixtiyoriy)</span>', phPromo: 'Masalan: YANGI20',
+    lDeadline: 'Muddat', total: 'Jami', send: '✅ Buyurtmani yuborish', filesNote: "Fayllarni buyurtmadan so'ng chatga yuborasiz",
+    nav_home: 'Asosiy', nav_prices: 'Narxlar', nav_samples: 'Namuna', nav_order: 'Buyurtma',
+    cur: "so'm", neg: 'Kelishiladi', from: p => p + 'dan', pkgs: n => n + ' paketlari', pkgsBelow: 'Paketlar pastda', pick: 'Tanlash ›', picked: n => '✅ ' + n + ' tanlandi',
+    normal: 'Oddiy muddat', urgent: '⚡ Shoshilinch', adminSays: 'Admin aytadi', openTg: 'Telegram ichida oching', chooseSvc: 'Xizmatni tanlang', choosePkg: 'Paketni tanlang',
+    writeTopic: 'Mavzuni yozing', noPrices: 'Narxlar yuklanmadi', pkgDef: 'Start · Professional · Premium',
+    words: ['Slayd', 'Mustaqil ish', 'Kurs ishi', 'Maqola', 'Amaliy ish', 'Portfolio', "O'quv-uslubiy majmua"],
+    pkd: { 1: 'Start — zamonaviy dizayn, toza va tushunarli', 2: "Professional — animatsiya, diagrammalar, 🐢 Toshbaqa o'qituvchi", 3: "Premium — neon nur, Morph, nutq matni, 🐢 Toshbaqa o'qituvchi" },
+    sheets: {
+      tez: { t: '⚡ Tez tayyorlash', b: "<p><b>Oddiy muddat:</b> Start — 1 kun, Professional — 1–2 kun, Premium — 2–3 kun.</p><p><b>Shoshilinch (+50%):</b> ishni shu kunning o'zida tayyorlaymiz. Buyurtmada «⚡ Shoshilinch» ni tanlang.</p>" },
+      fix: { t: '🔁 Bepul tuzatish', b: "<p>Ish tayyor bo'lgach, nimanidir o'zgartirmoqchi bo'lsangiz — bepul tuzatamiz.</p><p><b>Start</b> — 1 marta, <b>Professional</b> — 2 marta, <b>Premium</b> — 3 marta. Boshqa xizmatlarda — 1 marta.</p>" },
+      turtle: { t: "🐢 Toshbaqa o'qituvchi", b: "<p>Slaydda animatsion toshbaqa o'qituvchi paydo bo'ladi va <b>gapirib</b>, mavzuni sodda tilda tushuntiradi.</p><p>Talabalar va ustozlar uchun — <b>Professional</b> va <b>Premium</b> paketlarda. Start paketida yo'q.</p>" } } },
+  ru: { close: 'Закрыть', heroK: 'Профессиональный дизайн', heroH: 'Красивые работы<br><span class="grad">в один миг</span>', heroP: '— вовремя, с бесплатными правками.',
+    chipAud: '🎓 Студент · 👩‍🏫 Преподаватель ›', chipFast: '⚡ Срочно ›', chipFix: '🔁 Бесплатные правки ›', chipTurtle: '🐢 Черепаха-учитель ›', orderBtn: '🛒 Заказать',
+    prices: 'Цены', students: '🎓 Студентам', teachers: '👩‍🏫 Преподавателям', priceNote: '⚡ Срочно: +50% · 🔁 Правки бесплатно · 🐢 Pro и Premium',
+    samples: 'Примеры', mS: 'Современный дизайн', mP: 'Анимация + диаграммы + 🐢', mX: 'Неон, Morph-переходы, текст речи, видео, 🐢',
+    turtleT: 'Черепаха-учитель', turtleSay: 'Привет! Я говорю прямо на слайдах и просто объясняю тему 🎙', sendSamples: '📎 Отправить PPTX-примеры в чат',
+    order: 'Заказ', lService: 'Услуга', lPkg: 'Пакет', lTopic: 'Тема', phTopic: 'Например: Искусственный интеллект в образовании', lDetails: 'Доп. требования',
+    phDetails: 'Предмет, преподаватель, число слайдов, ФИО…', lPromo: '🎟 Промокод <span style="opacity:.6;font-weight:400">(необязательно)</span>', phPromo: 'Например: YANGI20',
+    lDeadline: 'Срок', total: 'Итого', send: '✅ Отправить заказ', filesNote: 'Файлы отправите в чат после заказа',
+    nav_home: 'Главная', nav_prices: 'Цены', nav_samples: 'Примеры', nav_order: 'Заказ',
+    cur: 'сум', neg: 'Договорная', from: p => 'от ' + p, pkgs: n => 'Пакеты: ' + n, pkgsBelow: 'Пакеты ниже', pick: 'Выбрать ›', picked: n => '✅ Выбрано: ' + n,
+    normal: 'Обычный срок', urgent: '⚡ Срочно', adminSays: 'Назначит админ', openTg: 'Откройте в Telegram', chooseSvc: 'Выберите услугу', choosePkg: 'Выберите пакет',
+    writeTopic: 'Напишите тему', noPrices: 'Цены не загрузились', pkgDef: 'Start · Professional · Premium',
+    words: ['Слайды', 'Самостоятельная', 'Курсовая', 'Статья', 'Практическая', 'Портфолио', 'УМК'],
+    pkd: { 1: 'Start — современный дизайн, чисто и понятно', 2: 'Professional — анимация, диаграммы, 🐢 Черепаха-учитель', 3: 'Premium — неон, Morph, текст речи, 🐢 Черепаха-учитель' },
+    sheets: {
+      tez: { t: '⚡ Срочно', b: '<p><b>Обычный срок:</b> Start — 1 день, Professional — 1–2 дня, Premium — 2–3 дня.</p><p><b>Срочно (+50%):</b> сделаем в тот же день. Выберите «⚡ Срочно» в заказе.</p>' },
+      fix: { t: '🔁 Бесплатные правки', b: '<p>Если после сдачи захотите что-то изменить — поправим бесплатно.</p><p><b>Start</b> — 1 раз, <b>Professional</b> — 2 раза, <b>Premium</b> — 3 раза. В остальных услугах — 1 раз.</p>' },
+      turtle: { t: '🐢 Черепаха-учитель', b: '<p>На слайдах появляется анимированная черепаха-учитель и <b>голосом</b> простыми словами объясняет тему.</p><p>Для студентов и преподавателей — в пакетах <b>Professional</b> и <b>Premium</b>. В Start её нет.</p>' } } },
+  en: { close: 'Close', heroK: 'Professional design', heroH: 'Beautiful work<br><span class="grad">in a flash</span>', heroP: '— on time, with free revisions.',
+    chipAud: '🎓 Student · 👩‍🏫 Teacher ›', chipFast: '⚡ Fast ›', chipFix: '🔁 Free revisions ›', chipTurtle: '🐢 Turtle teacher ›', orderBtn: '🛒 Place an order',
+    prices: 'Prices', students: '🎓 Students', teachers: '👩‍🏫 Teachers', priceNote: '⚡ Urgent: +50% · 🔁 Free revisions · 🐢 Pro & Premium',
+    samples: 'Samples', mS: 'Modern design', mP: 'Animation + charts + 🐢', mX: 'Neon glow, Morph transitions, speech text, video, 🐢',
+    turtleT: 'Turtle teacher', turtleSay: 'Hi! I talk right on the slides and explain the topic simply 🎙', sendSamples: '📎 Send PPTX samples to the chat',
+    order: 'Order', lService: 'Service', lPkg: 'Package', lTopic: 'Topic', phTopic: 'E.g. Artificial intelligence in education', lDetails: 'Extra requirements',
+    phDetails: 'Subject, teacher, number of slides, full name…', lPromo: '🎟 Promo code <span style="opacity:.6;font-weight:400">(optional)</span>', phPromo: 'E.g. YANGI20',
+    lDeadline: 'Deadline', total: 'Total', send: '✅ Send order', filesNote: "You'll send files in the chat after ordering",
+    nav_home: 'Home', nav_prices: 'Prices', nav_samples: 'Samples', nav_order: 'Order',
+    cur: 'UZS', neg: 'Negotiable', from: p => 'from ' + p, pkgs: n => n + ' packages', pkgsBelow: 'Packages below', pick: 'Choose ›', picked: n => '✅ ' + n + ' selected',
+    normal: 'Standard time', urgent: '⚡ Urgent', adminSays: 'Set by admin', openTg: 'Open inside Telegram', chooseSvc: 'Choose a service', choosePkg: 'Choose a package',
+    writeTopic: 'Write the topic', noPrices: "Prices didn't load", pkgDef: 'Start · Professional · Premium',
+    words: ['Slides', 'Independent work', 'Term paper', 'Article', 'Lab work', 'Portfolio', 'Teaching materials'],
+    pkd: { 1: 'Start — modern design, clean and clear', 2: 'Professional — animation, charts, 🐢 Turtle teacher', 3: 'Premium — neon, Morph, speech text, 🐢 Turtle teacher' },
+    sheets: {
+      tez: { t: '⚡ Fast delivery', b: '<p><b>Standard:</b> Start — 1 day, Professional — 1–2 days, Premium — 2–3 days.</p><p><b>Urgent (+50%):</b> ready the same day. Choose «⚡ Urgent» when ordering.</p>' },
+      fix: { t: '🔁 Free revisions', b: '<p>Want something changed after delivery? We fix it for free.</p><p><b>Start</b> — 1 time, <b>Professional</b> — 2 times, <b>Premium</b> — 3 times. Other services — 1 time.</p>' },
+      turtle: { t: '🐢 Turtle teacher', b: '<p>An animated turtle teacher appears on the slides and <b>explains the topic out loud</b> in simple words.</p><p>For students and teachers — in the <b>Professional</b> and <b>Premium</b> packages. Not in Start.</p>' } } }
+};
+const qs = new URLSearchParams(location.search);
+let lang = qs.get('lang') || (() => { try { return localStorage.getItem('lang'); } catch (e) { return null; } })()
+  || ((tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code) || 'uz').slice(0, 2);
+if (!T[lang]) lang = 'uz';
+const t = k => T[lang][k];
+const fmt = n => !n ? t('neg') : n.toLocaleString('ru-RU').replace(/\s/g, ' ') + ' ' + t('cur');
+const fromP = n => n ? t('from')(fmt(n)) : t('neg');
+const tri = (a, k) => (CAT.i18n && CAT.i18n[lang] && CAT.i18n[lang][a] && CAT.i18n[lang][a].services[k]) || {};
+const sName = (a, k) => tri(a, k).name || CAT[a].services[k].name;
+const sDesc = (a, k) => tri(a, k).desc || CAT[a].services[k].desc;
+const pName = (a, k, p) => ((tri(a, k).packages || {})[p] || [CAT[a].services[k].packages[p][0]])[0];
+const pDesc = (a, k, p) => ((tri(a, k).packages || {})[p] || [0, CAT[a].services[k].packages[p][2]])[1];
+function applyLang() {
+  document.getElementById('html').lang = lang;
+  document.querySelectorAll('[data-i]').forEach(el => { const v = t(el.dataset.i); if (typeof v === 'string') el.textContent = v; });
+  document.querySelectorAll('[data-h]').forEach(el => el.innerHTML = t(el.dataset.h));
+  document.querySelectorAll('[data-p]').forEach(el => el.placeholder = t(el.dataset.p));
+  document.querySelectorAll('.fl').forEach(b => b.classList.toggle('on', b.dataset.l === lang));
+  wi = 0; document.getElementById('rot').textContent = t('words')[0];
+  document.getElementById('pkDesc').textContent = t('pkd')[pk];
+  if (CAT) { renderHome(); const on = document.querySelector('.page.on').id; if (on === 'p-prices') renderPrices(); if (on === 'p-order') renderOrder(); }
+}
+document.querySelectorAll('.fl').forEach(b => b.onclick = () => { lang = b.dataset.l; try { localStorage.setItem('lang', lang); } catch (e) {} hap(); applyLang(); });
+
 const ICONS = {
   taqdimot: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8M7 12l3-3 3 2 4-4"/>',
   dars: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8M7 12l3-3 3 2 4-4"/>',
@@ -195,6 +300,14 @@ let CAT = null, aud = 's', order = { aud: 's', svc: null, pkg: '', deadline: 'no
 const minPrice = s => s.packages ? Math.min(...Object.values(s.packages).map(p => p[1])) : s.price;
 
 function toast(t) { const el = document.getElementById('toast'); el.textContent = t; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2200); }
+
+function sheet(k) {
+  const d = { ...t('sheets')[k], c: t('orderBtn'), go: 'order' }; hap();
+  document.getElementById('shT').textContent = d.t; document.getElementById('shB').innerHTML = d.b;
+  const btn = document.getElementById('shC'); btn.textContent = d.c; btn.onclick = () => { closeSheet(); go(d.go); };
+  document.getElementById('sheet').classList.add('on');
+}
+function closeSheet() { document.getElementById('sheet').classList.remove('on'); }
 function go(p) {
   document.querySelectorAll('.page').forEach(x => x.classList.toggle('on', x.id === 'p-' + p));
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
@@ -203,13 +316,13 @@ function go(p) {
 }
 document.querySelectorAll('nav button').forEach(b => b.onclick = () => go(b.dataset.p));
 
-const words = ['Slayd', 'Mustaqil ish', 'Kurs ishi', 'Maqola', 'Amaliy ish', 'Portfolio', "O'quv-uslubiy majmua"]; let wi = 0;
-setInterval(() => { const r = document.getElementById('rot'); wi = (wi + 1) % words.length; r.textContent = words[wi]; r.style.animation = 'none'; r.offsetHeight; r.style.animation = ''; }, 2200);
+let wi = 0;
+setInterval(() => { const r = document.getElementById('rot'); const words = t('words'); wi = (wi + 1) % words.length; r.textContent = words[wi]; r.style.animation = 'none'; r.offsetHeight; r.style.animation = ''; }, 2200);
 
 function renderHome() {
   const s = CAT.s.services;
   document.getElementById('homeTiles').innerHTML = Object.entries(s).map(([k, v]) =>
-    `<div class="card tile" onclick="pick('s','${k}')"><div class="ico">${svg(k)}</div><b>${v.name}</b><span>${v.desc || 'Start · Professional · Premium'}</span><div class="pr">${minPrice(v) ? fmt(minPrice(v)) + 'dan' : 'Kelishiladi'}</div></div>`).join('');
+    `<div class="card tile" onclick="pick('s','${k}')"><div class="ico">${svg(k)}</div><b>${sName('s', k)}</b><span>${sDesc('s', k) || t('pkgDef') + ' · 🐢'}</span><div class="pr">${fromP(minPrice(v))}</div></div>`).join('');
 }
 function bindSeg(id, cb) {
   const seg = document.getElementById(id);
@@ -222,12 +335,13 @@ function syncSeg(id) {
 function renderPrices() {
   syncSeg('seg'); const A = CAT[aud].services;
   const list = document.getElementById('priceList'); list.classList.remove('stag'); list.offsetHeight; list.classList.add('stag');
-  list.innerHTML = Object.entries(A).map(([k, v]) => `<div class="row"><div style="display:flex;gap:12px;align-items:center"><div class="ico" style="width:36px;height:36px;margin:0">${svg(k)}</div><div><b>${v.name}</b><small>${v.desc || 'Paketlar pastda'}</small></div></div><div class="v">${minPrice(v) ? fmt(minPrice(v)) + 'dan' : 'Kelishiladi'}</div></div>`).join('');
-  const pk = Object.values(A).find(v => v.packages);
-  document.getElementById('pkTitle').textContent = pk.name + ' paketlari';
-  document.getElementById('pkRow').innerHTML = Object.entries(pk.packages).map(([k, p]) => `<div class="${k === 'pro' ? 'hi' : ''}"><small>${p[0]}</small><b>${fmt(p[1]).replace(" so'm", '')}</b></div>`).join('');
+  list.innerHTML = Object.entries(A).map(([k, v]) => `<div class="row tap" onclick="pick('${aud}','${k}')"><div style="display:flex;gap:12px;align-items:center"><div class="ico" style="width:36px;height:36px;margin:0">${svg(k)}</div><div><b>${sName(aud, k)}</b><small>${sDesc(aud, k) || t('pkgsBelow')}</small></div></div><div class="v">${fromP(minPrice(v))}<span class="go">›</span></div></div>`).join('');
+  const pkKey = Object.keys(A).find(k => A[k].packages); const pk = A[pkKey];
+  document.getElementById('pkTitle').textContent = t('pkgs')(sName(aud, pkKey));
+  document.getElementById('pkRow').innerHTML = Object.entries(pk.packages).map(([k, p]) => `<div class="tap ${k === 'pro' ? 'hi' : ''}" onclick="pickPkg('${aud}','${pkKey}','${k}')"><small>${pName(aud, pkKey, k)}${k !== 'start' ? ' 🐢' : ''}</small><b>${fmt(p[1]).replace(' ' + t('cur'), '')}</b><em>${t('pick')}</em></div>`).join('');
 }
-function pick(a, svc) { aud = a; order = { aud: a, svc, pkg: '', deadline: 'normal' }; go('order'); }
+function pickPkg(a, svc, pkg) { aud = a; order = { aud: a, svc, pkg, deadline: 'normal' }; go('order'); setTimeout(() => document.getElementById('topic').scrollIntoView({ behavior: 'smooth', block: 'center' }), 350); toast(t('picked')(pName(a, svc, pkg))); }
+function pick(a, svc) { aud = a; order = { aud: a, svc, pkg: '', deadline: 'normal' }; go('order'); setTimeout(() => document.getElementById(CAT[a].services[svc].packages ? 'pkgWrap' : 'topic').scrollIntoView({ behavior: 'smooth', block: 'center' }), 350); toast(t('picked')(sName(a, svc))); }
 function price() {
   const s = CAT[order.aud].services[order.svc]; if (!s) return 0;
   let p = s.packages ? (order.pkg ? s.packages[order.pkg][1] : 0) : s.price;
@@ -238,42 +352,41 @@ function renderOrder() {
   if (order.aud !== aud) order = { aud, svc: null, pkg: '', deadline: order.deadline };
   syncSeg('seg2'); const A = CAT[aud].services;
   document.getElementById('svcOpts').innerHTML = Object.entries(A).map(([k, v]) =>
-    `<div class="opt ${order.svc === k ? 'on' : ''}" onclick="order.svc='${k}';order.pkg='';hap();renderOrder()"><span>${v.name}</span><span class="v">${minPrice(v) ? fmt(minPrice(v)) + (v.packages ? 'dan' : '') : 'Kelishiladi'}</span></div>`).join('');
+    `<div class="opt ${order.svc === k ? 'on' : ''}" onclick="order.svc='${k}';order.pkg='';hap();renderOrder()"><span>${sName(aud, k)}</span><span class="v">${minPrice(v) ? (v.packages ? fromP(minPrice(v)) : fmt(minPrice(v))) : t('neg')}</span></div>`).join('');
   const s = A[order.svc];
   document.getElementById('pkgWrap').style.display = s && s.packages ? 'block' : 'none';
   if (s && s.packages) document.getElementById('pkgOpts').innerHTML = Object.entries(s.packages).map(([k, p]) =>
-    `<div class="opt ${order.pkg === k ? 'on' : ''}" onclick="order.pkg='${k}';hap();renderOrder()"><span><b>${p[0]}</b><br><small style="color:var(--m)">${p[2]}</small></span><span class="v">${fmt(p[1])}</span></div>`).join('');
-  document.getElementById('dlOpts').innerHTML = [['normal', 'Oddiy muddat', ''], ['urgent', '⚡ Shoshilinch', '+50%']].map(([k, n, x]) =>
+    `<div class="opt ${order.pkg === k ? 'on' : ''}" onclick="order.pkg='${k}';hap();renderOrder()"><span><b>${pName(aud, order.svc, k)}</b><br><small style="color:var(--m)">${pDesc(aud, order.svc, k)}</small></span><span class="v">${fmt(p[1])}</span></div>`).join('');
+  document.getElementById('dlOpts').innerHTML = [['normal', t('normal'), ''], ['urgent', t('urgent'), '+' + Math.round(CAT.urgent * 100) + '%']].map(([k, n, x]) =>
     `<div class="opt ${order.deadline === k ? 'on' : ''}" onclick="order.deadline='${k}';hap();renderOrder()"><span>${n}</span><span class="v">${x}</span></div>`).join('');
-  const p = price(); const sv = CAT[order.aud].services[order.svc]; document.getElementById('total').textContent = p ? fmt(p) : (sv && !sv.packages && sv.price == null ? 'Admin aytadi' : '—');
+  const p = price(); const sv = CAT[order.aud].services[order.svc]; document.getElementById('total').textContent = p ? fmt(p) : (sv && !sv.packages && sv.price == null ? t('adminSays') : '—');
 }
 bindSeg('seg', renderPrices); bindSeg('seg2', renderOrder);
 
 function sendCmd(cmd) {
-  if (!tg || !tg.sendData) return toast('Telegram ichida oching');
-  hap('medium'); tg.sendData(JSON.stringify({ cmd }));
+  if (!tg || !tg.sendData) return toast(t('openTg'));
+  hap('medium'); tg.sendData(JSON.stringify({ cmd, lang }));
 }
 document.getElementById('sendBtn').onclick = () => {
   const s = CAT[order.aud].services[order.svc];
   const topic = document.getElementById('topic').value.trim();
-  if (!s) return toast('Xizmatni tanlang');
-  if (s.packages && !order.pkg) return toast('Paketni tanlang');
-  if (topic.length < 2) return toast('Mavzuni yozing');
-  const data = { cmd: 'order', aud: order.aud, svc: order.svc, pkg: order.pkg, deadline: order.deadline, topic, details: document.getElementById('details').value.trim() };
-  if (!tg || !tg.sendData) return toast('Telegram ichida oching');
+  if (!s) return toast(t('chooseSvc'));
+  if (s.packages && !order.pkg) return toast(t('choosePkg'));
+  if (topic.length < 2) return toast(t('writeTopic'));
+  const data = { cmd: 'order', aud: order.aud, svc: order.svc, pkg: order.pkg, deadline: order.deadline, topic, details: document.getElementById('details').value.trim(), promo: document.getElementById('promo').value.trim(), lang };
+  if (!tg || !tg.sendData) return toast(t('openTg'));
   try { tg.HapticFeedback.notificationOccurred('success'); } catch (e) {}
   tg.sendData(JSON.stringify(data));
 };
 
 
-const PKD = {1: "Start — zamonaviy dizayn, toza va tushunarli", 2: "Professional — animatsiya, ikonkalar, diagrammalar", 3: "Premium — neon nur, Morph o'tishlari, nutq matni"};
 let pk = 1, si = 0;
 function showPk(k) {
   pk = k; si = 0; hap();
   const seg = document.getElementById('seg3'); seg.querySelector('.ind').style.transform = `translateX(${(k - 1) * 100}%)`;
   seg.querySelectorAll('button').forEach(b => b.style.color = +b.dataset.k === k ? '#fff' : 'var(--m)');
   for (let i = 0; i < 3; i++) document.getElementById('sl' + i).src = `ns${k}-${i + 1}.jpg`;
-  document.getElementById('pkDesc').textContent = PKD[k]; slide(0);
+  document.getElementById('pkDesc').textContent = t('pkd')[k]; slide(0);
 }
 function slide(i) {
   si = i; for (let j = 0; j < 3; j++) { document.getElementById('sl' + j).classList.toggle('on', j === i); document.querySelectorAll('#dots i')[j].classList.toggle('on', j === i); }
@@ -283,7 +396,8 @@ document.getElementById('slider').onclick = () => slide((si + 1) % 3);
 setInterval(() => { if (document.getElementById('p-samples').classList.contains('on')) slide((si + 1) % 3); }, 2600);
 showPk(1);
 
-fetch('catalog.json?v=' + Date.now()).then(r => r.json()).then(c => { CAT = c; renderHome(); }).catch(() => toast("Narxlar yuklanmadi"));
+applyLang();
+fetch('catalog.json?v=' + Date.now()).then(r => r.json()).then(c => { CAT = c; renderHome(); }).catch(() => toast(t('noPrices')));
 </script>
 </body>
 </html>
