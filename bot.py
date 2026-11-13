@@ -271,7 +271,7 @@ def services_kb(aud):
         price = min(p[1] for p in s["packages"].values()) if "packages" in s else s["price"]
         label = f"{s['name']} — {money(price)}dan" if price else s["name"]
         rows.append([(label,
-                      f"svc:{aud}:{key}", None, SVC_ICON.get(key))])
+                      f"svc:{aud}:{key}", "success" if key == "boshqa" else "primary", SVC_ICON.get(key))])
     rows.append([("⬅️ Orqaga", "back:aud", "danger", "cancel")])
     return ikb(rows)
 
