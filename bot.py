@@ -54,7 +54,7 @@ BOT_USERNAME = os.getenv("BOT_USERNAME", "Birzumda_Tayyorla_bot")
 REF_BONUS = int(os.getenv("REF_BONUS", "5000"))       # taklif qilganga: do'sti birinchi to'lovni qilganda
 REF_WELCOME = int(os.getenv("REF_WELCOME", "5000"))   # taklif qilinganga: birinchi buyurtmaga chegirma
 BONUS_MAX_PCT = int(os.getenv("BONUS_MAX_PCT", "30"))  # bonus bilan buyurtmaning ko'pi bilan 30% to'lanadi
-TURTLE_ADDON = int(os.getenv("TURTLE_ADDON", "10000"))  # talabalar uchun 🐢 qo'shimcha narxi
+TURTLE_ADDON = int(os.getenv("TURTLE_ADDON", "50000"))  # talabalar uchun 🐢 qo'shimcha narxi
 GROUP_RULES = [(5, 20), (3, 15)]   # guruh: 5+ ish −20%, 3+ ish −15%
 GROUP_BONUS = int(os.getenv("GROUP_BONUS", "5000"))   # 5+ ishli guruhni yig'ganga bonus
 LOYALTY_LEVELS = [(10, 10), (5, 5)]  # 10+ buyurtma −10% (Oltin), 5+ −5% (Kumush); har 5-buyurtma −50%
@@ -95,7 +95,7 @@ def pe(key: str, fallback: str) -> str:
 
 logging.basicConfig(level=logging.INFO)
 
-from texts import (FX, TPL, TPL_TX, tpl_label, SAMPLE_PKG, SAMPLE_TX, BRIEF_GROUPS, BRIEF_LABEL, BRIEF_LABEL_TR, BRIEF_Q, BRIEF_TX, SVC_GROUP,  # noqa: E402
+from texts import (BRIEF_REQUIRED, BRIEF_REQ_TX, FX, TPL, TPL_TX, tpl_label, SAMPLE_PKG, SAMPLE_TX, BRIEF_GROUPS, BRIEF_LABEL, BRIEF_LABEL_TR, BRIEF_Q, BRIEF_TX, SVC_GROUP,  # noqa: E402
                    BTN, CAT_TR, CHANNEL_LINE, COMMANDS, CURRENCY, DESCRIPTION, SHORT_DESC, DEFAULT_LANG, FROM, LANGS, NEGOTIABLE, TURTLE_ADDON_TX, TX,  # noqa: E402
                    DEADLINES as DL_TR, STATUS as ST_TR)
 import autogen as AG  # noqa: E402
@@ -125,8 +125,8 @@ CATALOG = {
         "services": {
             "taqdimot": {"name": "Slayd (taqdimot)", "packages": {
                 "start": ("Start", 20000, "10–12 slayd, zamonaviy dizayn, 3 soat"),
-                "pro": ("Professional", 25000, "15–20 slayd, animatsiya, diagrammalar, 6 soat"),
-                "premium": ("Premium", 30000, "20–25 slayd, Morph, neon dizayn, nutq matni, 12 soat"),
+                "pro": ("Professional", 30000, "15–20 slayd, animatsiya, diagrammalar, 6 soat"),
+                "premium": ("Premium", 40000, "20–25 slayd, Morph, neon dizayn, nutq matni, 12 soat"),
             }},
             "mustaqil": {"name": "Mustaqil ish", "price": 25000, "desc": "Word formatda, chiroyli muqova bilan"},
             "kurs": {"name": "Kurs ishi", "price": 30000, "desc": "Reja, boblar, xulosa, adabiyotlar ro'yxati"},
@@ -247,7 +247,8 @@ def init_db():
             ("orders", "welcome", "INTEGER DEFAULT 0"), ("orders", "brief", "TEXT DEFAULT '[]'"), ("orders", "turtle", "INTEGER DEFAULT 0"),
             ("orders", "qty", "INTEGER DEFAULT 1"), ("orders", "paid_at", "TEXT"), ("orders", "remind_pay", "INTEGER DEFAULT 0"),
             ("orders", "remind_adm", "INTEGER DEFAULT 0"), ("orders", "shop_id", "INTEGER"),
-            ("orders", "ai_cost", "REAL DEFAULT 0"), ("orders", "auto", "TEXT DEFAULT ''")]:
+            ("orders", "ai_cost", "REAL DEFAULT 0"), ("orders", "auto", "TEXT DEFAULT ''"),
+            ("users", "ad_seen", "INTEGER DEFAULT 0")]:
             cols = {r["name"] for r in con.execute(f"PRAGMA table_info({table})")}
             if col not in cols:
                 con.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
@@ -703,6 +704,14 @@ class Brief(StatesGroup):
     q = State()
 
 
+class FixReq(StatesGroup):
+    text = State()
+
+
+class Support(StatesGroup):
+    text = State()
+
+
 class Review(StatesGroup):
     text = State()
 
@@ -739,6 +748,12 @@ async def notify_admins(bot: Bot, text: str, kb=None, photo=None, document=None)
 
 # ------------------------------------------------------------------ asosiy menyu
 async def send_welcome(m: Message, user, lang: str):
+    with db() as con:
+        r = con.execute("SELECT ad_seen FROM users WHERE user_id=?", (user.id,)).fetchone()
+    if not r or not r["ad_seen"]:
+        await send_ad(m)
+        with db() as con:
+            con.execute("UPDATE users SET ad_seen=1 WHERE user_id=?", (user.id,))
     text = tr(lang, "welcome", name=html.escape(user.first_name), bot=BOT_NAME, contact=CONTACT)
     banner = ASSETS / "banner.png"
     if banner.exists():
@@ -1064,7 +1079,10 @@ def brief_kb(lang: str, key: str):
     opts = BRIEF_Q[key].get("opts", {}).get(lang, [])
     btns = [(o, f"bq:o:{i}", "primary") for i, o in enumerate(opts)]
     rows = [btns[i:i + 2] for i in range(0, len(btns), 2)]
-    rows.append([(btr(lang, "skip"), "bq:skip", None), (btr(lang, "finish"), "bq:done", "success")])
+    last = [(btr(lang, "finish"), "bq:done", "success")]
+    if key not in BRIEF_REQUIRED:
+        last.insert(0, (btr(lang, "skip"), "bq:skip", None))
+    rows.append(last)
     return ikb(rows)
 
 
@@ -1129,8 +1147,19 @@ async def brief_button(c: CallbackQuery, state: FSMContext):
         idx = int(parts[2])
         await brief_next(c.message, state, lang, opts[idx] if idx < len(opts) else None)
     elif parts[1] == "skip":
+        if i < len(qs) and qs[i] in BRIEF_REQUIRED:
+            await c.message.answer(BRIEF_REQ_TX.get(lang) or BRIEF_REQ_TX["uz"])
+            return
         await brief_next(c.message, state, lang, None)
-    else:  # done
+    else:  # done — qolgan majburiy savollar baribir so'raladi
+        rest = [k for k in qs[i:] if k in BRIEF_REQUIRED]
+        if rest:
+            await state.update_data(bq=qs[:i] + rest, bi=i)
+            if qs[i] not in BRIEF_REQUIRED:
+                await ask_brief(c.message, state, lang)
+            else:
+                await c.message.answer(BRIEF_REQ_TX.get(lang) or BRIEF_REQ_TX["uz"])
+            return
         await brief_next(c.message, state, lang, None, finish=True)
 
 
@@ -1223,6 +1252,33 @@ async def ask_files(m: Message, state: FSMContext, lang: str = DEFAULT_LANG):
     await m.answer(tr(lang, "files_ask", mx=MAX_FILES), reply_markup=ikb([[(b(lang, "files_done"), "files_done", "success")]]))
 
 
+CHECK_TX = {"uz": "🔎 <b>Tekshirib oling:</b> mavzu, ism-familiya, raqamlar va rasmlar to'g'rimi? Xato bo'lsa — «Orqaga» bosib tuzating. "
+                  "Hammasi to'g'ri bo'lsa — tasdiqlang ✅",
+            "ru": "🔎 <b>Проверьте:</b> тема, ФИО, цифры и фото верны? Если есть ошибка — нажмите «Назад» и исправьте. Всё верно — подтвердите ✅",
+            "en": "🔎 <b>Please check:</b> topic, name, numbers and photos — all correct? If not, tap «Back» and fix it. All good — confirm ✅"}
+
+QWARN_TX = {"uz": "⚠️ <b>Rasm sifati past</b> — slaydda xira chiqishi mumkin. Aslini <b>📎 → Fayl</b> qilib qayta yuboring:",
+            "ru": "⚠️ <b>Низкое качество фото</b> — на слайде может быть размыто. Отправьте оригинал через <b>📎 → Файл</b>:",
+            "en": "⚠️ <b>Low photo quality</b> — it may look blurry on a slide. Re-send the original via <b>📎 → File</b>:"}
+
+
+def photo_warning(m: Message) -> str:
+    """Telegram siqgan rasm o'lchamiga qarab ogohlantirish (fayl qilib yuborilsa — sifat to'liq)."""
+    if m.photo:
+        p = m.photo[-1]
+        side = max(p.width, p.height)
+        if side < 700:
+            return f"juda kichik ({p.width}×{p.height})"
+        if min(p.width, p.height) < 420:
+            return "juda tor/kichik"
+        if p.file_size and p.file_size < 45_000 and side < 1100:
+            return "sifati past (siqilgan)"
+    elif m.document and (m.document.mime_type or "").startswith("image/"):
+        if m.document.file_size and m.document.file_size < 40_000:
+            return "fayl juda kichik — xira bo'lishi mumkin"
+    return ""
+
+
 MAX_FILES = 30
 _FILE_LOCKS: dict = {}
 _ALBUM_ACK: set = set()
@@ -1248,6 +1304,11 @@ async def got_file(m: Message, state: FSMContext):
                                reply_markup=ikb([[(b(lang, "ready"), "files_done", "success")]]))
             return
         cap = (m.caption or "").strip()[:200]
+        warn = photo_warning(m)
+        if warn:
+            ws = data.get("qwarn", [])
+            ws.append(f"{len(files) + 1}-rasm: {warn}")
+            await state.update_data(qwarn=ws)
         if m.photo:
             f = {"type": "photo", "id": m.photo[-1].file_id}
         elif m.video:
@@ -1271,7 +1332,12 @@ async def got_file(m: Message, state: FSMContext):
         _ALBUM_ACK.discard(m.media_group_id)
         files = (await state.get_data()).get("files", [])
     ph, dc = file_counts(files)
-    await m.answer(tr(lang, "files_got", n=len(files), ph=ph, dc=dc, mx=MAX_FILES),
+    ws = (await state.get_data()).get("qwarn", [])
+    extra = ""
+    if ws:
+        await state.update_data(qwarn=[])
+        extra = "\n\n" + (QWARN_TX.get(lang) or QWARN_TX["uz"]) + "\n• " + "\n• ".join(ws[:10])
+    await m.answer(tr(lang, "files_got", n=len(files), ph=ph, dc=dc, mx=MAX_FILES) + extra,
                    reply_markup=ikb([[(b(lang, "ready"), "files_done", "success")]]))
 
 
@@ -1361,6 +1427,7 @@ async def show_confirm(m: Message, state: FSMContext):
            + (f"📝 {html.escape(data['group_topics'][:300])}\n" if qty > 1 and data.get("group_topics") else "")
            + f"{tr(lang, 'f_files', n=len(data.get('files', [])))}\n"
            f"{tr(lang, 'f_deadline')}: {dl_name(dl, lang)}\n\n{price_block}")
+    txt += "\n\n" + (CHECK_TX.get(lang) or CHECK_TX["uz"])
     can_turtle = bool(price) and turtle_available(data["aud"], data["svc"])
     if not price:
         txt += "\n" + tr(lang, "admin_price")
@@ -1664,7 +1731,12 @@ async def info_cmd(m: Message):
              urgent=int(URGENT_EXTRA * 100), welcome=money(REF_WELCOME, lang), bonus=money(REF_BONUS, lang),
              pct=BONUS_MAX_PCT, channel=channel_name(), contact=CONTACT, yukla=OTHER_BOTS,
              turtle=money(TURTLE_ADDON, lang))
-    await m.answer(txt, reply_markup=channel_kb(lang), link_preview_options=LinkPreviewOptions(is_disabled=True))
+    rows = [[(CX["faq_btn"][lang], "help:faq", "primary"), (CX["sup_btn"][lang], "help:sup", "success")]]
+    url = channel_url()
+    kb = ikb(rows)
+    if url:
+        kb.inline_keyboard.append(channel_kb(lang).inline_keyboard[0])
+    await m.answer(txt, reply_markup=kb, link_preview_options=LinkPreviewOptions(is_disabled=True))
 
 
 @router.message(F.text.in_(btn_texts("channel")))
@@ -2319,7 +2391,7 @@ async def run_auto(bot: Bot, oid: int, to_client: bool = True):
         if to_client:
             await bot.send_document(o["user_id"], file, caption=tr(ul, "file_cap", oid=oid))
             set_status(oid, "done")
-            await bot.send_message(o["user_id"], tr(ul, "done", oid=oid, contact=CONTACT))
+            await bot.send_message(o["user_id"], tr(ul, "done", oid=oid, contact=CONTACT), reply_markup=fix_kb(oid, ul))
             await ask_review(bot, get_order(oid))
     except Exception as e:
         cost = acc[0]
@@ -2483,6 +2555,158 @@ async def avto_cmd(m: Message, command: CommandObject, bot: Bot):
           "<code>/avto +5</code> — $5 to'ldirdim · <code>/avto balans 4.30</code> — aniq qoldiq")
 
 
+# ------------------------------------------------------------------ 🎬 reklama, ✏️ tuzatish, 💬 yordam, ❓ FAQ
+CX = {
+    "fix_btn": {"uz": "✏️ Tuzatish so'rash", "ru": "✏️ Попросить правки", "en": "✏️ Request changes"},
+    "fix_ask": {"uz": "✏️ Buyurtma #{oid}: <b>nimani o'zgartirish kerak?</b>\nAniq yozing (masalan: «3-slayddagi rasmni almashtiring, 5-slaydga raqam qo'shing»). Rasm/fayl ham yuborsangiz bo'ladi. Tuzatish <b>bepul</b> 🔁",
+                "ru": "✏️ Заказ #{oid}: <b>что нужно изменить?</b>\nНапишите конкретно (например: «замените фото на 3-м слайде»). Можно приложить фото/файл. Правки <b>бесплатно</b> 🔁",
+                "en": "✏️ Order #{oid}: <b>what should we change?</b>\nBe specific (e.g. «replace the photo on slide 3»). You can attach a photo/file. Revisions are <b>free</b> 🔁"},
+    "fix_ok": {"uz": "✅ Qabul qilindi! Tuzatilgan variant shu chatga keladi.", "ru": "✅ Принято! Исправленный вариант придёт в этот чат.",
+               "en": "✅ Got it! The revised version will arrive in this chat."},
+    "faq_btn": {"uz": "❓ Savol-javob", "ru": "❓ Вопросы", "en": "❓ FAQ"},
+    "sup_btn": {"uz": "💬 Adminga yozish", "ru": "💬 Написать админу", "en": "💬 Message admin"},
+    "sup_ask": {"uz": "💬 Savolingizni yozing (rasm ham bo'ladi) — admin shu yerda javob beradi.",
+                "ru": "💬 Напишите вопрос (можно с фото) — админ ответит здесь.", "en": "💬 Type your question (photos OK) — the admin will reply here."},
+    "sup_ok": {"uz": "✅ Yuborildi! Javob shu chatga keladi.", "ru": "✅ Отправлено! Ответ придёт сюда.", "en": "✅ Sent! The reply will come here."},
+    "sup_reply": {"uz": "💬 <b>Admin javobi:</b>\n", "ru": "💬 <b>Ответ админа:</b>\n", "en": "💬 <b>Admin reply:</b>\n"},
+    "faq": {"uz": "❓ <b>Ko'p beriladigan savollar</b>\n\n<b>Qanday to'layman?</b> — Buyurtma oxirida karta raqami chiqadi. O'tkazib, chek rasmini yuborasiz.\n\n"
+                  "<b>Qancha vaqtda tayyor?</b> — Ko'p ishlar to'lovdan keyin bir necha daqiqada avtomatik keladi. Murakkab ishlar — paketga qarab 3–12 soat.\n\n"
+                  "<b>Tuzatish bepulmi?</b> — Ha. Ish kelgach «✏️ Tuzatish so'rash» ni bosing.\n\n"
+                  "<b>Rasmlarimni qo'shasizmi?</b> — Ha. Buyurtmada galereyadan yuboring; sifat yo'qolmasin desangiz 📎 Fayl qilib.\n\n"
+                  "<b>Qaysi formatda beriladi?</b> — Slayd: PPTX (xohlasangiz PDF), yozma ishlar: Word (DOCX).\n\n"
+                  "<b>Lotin yoki kirill?</b> — Qaysi birini tanlasangiz, o'shanda.",
+            "ru": "❓ <b>Частые вопросы</b>\n\n<b>Как оплатить?</b> — В конце заказа появится номер карты. Переведите и отправьте фото чека.\n\n"
+                  "<b>Когда будет готово?</b> — Большинство работ приходит автоматически через несколько минут после оплаты. Сложные — 3–12 часов по пакету.\n\n"
+                  "<b>Правки бесплатно?</b> — Да. После получения нажмите «✏️ Попросить правки».\n\n"
+                  "<b>Добавите мои фото?</b> — Да. Отправьте их при заказе; для лучшего качества — через 📎 Файл.\n\n"
+                  "<b>Формат?</b> — Слайды: PPTX (по желанию PDF), письменные работы: Word (DOCX).",
+            "en": "❓ <b>FAQ</b>\n\n<b>How do I pay?</b> — The card number appears at the end of the order. Transfer and send the receipt photo.\n\n"
+                  "<b>How fast?</b> — Most work arrives automatically minutes after payment. Complex work: 3–12 hours by package.\n\n"
+                  "<b>Are revisions free?</b> — Yes. Tap «✏️ Request changes» after delivery.\n\n"
+                  "<b>Will you add my photos?</b> — Yes. Send them when ordering; for best quality use 📎 File.\n\n"
+                  "<b>Format?</b> — Slides: PPTX (PDF on request), papers: Word (DOCX)."},
+}
+
+
+def fix_kb(oid: int, lang: str):
+    return ikb([[(CX["fix_btn"][lang], f"fix:{oid}", "primary")]])
+
+
+@router.callback_query(F.data.startswith("fix:"))
+async def fix_start(c: CallbackQuery, state: FSMContext):
+    oid = int(c.data.split(":")[1])
+    o = get_order(oid)
+    if not o or o["user_id"] != c.from_user.id:
+        await c.answer()
+        return
+    await c.answer()
+    await state.set_state(FixReq.text)
+    await state.update_data(fix_oid=oid)
+    await c.message.answer(CX["fix_ask"][L(c.from_user.id)].format(oid=oid))
+
+
+@router.message(FixReq.text, ~F.text.startswith("/") | ~F.text)
+async def fix_got(m: Message, state: FSMContext, bot: Bot):
+    oid = (await state.get_data()).get("fix_oid")
+    await state.clear()
+    o = get_order(oid)
+    lang = L(m.from_user.id)
+    with db() as con:
+        con.execute("UPDATE orders SET status='work' WHERE id=?", (oid,))
+    for aid in ADMIN_IDS:
+        try:
+            await bot.send_message(aid, f"✏️ <b>Tuzatish so'raldi</b> — #{oid} {html.escape(service_label(o))}\n"
+                                        f"👤 {html.escape(m.from_user.full_name)} (<code>{m.from_user.id}</code>)\n\n"
+                                        f"Tuzatilgan faylni yuborish: /yubor_{oid}")
+            await bot.copy_message(aid, m.chat.id, m.message_id)
+        except Exception as e:
+            logging.warning("Tuzatish so'rovi yuborilmadi: %s", e)
+    await m.answer(CX["fix_ok"][lang], reply_markup=mkb(m.from_user.id))
+
+
+@router.callback_query(F.data.startswith("help:"))
+async def help_cb(c: CallbackQuery, state: FSMContext):
+    lang = L(c.from_user.id)
+    await c.answer()
+    if c.data == "help:faq":
+        await c.message.answer(CX["faq"][lang])
+    else:
+        await state.set_state(Support.text)
+        await c.message.answer(CX["sup_ask"][lang])
+
+
+@router.message(Command("faq", "savol"))
+async def faq_cmd(m: Message):
+    await m.answer(CX["faq"][L(m.from_user.id)])
+
+
+@router.message(Command("yordam", "support"))
+async def support_cmd(m: Message, state: FSMContext):
+    await state.set_state(Support.text)
+    await m.answer(CX["sup_ask"][L(m.from_user.id)])
+
+
+@router.message(Support.text)
+async def support_got(m: Message, state: FSMContext, bot: Bot):
+    await state.clear()
+    for aid in ADMIN_IDS:
+        try:
+            await bot.send_message(aid, f"💬 <b>Mijozdan savol</b> — {html.escape(m.from_user.full_name)} (<code>{m.from_user.id}</code>)\n"
+                                        f"Javob: <code>/javob {m.from_user.id} matn</code>")
+            await bot.copy_message(aid, m.chat.id, m.message_id)
+        except Exception as e:
+            logging.warning("Savol yuborilmadi: %s", e)
+    await m.answer(CX["sup_ok"][L(m.from_user.id)], reply_markup=mkb(m.from_user.id))
+
+
+@router.message(Command("javob"))
+async def javob_cmd(m: Message, command: CommandObject, bot: Bot):
+    if not is_admin(m.from_user.id):
+        return
+    parts = (command.args or "").split(maxsplit=1)
+    if len(parts) < 2 or not parts[0].isdigit():
+        await m.answer("Ishlatish: <code>/javob 123456789 matn</code>")
+        return
+    uid = int(parts[0])
+    try:
+        await bot.send_message(uid, CX["sup_reply"][L(uid)] + html.escape(parts[1]))
+        await m.answer("✅ Javob yuborildi")
+    except Exception as e:
+        await m.answer(f"❌ Yuborilmadi: {html.escape(str(e))[:200]}")
+
+
+# --- 🎬 reklama video (/start da birinchi marta)
+AD_FILE = BASE / "reklama.mp4"
+
+
+async def send_ad(m: Message):
+    fid = get_setting("ad_file_id")
+    try:
+        if fid:
+            await m.answer_video(fid)
+        elif AD_FILE.exists():
+            msg = await m.answer_video(FSInputFile(AD_FILE), width=1080, height=1350, supports_streaming=True)
+            if msg and msg.video:
+                set_setting("ad_file_id", msg.video.file_id)
+    except Exception as e:
+        logging.warning("Reklama yuborilmadi: %s", e)
+
+
+@router.message(F.video, F.caption.regexp(r"^/reklama\b"))
+async def set_ad(m: Message):
+    if not is_admin(m.from_user.id):
+        return
+    set_setting("ad_file_id", m.video.file_id)
+    with db() as con:
+        con.execute("UPDATE users SET ad_seen=0")
+    await m.answer("✅ Reklama video yangilandi. Endi /start bosgan har bir foydalanuvchi uni bir marta ko'radi.")
+
+
+@router.message(Command("reklama"))
+async def show_ad_cmd(m: Message):
+    await send_ad(m)
+
+
 # ------------------------------------------------------------------ ⏰ eslatmalar (muddat va to'lov)
 PKG_HOURS = {"start": 3, "pro": 6, "premium": 12}  # to'lovdan keyin, soatda
 URGENT_HOURS = 2
@@ -2615,6 +2839,8 @@ async def admin_help(m: Message):
         "📤 /yubor 12 — tayyor ishni mijozga yuborish\n"
         "🤖 /avto — avtomatik bajarish, API balansi\n"
         "🗑 /ochir 1 2 — sinov buyurtmalarini o'chirish\n"
+        "🎬 Video + izoh /reklama — /start reklamasini almashtirish\n"
+        "💬 /javob ID matn — mijoz savoliga javob\n"
         "📋 <code>/tz 12</code> — texnik topshiriq\n"
         "⭐ /reviews — sharhlar\n"
         "📦 /dokon — tayyor ishlar · fayl + <code>/sell 15000 Nomi</code> · rasm + <code>/preview ID</code> · "
@@ -2740,7 +2966,7 @@ async def admin_done(m: Message, state: FSMContext, bot: Bot):
     set_status(oid, "done")
     await state.clear()
     o = get_order(oid)
-    await bot.send_message(o["user_id"], tr(L(o["user_id"]), "done", oid=oid, contact=CONTACT))
+    await bot.send_message(o["user_id"], tr(L(o["user_id"]), "done", oid=oid, contact=CONTACT), reply_markup=fix_kb(oid, L(o["user_id"])))
     await ask_review(bot, o)
     await m.answer(f"#{oid} — topshirildi ✅ Mijozdan baho so'raldi.")
 

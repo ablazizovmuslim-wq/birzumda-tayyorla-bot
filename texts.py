@@ -522,10 +522,10 @@ SHORT_DESC = {
 # ------------------------------------------------------------------ batafsil so'rovnoma (texnik topshiriq)
 # Har bir xizmat turi uchun savollar ketma-ketligi
 BRIEF_GROUPS = {
-    "slides": ["subject", "slides", "wlang", "title", "plan", "style", "date", "extra"],
-    "paper": ["subject", "pages", "wlang", "title", "cover", "plan", "format", "date", "extra"],
-    "portfolio": ["who", "sections", "style", "date", "extra"],
-    "teach": ["subject", "grade", "count", "wlang", "cover", "plan", "date", "extra"],
+    "slides": ["subject", "slides", "wlang", "script", "title", "plan", "must", "where", "style", "date", "extra"],
+    "paper": ["subject", "pages", "wlang", "script", "title", "cover", "plan", "must", "format", "date", "extra"],
+    "portfolio": ["who", "sections", "must", "where", "style", "date", "extra"],
+    "teach": ["subject", "grade", "count", "wlang", "script", "cover", "plan", "must", "date", "extra"],
     "other": ["free", "date"],
 }
 SVC_GROUP = {"taqdimot": "slides", "dars": "slides", "tadbir": "slides",
@@ -575,9 +575,24 @@ BRIEF_Q = {
              "opts": {"uz": ["Bugun", "Ertaga", "2–3 kunda", "Farqi yo'q"], "ru": ["Сегодня", "Завтра", "Через 2–3 дня", "Неважно"],
                       "en": ["Today", "Tomorrow", "In 2–3 days", "No rush"]}},
     "extra": {"uz": "💬 <b>Yana istaklar</b> bormi?", "ru": "💬 <b>Ещё пожелания</b>?", "en": "💬 <b>Anything else</b>?"},
+    "script": {"uz": "🔤 O'zbekcha bo'lsa — <b>qaysi yozuvda</b>?", "ru": "🔤 Если на узбекском — <b>какой алфавит</b>?",
+               "en": "🔤 If in Uzbek — <b>which script</b>?",
+               "opts": {"uz": ["Lotin (o'zbekcha)", "Кирилл (ўзбекча)", "O'zbekcha emas"], "ru": ["Латиница", "Кириллица", "Не на узбекском"],
+                        "en": ["Latin", "Cyrillic", "Not Uzbek"]}},
+    "must": {"uz": "📌 <b>Albatta bo'lishi kerak</b> bo'lgan narsalar? (raqamlar, nomlar, sanalar, yutuqlar, iqtiboslar)\n<i>Ro'yxat qilib yozing — hech biri tushib qolmaydi.</i>",
+             "ru": "📌 Что <b>обязательно должно быть</b>? (цифры, имена, даты, достижения, цитаты)\n<i>Напишите списком — ничего не потеряется.</i>",
+             "en": "📌 What <b>must be included</b>? (numbers, names, dates, achievements, quotes)\n<i>Write it as a list — nothing will be missed.</i>",
+             "opts": {"uz": ["Hech narsa — o'zingiz tuzing"], "ru": ["Ничего — составьте сами"], "en": ["Nothing — up to you"]}},
+    "where": {"uz": "🎯 <b>Qayerda</b> taqdim etiladi?", "ru": "🎯 <b>Где</b> будете показывать?", "en": "🎯 <b>Where</b> will it be presented?",
+              "opts": {"uz": ["Dars / seminar", "Tanlov", "Himoya", "Konferensiya / tadbir"], "ru": ["Урок / семинар", "Конкурс", "Защита", "Конференция"],
+                       "en": ["Class / seminar", "Contest", "Defense", "Conference / event"]}},
 }
+BRIEF_REQUIRED = {"subject", "slides", "pages", "wlang", "title", "who", "free", "script"}
+BRIEF_REQ_TX = {"uz": "❗ Bu savol <b>majburiy</b> — keyin «bu qani?» degan gap bo'lmasligi uchun. Javob yozing yoki tugmani bosing.",
+                "ru": "❗ Этот вопрос <b>обязательный</b> — чтобы потом не было «а где это?». Напишите ответ или нажмите кнопку.",
+                "en": "❗ This question is <b>required</b> — so nothing is missing later. Type an answer or tap a button."}
 # Admin uchun texnik topshiriqdagi nomlar (o'zbekcha)
-BRIEF_LABEL = {"subject": "Fan", "slides": "Slaydlar soni", "pages": "Hajmi (bet)", "wlang": "Ish tili",
+BRIEF_LABEL = {"script": "Yozuv", "must": "ALBATTA BO'LSIN", "where": "Qayerda taqdim etiladi", "subject": "Fan", "slides": "Slaydlar soni", "pages": "Hajmi (bet)", "wlang": "Ish tili",
                "title": "Titul ma'lumotlari", "plan": "Reja / bo'limlar", "style": "Dizayn shabloni", "cover": "Muqova shabloni", "format": "Rasmiylashtirish",
                "who": "Kim uchun", "sections": "Bo'limlar", "grade": "Kurs / sinf", "count": "Hajm",
                "free": "Batafsil", "date": "Qachongacha", "extra": "Qo'shimcha istaklar",
@@ -594,11 +609,11 @@ BRIEF_TX = {
     "summary": {"uz": "🗒 <b>Talablaringiz:</b>", "ru": "🗒 <b>Ваши требования:</b>", "en": "🗒 <b>Your requirements:</b>"},
 }
 BRIEF_LABEL_TR = {
-    "ru": {"subject": "Предмет", "slides": "Слайдов", "pages": "Страниц", "wlang": "Язык работы", "title": "Титул",
+    "ru": {"script": "Алфавит", "must": "Обязательно", "where": "Где показ", "subject": "Предмет", "slides": "Слайдов", "pages": "Страниц", "wlang": "Язык работы", "title": "Титул",
            "plan": "План", "style": "Шаблон дизайна", "cover": "Шаблон обложки", "format": "Оформление", "who": "Для кого", "sections": "Разделы",
            "grade": "Курс / класс", "count": "Объём", "free": "Подробно", "date": "Срок", "extra": "Пожелания",
            "group": "Темы группы"},
-    "en": {"subject": "Subject", "slides": "Slides", "pages": "Pages", "wlang": "Language", "title": "Title page",
+    "en": {"script": "Script", "must": "Must include", "where": "Presented at", "subject": "Subject", "slides": "Slides", "pages": "Pages", "wlang": "Language", "title": "Title page",
            "plan": "Outline", "style": "Design template", "cover": "Cover template", "format": "Formatting", "who": "For", "sections": "Sections",
            "grade": "Year / grade", "count": "Size", "free": "Details", "date": "Deadline", "extra": "Extra",
            "group": "Group topics"},

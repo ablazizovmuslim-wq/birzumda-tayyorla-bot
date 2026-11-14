@@ -233,7 +233,7 @@ nav button.on svg{animation:navBounce .5s cubic-bezier(.2,1.6,.4,1)}
 <g class="teye"><circle cx="93" cy="55" r="3.2" fill="#1C1430"/><circle cx="102" cy="55" r="3.2" fill="#1C1430"/></g>
 <ellipse class="tmouth" cx="98" cy="65" rx="4" ry="2.5" fill="#1C1430"/></g>
 <g class="tsound" stroke="#FF8FDA" stroke-width="2.5" fill="none" stroke-linecap="round"><path d="M114 58 q4 4 0 8"/><path d="M118 54 q7 8 0 16"/></g>
-</svg><div><b data-i="turtleT">Toshbaqa o'qituvchi</b><span class="badge" data-i="turtleBadge">👩‍🏫 Pro · Premium · 🎓 +10 000</span><div class="say" style="margin-top:8px" data-i="turtleSay">Salom! Men slayd ichida gapirib, mavzuni sodda qilib tushuntiraman 🎙</div></div></div>
+</svg><div><b data-i="turtleT">Toshbaqa o'qituvchi</b><span class="badge" data-i="turtleBadge">👩‍🏫 Pro · Premium · 🎓 +50 000</span><div class="say" style="margin-top:8px" data-i="turtleSay">Salom! Men slayd ichida gapirib, mavzuni sodda qilib tushuntiraman 🎙</div></div></div>
   <h2 style="margin-top:22px" data-i="tplTitle">Dizayn shablonlari</h2>
   <div class="seg" id="seg4" style="margin-bottom:12px"><div class="ind"></div><button data-k="s" data-i="tplSlides">🖼 Slayd</button><button data-k="c" data-i="tplCovers">📄 Muqova</button></div>
   <div class="tgrid" id="tplGallery"></div>
@@ -285,9 +285,9 @@ if (tg) { tg.ready(); tg.expand(); try { tg.setHeaderColor('#0B0812'); tg.setBac
 const hap = t => { try { tg && tg.HapticFeedback.impactOccurred(t || 'light'); } catch (e) {} };
 const T = {
   uz: { photoHint: "Rasmlaringizni (galereyadan) buyurtmadan keyin botga yuborasiz — ishga qo'yib beramiz", lTpl: "🎨 Dizayn shabloni", tplHint: "Tanlamasangiz — bot keyin so'raydi", tplTitle: "Dizayn shablonlari", tplSlides: "🖼 Slayd", tplCovers: "📄 Muqova", tplGalHint: "Buyurtma berishda o'zingizga yoqqanini tanlaysiz", tplNames: ["Binafsha Neon", "Ko'k Kosmos", "Yashil Zumrad", "Oq Premium", "Qizil Olov", "Oltin Lyuks", "Pastel Orzu", "Aurora Gradient"],
-    turtleAdd: "🐢 Toshbaqa o'qituvchi qo'shish", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +10 000', close: 'Yopish', heroK: 'Professional dizayn', heroH: 'Chiroyli ishlar<br><span class="grad">bir zumda</span>', heroP: "— o'z vaqtida, bepul tuzatish bilan.",
+    turtleAdd: "🐢 Toshbaqa o'qituvchi qo'shish", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +50 000', close: 'Yopish', heroK: 'Professional dizayn', heroH: 'Chiroyli ishlar<br><span class="grad">bir zumda</span>', heroP: "— o'z vaqtida, bepul tuzatish bilan.",
     chipAud: '🎓 Talaba · 👩‍🏫 Ustoz ›', chipFast: '⚡ Tez ›', chipFix: '🔁 Bepul tuzatish ›', chipTurtle: "🐢 Toshbaqa o'qituvchi ›", orderBtn: '🛒 Buyurtma berish',
-    prices: 'Narxlar', students: '🎓 Talabalar', teachers: '👩‍🏫 Ustozlar', priceNote: '⚡ Shoshilinch: +50% · 🔁 Tuzatish bepul · 🐢 ustozlarga Pro/Premium, talabalarga +10 000',
+    prices: 'Narxlar', students: '🎓 Talabalar', teachers: '👩‍🏫 Ustozlar', priceNote: '⚡ Shoshilinch: +50% · 🔁 Tuzatish bepul · 🐢 ustozlarga Pro/Premium, talabalarga +50 000',
     samples: 'Namunalar', mS: 'Zamonaviy dizayn', mP: 'Animatsiya + diagramma', mX: "Neon nur, Morph o'tishlari, nutq matni, video",
     turtleT: "Toshbaqa o'qituvchi", turtleSay: 'Salom! Men slayd ichida gapirib, mavzuni sodda qilib tushuntiraman 🎙', sendSamples: '📎 PPTX namunalarni chatga yuborish',
     order: 'Buyurtma', lService: 'Xizmat', lPkg: 'Paket', lTopic: 'Mavzu', phTopic: "Masalan: Sun'iy intellekt ta'limda", lDetails: "Qo'shimcha talablar",
@@ -302,11 +302,11 @@ const T = {
     sheets: {
       tez: { t: '⚡ Tez tayyorlash', b: "<p><b>Oddiy muddat</b> (to'lovdan keyin): Start — 3 soat, Professional — 6 soat, Premium — 12 soat.</p><p><b>Shoshilinch (+50%):</b> 1–2 soatda tayyor. Buyurtmada «⚡ Shoshilinch» ni tanlang.</p><p>🌙 Kechasi (22:00 dan keyin) to'langan buyurtmalar ertalab 10:00 gacha tayyor bo'ladi.</p>" },
       fix: { t: '🔁 Bepul tuzatish', b: "<p>Ish tayyor bo'lgach, nimanidir o'zgartirmoqchi bo'lsangiz — bepul tuzatamiz.</p><p><b>Start</b> — 1 marta, <b>Professional</b> — 2 marta, <b>Premium</b> — 3 marta. Boshqa xizmatlarda — 1 marta.</p>" },
-      turtle: { t: "🐢 Toshbaqa o'qituvchi", b: "<p>Slaydda animatsion toshbaqa o'qituvchi paydo bo'ladi va <b>gapirib</b>, mavzuni sodda tilda tushuntiradi.</p><p>👩‍🏫 <b>Ustozlarga</b> — Professional va Premium paketlarga kiradi.<br>🎓 <b>Talabalarga</b> — xohlasangiz, buyurtmada qo'shasiz: <b>+10 000 so'm</b>.</p>" } } },
+      turtle: { t: "🐢 Toshbaqa o'qituvchi", b: "<p>Slaydda animatsion toshbaqa o'qituvchi paydo bo'ladi va <b>gapirib</b>, mavzuni sodda tilda tushuntiradi.</p><p>👩‍🏫 <b>Ustozlarga</b> — Professional va Premium paketlarga kiradi.<br>🎓 <b>Talabalarga</b> — xohlasangiz, buyurtmada qo'shasiz: <b>+50 000 so'm</b>.</p>" } } },
   ru: { photoHint: "Свои фото (из галереи) отправите боту после заказа — вставим их в работу", lTpl: "🎨 Шаблон дизайна", tplHint: "Не выберете — бот спросит позже", tplTitle: "Шаблоны дизайна", tplSlides: "🖼 Слайды", tplCovers: "📄 Обложки", tplGalHint: "Понравившийся выберете при заказе", tplNames: ["Фиолетовый неон", "Синий космос", "Изумрудный", "Белый премиум", "Красный огонь", "Золотой люкс", "Пастельная мечта", "Аврора"],
-    turtleAdd: "🐢 Добавить черепаху-учителя", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +10 000', close: 'Закрыть', heroK: 'Профессиональный дизайн', heroH: 'Красивые работы<br><span class="grad">в один миг</span>', heroP: '— вовремя, с бесплатными правками.',
+    turtleAdd: "🐢 Добавить черепаху-учителя", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +50 000', close: 'Закрыть', heroK: 'Профессиональный дизайн', heroH: 'Красивые работы<br><span class="grad">в один миг</span>', heroP: '— вовремя, с бесплатными правками.',
     chipAud: '🎓 Студент · 👩‍🏫 Преподаватель ›', chipFast: '⚡ Срочно ›', chipFix: '🔁 Бесплатные правки ›', chipTurtle: '🐢 Черепаха-учитель ›', orderBtn: '🛒 Заказать',
-    prices: 'Цены', students: '🎓 Студентам', teachers: '👩‍🏫 Преподавателям', priceNote: '⚡ Срочно: +50% · 🔁 Правки бесплатно · 🐢 учителям Pro/Premium, студентам +10 000',
+    prices: 'Цены', students: '🎓 Студентам', teachers: '👩‍🏫 Преподавателям', priceNote: '⚡ Срочно: +50% · 🔁 Правки бесплатно · 🐢 учителям Pro/Premium, студентам +50 000',
     samples: 'Примеры', mS: 'Современный дизайн', mP: 'Анимация + диаграммы', mX: "Неон, Morph-переходы, текст речи, видео",
     turtleT: 'Черепаха-учитель', turtleSay: 'Привет! Я говорю прямо на слайдах и просто объясняю тему 🎙', sendSamples: '📎 Отправить PPTX-примеры в чат',
     order: 'Заказ', lService: 'Услуга', lPkg: 'Пакет', lTopic: 'Тема', phTopic: 'Например: Искусственный интеллект в образовании', lDetails: 'Доп. требования',
@@ -321,11 +321,11 @@ const T = {
     sheets: {
       tez: { t: '⚡ Срочно', b: '<p><b>Обычный срок</b> (после оплаты): Start — 3 часа, Professional — 6 часов, Premium — 12 часов.</p><p><b>Срочно (+50%):</b> готово за 1–2 часа. Выберите «⚡ Срочно» в заказе.</p><p>🌙 Заказы, оплаченные ночью (после 22:00), будут готовы к 10:00 утра.</p>' },
       fix: { t: '🔁 Бесплатные правки', b: '<p>Если после сдачи захотите что-то изменить — поправим бесплатно.</p><p><b>Start</b> — 1 раз, <b>Professional</b> — 2 раза, <b>Premium</b> — 3 раза. В остальных услугах — 1 раз.</p>' },
-      turtle: { t: '🐢 Черепаха-учитель', b: '<p>На слайдах появляется анимированная черепаха-учитель и <b>голосом</b> простыми словами объясняет тему.</p><p>👩‍🏫 <b>Преподавателям</b> — входит в пакеты Professional и Premium.<br>🎓 <b>Студентам</b> — по желанию при заказе: <b>+10 000 сум</b>.</p>' } } },
+      turtle: { t: '🐢 Черепаха-учитель', b: '<p>На слайдах появляется анимированная черепаха-учитель и <b>голосом</b> простыми словами объясняет тему.</p><p>👩‍🏫 <b>Преподавателям</b> — входит в пакеты Professional и Premium.<br>🎓 <b>Студентам</b> — по желанию при заказе: <b>+50 000 сум</b>.</p>' } } },
   en: { photoHint: "Send your photos (from gallery) to the bot after ordering — we'll put them into the work", lTpl: "🎨 Design template", tplHint: "Skip it — the bot will ask later", tplTitle: "Design templates", tplSlides: "🖼 Slides", tplCovers: "📄 Covers", tplGalHint: "Pick the one you like when ordering", tplNames: ["Purple Neon", "Blue Cosmos", "Emerald", "White Premium", "Red Fire", "Gold Luxe", "Pastel Dream", "Aurora Gradient"],
-    turtleAdd: "🐢 Add the Turtle teacher", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +10 000', close: 'Close', heroK: 'Professional design', heroH: 'Beautiful work<br><span class="grad">in a flash</span>', heroP: '— on time, with free revisions.',
+    turtleAdd: "🐢 Add the Turtle teacher", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +50 000', close: 'Close', heroK: 'Professional design', heroH: 'Beautiful work<br><span class="grad">in a flash</span>', heroP: '— on time, with free revisions.',
     chipAud: '🎓 Student · 👩‍🏫 Teacher ›', chipFast: '⚡ Fast ›', chipFix: '🔁 Free revisions ›', chipTurtle: '🐢 Turtle teacher ›', orderBtn: '🛒 Place an order',
-    prices: 'Prices', students: '🎓 Students', teachers: '👩‍🏫 Teachers', priceNote: '⚡ Urgent: +50% · 🔁 Free revisions · 🐢 teachers Pro/Premium, students +10 000',
+    prices: 'Prices', students: '🎓 Students', teachers: '👩‍🏫 Teachers', priceNote: '⚡ Urgent: +50% · 🔁 Free revisions · 🐢 teachers Pro/Premium, students +50 000',
     samples: 'Samples', mS: 'Modern design', mP: 'Animation + charts', mX: "Neon glow, Morph transitions, speech text, video",
     turtleT: 'Turtle teacher', turtleSay: 'Hi! I talk right on the slides and explain the topic simply 🎙', sendSamples: '📎 Send PPTX samples to the chat',
     order: 'Order', lService: 'Service', lPkg: 'Package', lTopic: 'Topic', phTopic: 'E.g. Artificial intelligence in education', lDetails: 'Extra requirements',
@@ -340,7 +340,7 @@ const T = {
     sheets: {
       tez: { t: '⚡ Fast delivery', b: '<p><b>Standard</b> (after payment): Start — 3 hours, Professional — 6 hours, Premium — 12 hours.</p><p><b>Urgent (+50%):</b> ready in 1–2 hours. Choose «⚡ Urgent» when ordering.</p><p>🌙 Orders paid at night (after 22:00) are ready by 10:00 in the morning.</p>' },
       fix: { t: '🔁 Free revisions', b: '<p>Want something changed after delivery? We fix it for free.</p><p><b>Start</b> — 1 time, <b>Professional</b> — 2 times, <b>Premium</b> — 3 times. Other services — 1 time.</p>' },
-      turtle: { t: '🐢 Turtle teacher', b: '<p>An animated turtle teacher appears on the slides and <b>explains the topic out loud</b> in simple words.</p><p>👩‍🏫 <b>Teachers</b> — included in Professional and Premium.<br>🎓 <b>Students</b> — optional when ordering: <b>+10 000 UZS</b>.</p>' } } }
+      turtle: { t: '🐢 Turtle teacher', b: '<p>An animated turtle teacher appears on the slides and <b>explains the topic out loud</b> in simple words.</p><p>👩‍🏫 <b>Teachers</b> — included in Professional and Premium.<br>🎓 <b>Students</b> — optional when ordering: <b>+50 000 UZS</b>.</p>' } } }
 };
 const qs = new URLSearchParams(location.search);
 let lang = qs.get('lang') || (() => { try { return localStorage.getItem('lang'); } catch (e) { return null; } })()
