@@ -53,17 +53,42 @@ AUTO_SERVICES = {
 }
 
 # n: name, bg, a1, a2, text, muted, card, card_alpha, border, light, title_font
-THEMES = {
-    1: ("Binafsha Neon", "07050D", "C9A6FF", "FF5FC8", "F4EEFF", "B9AECB", "1C142C", 72, "B48CFF", False, "Arial"),
-    2: ("Ko'k Kosmos", "030914", "5CC8FF", "00F0FF", "EAF6FF", "9FB6CF", "0A1830", 72, "5CC8FF", False, "Arial"),
-    3: ("Yashil Zumrad", "03100B", "4BF0A0", "C8FF6B", "EAFFF3", "9CC9B2", "082218", 72, "4BF0A0", False, "Arial"),
-    4: ("Oq Premium", "F7F5FC", "7B2CBF", "FF4FD8", "16121F", "6B6478", "FFFFFF", 80, "7B2CBF", True, "Arial"),
-    5: ("Qizil Olov", "0D0505", "FF6A3D", "FFC24B", "FFF1EC", "D7AFA6", "280E0C", 72, "FF6A3D", False, "Arial"),
-    6: ("Oltin Lyuks", "0A0907", "F5D27A", "C99A2E", "F7EEDB", "C9BB9C", "1E1A12", 75, "F5D27A", False, "Georgia"),
-    7: ("Pastel Orzu", "FFF4FA", "FF6FB5", "6C8CFF", "2F2448", "7A6E93", "FFFFFF", 66, "FF6FB5", True, "Arial"),
-    8: ("Aurora Gradient", "0A0618", "FF8AD8", "7FE3FF", "FFFFFF", "D5CCEA", "FFFFFF", 12, "FFFFFF", False, "Arial"),
+THEMES = {  # 1–12 Start · 13–22 Professional · 23–32 Premium
+    1: ("Oq Klassik", "FAFAF7", "1F3A68", "C8A24A", "1B2333", "5E6675", "FFFFFF", 92, "D9DEE8", True, "Arial"),
+    2: ("Moviy Osmon", "F3F8FF", "1E6FE0", "38B6FF", "13233D", "56657E", "FFFFFF", 92, "CFE0F7", True, "Arial"),
+    3: ("Yashil Bahor", "F4FBF5", "1F8A4C", "8BC34A", "14261A", "566B5C", "FFFFFF", 92, "CFE8D6", True, "Arial"),
+    4: ("Pushti Pastel", "FFF6F9", "D6336C", "F59FBF", "34202A", "7A5E69", "FFFFFF", 92, "F4D4DF", True, "Arial"),
+    5: ("Quyoshli Sariq", "FFFBEF", "C98A00", "F2B705", "2B2310", "6E6447", "FFFFFF", 92, "F0E2B8", True, "Arial"),
+    6: ("Lavanda", "F8F6FF", "6A4BC4", "A88BEB", "231C3A", "675F80", "FFFFFF", 92, "DDD5F5", True, "Arial"),
+    7: ("Kulrang Minimal", "F5F5F4", "2F3437", "8A8F93", "1C1F21", "64696D", "FFFFFF", 92, "DDDEDC", True, "Arial"),
+    8: ("Akademik Ko'k", "F4F6FA", "14306B", "D4A017", "141C2E", "586276", "FFFFFF", 94, "D4DAE6", True, "Arial"),
+    9: ("Shaftoli", "FFF7F2", "E0683A", "F4A261", "33221A", "7A6156", "FFFFFF", 92, "F3DACD", True, "Arial"),
+    10: ("Yalpiz", "F2FBF9", "11998E", "38EF7D", "11302B", "53716B", "FFFFFF", 92, "CDEDE6", True, "Arial"),
+    11: ("Qizil Klassik", "FCF8F7", "B3261E", "E57373", "2A1716", "6F5D5B", "FFFFFF", 92, "EED6D3", True, "Arial"),
+    12: ("Tungi Minimal", "121417", "8AB4F8", "C3D9FF", "EEF2F7", "A3ABB6", "1C2026", 90, "2E343D", False, "Arial"),
+    13: ("Binafsha Neon", "07050D", "C9A6FF", "FF5FC8", "F4EEFF", "B9AECB", "1C142C", 72, "B48CFF", False, "Arial"),
+    14: ("Ko'k Kosmos", "030914", "5CC8FF", "00F0FF", "EAF6FF", "9FB6CF", "0A1830", 72, "5CC8FF", False, "Arial"),
+    15: ("Yashil Zumrad", "03100B", "4BF0A0", "C8FF6B", "EAFFF3", "9CC9B2", "082218", 72, "4BF0A0", False, "Arial"),
+    16: ("Qizil Olov", "0D0505", "FF6A3D", "FFC24B", "FFF1EC", "D7AFA6", "280E0C", 72, "FF6A3D", False, "Arial"),
+    17: ("Firuza Neon", "021012", "2EE6D6", "7AF7FF", "E8FFFD", "9CC7C4", "06201F", 72, "2EE6D6", False, "Arial"),
+    18: ("Pushti Neon", "0F0510", "FF5CC8", "FFB3E6", "FFEFFA", "D3AFC6", "2A0E26", 72, "FF5CC8", False, "Arial"),
+    19: ("Sariq Elektr", "0D0B02", "FFE14D", "FFA600", "FFFBE6", "D2C9A0", "241F08", 72, "FFE14D", False, "Arial"),
+    20: ("Kiber Ko'k-Pushti", "070616", "6C8CFF", "FF4FD8", "F0F2FF", "AEB4D6", "141535", 72, "6C8CFF", False, "Arial"),
+    21: ("Oq Premium", "F7F5FC", "7B2CBF", "FF4FD8", "16121F", "6B6478", "FFFFFF", 80, "7B2CBF", True, "Arial"),
+    22: ("Pastel Orzu", "FFF4FA", "FF6FB5", "6C8CFF", "2F2448", "7A6E93", "FFFFFF", 66, "FF6FB5", True, "Arial"),
+    23: ("Oltin Lyuks", "0A0907", "F5D27A", "C99A2E", "F7EEDB", "C9BB9C", "1E1A12", 75, "F5D27A", False, "Arial"),
+    24: ("Aurora", "0A0618", "FF8AD8", "7FE3FF", "FFFFFF", "D5CCEA", "FFFFFF", 12, "FFFFFF", False, "Arial"),
+    25: ("Qora Olmos", "060607", "E6E8EE", "9AA3B5", "F5F6F8", "A9AEB8", "16171A", 80, "C9CED8", False, "Arial"),
+    26: ("Zumrad Lyuks", "03110C", "E9C46A", "2A9D8F", "F1F7F2", "A8C2B5", "0B2219", 78, "E9C46A", False, "Arial"),
+    27: ("Yoqut", "120307", "F2C46D", "E0245E", "FFF1F4", "D6AAB4", "2A0A12", 78, "F2C46D", False, "Arial"),
+    28: ("Safir", "030818", "E8C36A", "3D7BFF", "EEF3FF", "A6B4D4", "0C1631", 78, "E8C36A", False, "Arial"),
+    29: ("Shimoliy Yog'du", "020B10", "7CFFCB", "B67CFF", "EFFFF9", "A7C7C0", "0A1D22", 72, "7CFFCB", False, "Arial"),
+    30: ("Kosmik Tumanlik", "07030F", "FF9EE5", "8FB8FF", "F7F1FF", "C5B8DA", "1A1030", 70, "FF9EE5", False, "Arial"),
+    31: ("Marmar Oq", "FBFAF7", "A67C2E", "C9A45C", "1F1A12", "6E6452", "FFFFFF", 90, "D9C49A", True, "Arial"),
+    32: ("Quyosh Botishi", "120709", "FFB86B", "FF5E7E", "FFF4EC", "E0BFB4", "2A1214", 72, "FFB86B", False, "Arial"),
 }
-DEFAULT_THEME = 1
+TIER = {n: ('start' if n <= 12 else 'pro' if n <= 22 else 'premium') for n in THEMES}
+DEFAULT_THEME = 13
 
 LANG_NAMES = {"uz": "o'zbek (lotin yozuvida)", "ru": "rus", "en": "ingliz"}
 WORDS_PER_PAGE = 260  # Times New Roman 14, 1.5 interval
@@ -150,9 +175,20 @@ def work_lang(o, client_lang: str) -> str:
     return client_lang if client_lang in LANG_NAMES else "uz"
 
 
+PKG_MAX = {"start": 12, "pro": 22, "premium": 32}
+PKG_DEFAULT = {"start": 2, "pro": 13, "premium": 23}
+
+
 def theme_no(o, key: str) -> int:
-    m = re.search(r"№\s*(\d)", brief_dict(o).get(key, ""))
-    return int(m.group(1)) if m and int(m.group(1)) in THEMES else 0
+    """Mijoz tanlagan shablon raqami; paketidan yuqori shablon bo'lsa — paket standarti."""
+    pkg = (o["package"] or "") if "package" in o.keys() else ""
+    m = re.search(r"№\s*(\d{1,2})", brief_dict(o).get(key, ""))
+    n = int(m.group(1)) if m and int(m.group(1)) in THEMES else 0
+    if n and n > PKG_MAX.get(pkg, 32):
+        n = 0
+    if not n and key == "style":
+        n = PKG_DEFAULT.get(pkg, DEFAULT_THEME)
+    return n
 
 
 def order_context(o, svc_name: str, files_note: str) -> str:

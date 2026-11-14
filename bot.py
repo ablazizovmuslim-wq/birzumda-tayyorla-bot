@@ -95,7 +95,7 @@ def pe(key: str, fallback: str) -> str:
 
 logging.basicConfig(level=logging.INFO)
 
-from texts import (BRIEF_REQUIRED, BRIEF_REQ_TX, FX, TPL, TPL_TX, tpl_label, SAMPLE_PKG, SAMPLE_TX, BRIEF_GROUPS, BRIEF_LABEL, BRIEF_LABEL_TR, BRIEF_Q, BRIEF_TX, SVC_GROUP,  # noqa: E402
+from texts import (BRIEF_REQUIRED, BRIEF_REQ_TX, FX, TPL, TPL_TX, tpl_label, tpl_allowed, SAMPLE_PKG, SAMPLE_TX, BRIEF_GROUPS, BRIEF_LABEL, BRIEF_LABEL_TR, BRIEF_Q, BRIEF_TX, SVC_GROUP,  # noqa: E402
                    BTN, CAT_TR, CHANNEL_LINE, COMMANDS, CURRENCY, DESCRIPTION, SHORT_DESC, DEFAULT_LANG, FROM, LANGS, NEGOTIABLE, TURTLE_ADDON_TX, TX,  # noqa: E402
                    DEADLINES as DL_TR, STATUS as ST_TR)
 import autogen as AG  # noqa: E402
@@ -1081,10 +1081,15 @@ def brief_label(key: str, lang: str = "uz") -> str:
     return BRIEF_LABEL_TR.get(lang, {}).get(key) or BRIEF_LABEL[key]
 
 
-def brief_kb(lang: str, key: str):
+def brief_kb(lang: str, key: str, pkg: str = ""):
     opts = BRIEF_Q[key].get("opts", {}).get(lang, [])
-    btns = [(o, f"bq:o:{i}", "primary") for i, o in enumerate(opts)]
-    rows = [btns[i:i + 2] for i in range(0, len(btns), 2)]
+    if key in ("style", "cover"):  # 32 ta shablon — paketga ochiqlari, 4 tadan raqamli tugma
+        btns = [(f"№{n}", f"bq:o:{n - 1}", "primary") for n in tpl_allowed(pkg)]
+        rows = [btns[i:i + 4] for i in range(0, len(btns), 4)]
+        rows.append([(opts[-1], f"bq:o:{len(opts) - 1}", None)])
+    else:
+        btns = [(o, f"bq:o:{i}", "primary") for i, o in enumerate(opts)]
+        rows = [btns[i:i + 2] for i in range(0, len(btns), 2)]
     last = [(btr(lang, "finish"), "bq:done", "success")]
     if key not in BRIEF_REQUIRED:
         last.insert(0, (btr(lang, "skip"), "bq:skip", None))
@@ -1113,10 +1118,15 @@ async def ask_brief(m: Message, state: FSMContext, lang: str):
         await ask_files(m, state, lang)
         return
     q = BRIEF_Q[qs[i]]
+    pkg = data.get("pkg") or ""
+    extra = ""
     if qs[i] in ("style", "cover"):
-        await send_tpl_album(m, "s" if qs[i] == "style" else "c", lang, "album_" + qs[i])
-    await m.answer(f"<i>{btr(lang, 'step', i=i + 1, n=len(qs))}</i>\n{q.get(lang) or q['uz']}",
-                   reply_markup=brief_kb(lang, qs[i]))
+        await send_tpl_album(m, "s" if qs[i] == "style" else "c", lang, "album_" + qs[i], pkg)
+        mx = len(tpl_allowed(pkg))
+        if mx < len(TPL):
+            extra = "\n\n" + ttx(lang, "locked").format(a=mx + 1)
+    await m.answer(f"<i>{btr(lang, 'step', i=i + 1, n=len(qs))}</i>\n{q.get(lang) or q['uz']}{extra}",
+                   reply_markup=brief_kb(lang, qs[i], pkg))
 
 
 async def brief_next(m: Message, state: FSMContext, lang: str, answer: str | None, finish: bool = False):
@@ -1151,6 +1161,8 @@ async def brief_button(c: CallbackQuery, state: FSMContext):
     if parts[1] == "o" and i < len(qs):
         opts = BRIEF_Q[qs[i]].get("opts", {}).get(lang, [])
         idx = int(parts[2])
+        if qs[i] in ("style", "cover") and idx < len(TPL) and idx + 1 not in tpl_allowed(data.get("pkg") or ""):
+            return
         await brief_next(c.message, state, lang, opts[idx] if idx < len(opts) else None)
     elif parts[1] == "skip":
         if i < len(qs) and qs[i] in BRIEF_REQUIRED:
@@ -1221,9 +1233,20 @@ def ttx(lang: str, key: str) -> str:
     return TPL_TX[key].get(lang) or TPL_TX[key]["uz"]
 
 
-async def send_tpl_album(m: Message, kind: str, lang: str, title_key: str):
-    """8 ta shablon rasmini albom qilib yuboradi (file_id keshlanadi)."""
-    paths = [str(SAMPLES / f"tpl_{kind}{n}.jpg") for n in TPL]
+def tpl_sheets(kind: str, pkg: str = "") -> list:
+    """Shablon varaqlari: slayd — paket darajasigacha (start/pro/premium), muqova — 2 ta varaq."""
+    if kind == "c":
+        names = ["tpl_csheet1.jpg", "tpl_csheet2.jpg"]
+    else:
+        tiers = ["start", "pro", "premium"]
+        top = {"start": 1, "pro": 2}.get(pkg or "", 3)
+        names = [f"tpl_sheet_{t}.jpg" for t in tiers[:top]]
+    return [str(SAMPLES / x) for x in names]
+
+
+async def send_tpl_album(m: Message, kind: str, lang: str, title_key: str, pkg: str = ""):
+    """Shablon varaqlarini albom qilib yuboradi (file_id keshlanadi)."""
+    paths = tpl_sheets(kind, pkg)
     if not all(os.path.exists(x) for x in paths):
         return
     media = [InputMediaPhoto(media=PHOTO_CACHE.get(x) or FSInputFile(x),
@@ -1239,7 +1262,7 @@ async def send_tpl_album(m: Message, kind: str, lang: str, title_key: str):
 @router.message(Command("shablon", "templates"))
 async def templates_cmd(m: Message):
     lang = L(m.from_user.id)
-    await m.answer(ttx(lang, "gallery"))
+    await m.answer(ttx(lang, "gallery") + "\n\n" + ttx(lang, "tiers"))
     await send_tpl_album(m, "s", lang, "album_style")
     await send_tpl_album(m, "c", lang, "album_cover")
 
@@ -1248,6 +1271,7 @@ async def templates_cmd(m: Message):
 async def templates_cb(c: CallbackQuery):
     await c.answer()
     lang = L(c.from_user.id)
+    await c.message.answer(ttx(lang, "gallery") + "\n\n" + ttx(lang, "tiers"))
     await send_tpl_album(c.message, "s", lang, "album_style")
     await send_tpl_album(c.message, "c", lang, "album_cover")
 
@@ -1554,7 +1578,7 @@ async def webapp_data(m: Message, state: FSMContext):
         tpl = int(d.get("tpl") or 0)
     except (TypeError, ValueError):
         tpl = 0
-    if tpl in TPL:
+    if tpl in TPL and tpl in tpl_allowed(pkg if "packages" in s else ""):
         key = "cover" if d.get("tpl_kind") == "c" else "style"
         await state.update_data(preset_brief=[[key, tpl_label(tpl, lang)]])
     code = str(d.get("promo", "")).strip().upper()[:32]

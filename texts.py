@@ -738,26 +738,66 @@ FX = {
 }
 
 
-# ------------------------------------------------------------------ 🎨 dizayn shablonlari (8 ta)
+# ------------------------------------------------------------------ 🎨 dizayn shablonlari (32 ta)
+# 1–12 Start (toza), 13–22 Professional (neon), 23–32 Premium (lyuks)
 TPL = {
-    1: {"uz": "Binafsha Neon", "ru": "Фиолетовый неон", "en": "Purple Neon"},
-    2: {"uz": "Ko'k Kosmos", "ru": "Синий космос", "en": "Blue Cosmos"},
-    3: {"uz": "Yashil Zumrad", "ru": "Изумрудный", "en": "Emerald"},
-    4: {"uz": "Oq Premium", "ru": "Белый премиум", "en": "White Premium"},
-    5: {"uz": "Qizil Olov", "ru": "Красный огонь", "en": "Red Fire"},
-    6: {"uz": "Oltin Lyuks", "ru": "Золотой люкс", "en": "Gold Luxe"},
-    7: {"uz": "Pastel Orzu", "ru": "Пастельная мечта", "en": "Pastel Dream"},
-    8: {"uz": "Aurora Gradient", "ru": "Аврора", "en": "Aurora Gradient"},
+    1: {"uz": "Oq Klassik", "ru": "Белая классика", "en": "White Classic"},
+    2: {"uz": "Moviy Osmon", "ru": "Голубое небо", "en": "Sky Blue"},
+    3: {"uz": "Yashil Bahor", "ru": "Весенняя зелень", "en": "Spring Green"},
+    4: {"uz": "Pushti Pastel", "ru": "Розовая пастель", "en": "Pink Pastel"},
+    5: {"uz": "Quyoshli Sariq", "ru": "Солнечный жёлтый", "en": "Sunny Yellow"},
+    6: {"uz": "Lavanda", "ru": "Лаванда", "en": "Lavender"},
+    7: {"uz": "Kulrang Minimal", "ru": "Серый минимализм", "en": "Gray Minimal"},
+    8: {"uz": "Akademik Ko'k", "ru": "Академический синий", "en": "Academic Navy"},
+    9: {"uz": "Shaftoli", "ru": "Персик", "en": "Peach"},
+    10: {"uz": "Yalpiz", "ru": "Мята", "en": "Mint"},
+    11: {"uz": "Qizil Klassik", "ru": "Красная классика", "en": "Classic Red"},
+    12: {"uz": "Tungi Minimal", "ru": "Ночной минимализм", "en": "Night Minimal"},
+    13: {"uz": "Binafsha Neon", "ru": "Фиолетовый неон", "en": "Purple Neon"},
+    14: {"uz": "Ko'k Kosmos", "ru": "Синий космос", "en": "Blue Cosmos"},
+    15: {"uz": "Yashil Zumrad", "ru": "Изумрудный неон", "en": "Emerald Neon"},
+    16: {"uz": "Qizil Olov", "ru": "Красный огонь", "en": "Red Fire"},
+    17: {"uz": "Firuza Neon", "ru": "Бирюзовый неон", "en": "Teal Neon"},
+    18: {"uz": "Pushti Neon", "ru": "Розовый неон", "en": "Pink Neon"},
+    19: {"uz": "Sariq Elektr", "ru": "Электро-жёлтый", "en": "Electric Yellow"},
+    20: {"uz": "Kiber Ko'k-Pushti", "ru": "Кибер синий-розовый", "en": "Cyber Blue-Pink"},
+    21: {"uz": "Oq Premium", "ru": "Белый премиум", "en": "White Premium"},
+    22: {"uz": "Pastel Orzu", "ru": "Пастельная мечта", "en": "Pastel Dream"},
+    23: {"uz": "Oltin Lyuks", "ru": "Золотой люкс", "en": "Gold Luxe"},
+    24: {"uz": "Aurora", "ru": "Аврора", "en": "Aurora"},
+    25: {"uz": "Qora Olmos", "ru": "Чёрный бриллиант", "en": "Black Diamond"},
+    26: {"uz": "Zumrad Lyuks", "ru": "Изумрудный люкс", "en": "Emerald Luxe"},
+    27: {"uz": "Yoqut", "ru": "Рубин", "en": "Ruby"},
+    28: {"uz": "Safir", "ru": "Сапфир", "en": "Sapphire"},
+    29: {"uz": "Shimoliy Yog'du", "ru": "Северное сияние", "en": "Northern Lights"},
+    30: {"uz": "Kosmik Tumanlik", "ru": "Космическая туманность", "en": "Cosmic Nebula"},
+    31: {"uz": "Marmar Oq", "ru": "Белый мрамор", "en": "White Marble"},
+    32: {"uz": "Quyosh Botishi", "ru": "Закат", "en": "Sunset"},
 }
+TPL_TIER = {n: ("start" if n <= 12 else "pro" if n <= 22 else "premium") for n in TPL}
+TIER_MAX = {"start": 12, "pro": 22, "premium": 32}
+
+
+def tpl_allowed(pkg: str) -> list:
+    """Paketga qarab ochiq shablonlar: Start 1–12, Pro 1–22, Premium 1–32 (paketsiz — hammasi)."""
+    return [n for n in TPL if n <= TIER_MAX.get(pkg or "", 32)]
+
+
 TPL_ANY = {"uz": "🤷 Farqi yo'q", "ru": "🤷 Неважно", "en": "🤷 No preference"}
 TPL_TX = {
-    "album_style": {"uz": "🎨 <b>Slayd dizayn shablonlari</b> — 8 ta uslub. Pastdagi tugmalardan raqamini tanlang 👇",
-                    "ru": "🎨 <b>Шаблоны дизайна слайдов</b> — 8 стилей. Выберите номер кнопкой ниже 👇",
-                    "en": "🎨 <b>Slide design templates</b> — 8 styles. Pick a number with the buttons below 👇"},
-    "album_cover": {"uz": "📄 <b>Muqova shablonlari</b> — 8 ta uslub. Pastdagi tugmalardan raqamini tanlang 👇",
-                    "ru": "📄 <b>Шаблоны обложки</b> — 8 стилей. Выберите номер кнопкой ниже 👇",
-                    "en": "📄 <b>Cover templates</b> — 8 styles. Pick a number with the buttons below 👇"},
-    "gallery": {"uz": "🎨 <b>Dizayn shablonlari</b>\nBuyurtma berishda o'zingizga yoqqanini tanlaysiz.",
+    "album_style": {"uz": "🎨 <b>Slayd dizayn shablonlari</b> — paketingizga ochiq uslublar. Pastdagi tugmalardan raqamini tanlang 👇",
+                    "ru": "🎨 <b>Шаблоны дизайна слайдов</b> — стили, доступные в вашем пакете. Выберите номер кнопкой ниже 👇",
+                    "en": "🎨 <b>Slide design templates</b> — styles open for your package. Pick a number with the buttons below 👇"},
+    "album_cover": {"uz": "📄 <b>Muqova shablonlari</b> — 32 ta uslub. Pastdagi tugmalardan raqamini tanlang 👇",
+                    "ru": "📄 <b>Шаблоны обложки</b> — 32 стиля. Выберите номер кнопкой ниже 👇",
+                    "en": "📄 <b>Cover templates</b> — 32 styles. Pick a number with the buttons below 👇"},
+    "locked": {"uz": "🔒 №{a}–32 shablonlar yuqoriroq paketda ochiladi (Professional: 1–22, Premium: 1–32).",
+               "ru": "🔒 Шаблоны №{a}–32 открываются в старшем пакете (Professional: 1–22, Premium: 1–32).",
+               "en": "🔒 Templates №{a}–32 unlock in a higher package (Professional: 1–22, Premium: 1–32)."},
+    "tiers": {"uz": "⭐ <b>Start</b> 1–12 · 💜 <b>Professional</b> 13–22 · 👑 <b>Premium</b> 23–32",
+              "ru": "⭐ <b>Start</b> 1–12 · 💜 <b>Professional</b> 13–22 · 👑 <b>Premium</b> 23–32",
+              "en": "⭐ <b>Start</b> 1–12 · 💜 <b>Professional</b> 13–22 · 👑 <b>Premium</b> 23–32"},
+    "gallery": {"uz": "🎨 <b>Dizayn shablonlari — 32 ta</b>\nBuyurtma berishda o'zingizga yoqqanini tanlaysiz.",
                 "ru": "🎨 <b>Шаблоны дизайна</b>\nВыберете понравившийся при оформлении заказа.",
                 "en": "🎨 <b>Design templates</b>\nYou pick the one you like when ordering."},
     "btn": {"uz": "🎨 Dizayn shablonlari", "ru": "🎨 Шаблоны дизайна", "en": "🎨 Design templates"},
