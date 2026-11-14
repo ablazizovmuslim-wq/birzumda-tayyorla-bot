@@ -2879,6 +2879,20 @@ async def javob_cmd(m: Message, command: CommandObject, bot: Bot):
 AD_FILE = BASE / "reklama.mp4"
 
 
+def sync_ad_file():
+    """Repodagi reklama.mp4 almashtirilgan bo'lsa — eski file_id ni o'chiradi va hamma uni yana bir marta ko'radi."""
+    if not AD_FILE.exists():
+        return
+    import hashlib
+    h = hashlib.md5(AD_FILE.read_bytes()).hexdigest()
+    if get_setting("ad_hash") != h:
+        set_setting("ad_hash", h)
+        set_setting("ad_file_id", None)
+        with db() as con:
+            con.execute("UPDATE users SET ad_seen=0")
+        logging.info("Yangi reklama video aniqlandi — hamma uni bir marta ko'radi")
+
+
 async def send_ad(m: Message):
     fid = get_setting("ad_file_id")
     try:
@@ -2897,6 +2911,9 @@ async def set_ad(m: Message):
     if not is_admin(m.from_user.id):
         return
     set_setting("ad_file_id", m.video.file_id)
+    if AD_FILE.exists():
+        import hashlib
+        set_setting("ad_hash", hashlib.md5(AD_FILE.read_bytes()).hexdigest())
     with db() as con:
         con.execute("UPDATE users SET ad_seen=0")
     await m.answer("✅ Reklama video yangilandi. Endi /start bosgan har bir foydalanuvchi uni bir marta ko'radi.")
@@ -3412,6 +3429,7 @@ async def main():
     if not BOT_TOKEN:
         raise SystemExit("BOT_TOKEN o'rnatilmagan")
     init_db()
+    sync_ad_file()
     bot = Bot(BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     bot.session.middleware(RetryMiddleware())
     dp = Dispatcher()
