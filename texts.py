@@ -649,6 +649,12 @@ SAMPLE_TX = {
 
 # ------------------------------------------------------------------ yangi funksiyalar: sharh, guruh, do'kon, sodiqlik...
 FX = {
+    "auto_wait": {"uz": "✅ <b>To'lov tasdiqlandi!</b> Buyurtma #{oid} 🛠\n\n⚡ Ishingiz <b>hozir tayyorlanmoqda</b> — bir necha daqiqada shu chatga keladi 📩",
+                  "ru": "✅ <b>Оплата подтверждена!</b> Заказ #{oid} 🛠\n\n⚡ Работа <b>уже готовится</b> — через несколько минут придёт в этот чат 📩",
+                  "en": "✅ <b>Payment confirmed!</b> Order #{oid} 🛠\n\n⚡ Your work is <b>being prepared now</b> — it will arrive in this chat in a few minutes 📩"},
+    "auto_manual": {"uz": "🛠 Buyurtma #{oid} ustida ishlayapmiz — sifatli chiqishi uchun biroz ko'proq vaqt kerak.\n⏰ Tayyor bo'ladi: <b>{due}</b> gacha. Fayl shu chatga keladi 📩",
+                    "ru": "🛠 Работаем над заказом #{oid} — чтобы всё было качественно, нужно чуть больше времени.\n⏰ Будет готово: до <b>{due}</b>. Файл придёт в этот чат 📩",
+                    "en": "🛠 We're working on order #{oid} — it needs a bit more time to be done right.\n⏰ Ready by: <b>{due}</b>. The file will arrive in this chat 📩"},
     "rv_ask": {"uz": "{e[star]} <b>Ishimiz yoqdimi?</b>\nBuyurtma #{oid} ni baholang:",
                "ru": "{e[star]} <b>Понравилась работа?</b>\nОцените заказ #{oid}:",
                "en": "{e[star]} <b>Did you like it?</b>\nRate order #{oid}:"},

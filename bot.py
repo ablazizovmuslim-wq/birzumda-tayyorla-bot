@@ -97,6 +97,7 @@ logging.basicConfig(level=logging.INFO)
 from texts import (FX, TPL, TPL_TX, tpl_label, SAMPLE_PKG, SAMPLE_TX, BRIEF_GROUPS, BRIEF_LABEL, BRIEF_LABEL_TR, BRIEF_Q, BRIEF_TX, SVC_GROUP,  # noqa: E402
                    BTN, CAT_TR, CHANNEL_LINE, COMMANDS, CURRENCY, DESCRIPTION, SHORT_DESC, DEFAULT_LANG, FROM, LANGS, NEGOTIABLE, TURTLE_ADDON_TX, TX,  # noqa: E402
                    DEADLINES as DL_TR, STATUS as ST_TR)
+import autogen as AG  # noqa: E402
 
 # Matnlardagi {e[kalit]} uchun premium emoji (ID bo'lmasa oddiy emoji)
 E_FALLBACK = {"hi": "👋", "star": "✨", "bot": "🤖", "student": "🎓", "teacher": "👩‍🏫", "edit": "✍️",
@@ -244,7 +245,8 @@ def init_db():
             ("orders", "promo", "TEXT DEFAULT ''"), ("orders", "bonus_used", "INTEGER DEFAULT 0"),
             ("orders", "welcome", "INTEGER DEFAULT 0"), ("orders", "brief", "TEXT DEFAULT '[]'"), ("orders", "turtle", "INTEGER DEFAULT 0"),
             ("orders", "qty", "INTEGER DEFAULT 1"), ("orders", "paid_at", "TEXT"), ("orders", "remind_pay", "INTEGER DEFAULT 0"),
-            ("orders", "remind_adm", "INTEGER DEFAULT 0"), ("orders", "shop_id", "INTEGER")]:
+            ("orders", "remind_adm", "INTEGER DEFAULT 0"), ("orders", "shop_id", "INTEGER"),
+            ("orders", "ai_cost", "REAL DEFAULT 0"), ("orders", "auto", "TEXT DEFAULT ''")]:
             cols = {r["name"] for r in con.execute(f"PRAGMA table_info({table})")}
             if col not in cols:
                 con.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
@@ -1556,6 +1558,8 @@ async def accept_cheque(m: Message, bot: Bot, oid: int):
     await m.answer(tr(L(m.from_user.id), "cheque_ok"), reply_markup=mkb(m.from_user.id))
     o = get_order(oid)
     text = "🧾 Chek keldi!\n\n" + order_text(o, True)
+    if auto_ready(o):
+        text += "\n\n🤖 <b>Tasdiqlasangiz — ish avtomatik tayyorlanib, mijozga darhol yuboriladi.</b>"
     if m.photo:
         await notify_admins(bot, text, admin_kb(oid, "paid"), photo=m.photo[-1].file_id)
     else:
@@ -2200,6 +2204,140 @@ async def daromad_cmd(m: Message):
                    f"🏆 <b>Eng ko'p daromad:</b>\n{lines or '—'}")
 
 
+# ------------------------------------------------------------------ 🤖 avtomatik bajarish
+AUTO_LOW_USD = 1.0
+
+
+def auto_on() -> bool:
+    return AG.enabled() and get_setting("auto_mode", "on") == "on"
+
+
+def auto_ready(o) -> bool:
+    return auto_on() and AG.kind_for(o) is not None and o["service"] != "shop"
+
+
+def api_balance():
+    try:
+        top = float(get_setting("api_topup", "0") or 0)
+    except ValueError:
+        top = 0.0
+    with db() as con:
+        spent = con.execute("SELECT COALESCE(SUM(ai_cost),0) FROM orders").fetchone()[0] or 0.0
+    return top, spent, (top - spent if top else None)
+
+
+async def check_low_balance(bot: Bot):
+    top, spent, left = api_balance()
+    if left is None:
+        return
+    if left < AUTO_LOW_USD and get_setting("api_low_warned") != "1":
+        set_setting("api_low_warned", "1")
+        await notify_admins(bot, f"⚠️ <b>API balansi tugayapti</b>: taxminan <b>${max(left, 0):.2f}</b> qoldi "
+                                 f"(to'ldirilgan ${top:.2f}, sarflangan ${spent:.2f}).\n"
+                                 "platform.claude.com → Billing da to'ldiring, keyin yozing: <code>/avto +5</code>")
+
+
+async def run_auto(bot: Bot, oid: int, to_client: bool = True):
+    o = get_order(oid)
+    if not o:
+        return
+    ul = L(o["user_id"])
+    acc = AG.cost_tracker()
+    with db() as con:
+        con.execute("UPDATE orders SET auto='run' WHERE id=?", (oid,))
+    try:
+        name, data, report = await asyncio.wait_for(
+            AG.generate(bot, o, svc_tr(o["audience"], o["service"], "uz")[0], ul), timeout=900)
+        file = BufferedInputFile(data, filename=name)
+        cost = acc[0]
+        with db() as con:
+            con.execute("UPDATE orders SET auto='ok', ai_cost=COALESCE(ai_cost,0)+? WHERE id=?", (cost, oid))
+        kb = ikb([[("🔁 Qayta yaratish", f"adm:regen:{oid}", None)]] +
+                 ([] if to_client else [[("📤 Mijozga yuborish", f"adm:pushai:{oid}", "success")]]))
+        cap = (f"🤖 #{oid} — {'mijozga yuborildi ✅' if to_client else 'yangi variant (mijoz hali ko‘rmadi)'}\n"
+               f"{html.escape(service_label(o))} · {report}\n💵 ${cost:.2f}")
+        sent_fid = None
+        for aid in ADMIN_IDS:
+            try:
+                msg = await bot.send_document(aid, file, caption=cap, reply_markup=kb)
+                if msg and msg.document:
+                    sent_fid = sent_fid or msg.document.file_id
+                    file = msg.document.file_id  # keyingi yuborishlar uchun qayta yuklamaymiz
+            except Exception as e:
+                logging.warning("Admin nusxasi yuborilmadi: %s", e)
+        if sent_fid:
+            set_setting(f"ai_file_{oid}", sent_fid)
+        if to_client:
+            await bot.send_document(o["user_id"], file, caption=tr(ul, "file_cap", oid=oid))
+            set_status(oid, "done")
+            await bot.send_message(o["user_id"], tr(ul, "done", oid=oid, contact=CONTACT))
+            await ask_review(bot, get_order(oid))
+    except Exception as e:
+        cost = acc[0]
+        with db() as con:
+            con.execute("UPDATE orders SET auto='fail', ai_cost=COALESCE(ai_cost,0)+? WHERE id=?", (cost, oid))
+        logging.warning("Avto #%s xato: %s", oid, e)
+        msg = str(e)[:300]
+        if to_client:
+            due = due_time(get_order(oid))
+            try:
+                await bot.send_message(o["user_id"], fx(ul, "auto_manual", oid=oid, due=fmt_local(due) if due else "—"))
+            except Exception:
+                pass
+        head = "💳 <b>API balansi tugagan!</b>" if msg.startswith("BALANS") else "⚠️ <b>Avtomatik bajarilmadi</b>"
+        await notify_admins(bot, f"{head} — #{oid}\n<code>{html.escape(msg)}</code>\n\n"
+                                 + (f"Mijozga muddat yozildi. Qo'lda bajaring: /yubor_{oid}" if to_client else ""),
+                            admin_kb(oid, "work") if to_client else None)
+    await check_low_balance(bot)
+
+
+@router.message(Command("avto", "auto"))
+async def avto_cmd(m: Message, command: CommandObject, bot: Bot):
+    if not is_admin(m.from_user.id):
+        return
+    arg = (command.args or "").strip().lower().replace(",", ".")
+    if arg in ("on", "yoq", "yoqish"):
+        set_setting("auto_mode", "on")
+    elif arg in ("off", "o'chir", "ochir"):
+        set_setting("auto_mode", "off")
+    elif arg.startswith("+"):
+        try:
+            add = float(arg[1:].replace("$", ""))
+            top = float(get_setting("api_topup", "0") or 0)
+            set_setting("api_topup", f"{top + add:.2f}")
+            set_setting("api_low_warned", None)
+        except ValueError:
+            await m.answer("Masalan: <code>/avto +5</code>")
+            return
+    elif arg.startswith("balans"):
+        try:
+            left = float(arg.split()[1].replace("$", ""))
+            _, spent, _ = api_balance()
+            set_setting("api_topup", f"{spent + left:.2f}")
+            set_setting("api_low_warned", None)
+        except (IndexError, ValueError):
+            await m.answer("Masalan: <code>/avto balans 4.30</code> — platform.claude.com dagi qoldiq")
+            return
+    top, spent, left = api_balance()
+    month = datetime.now().strftime("%Y-%m")
+    with db() as con:
+        r = con.execute("SELECT COUNT(*), COALESCE(SUM(ai_cost),0) FROM orders WHERE auto='ok' AND substr(paid_at,1,7)=?",
+                        (month,)).fetchone()
+        fails = con.execute("SELECT COUNT(*) FROM orders WHERE auto='fail' AND substr(paid_at,1,7)=?", (month,)).fetchone()[0]
+    state = ("🟢 YOQILGAN" if auto_on() else "🔴 O'CHIRILGAN" if AG.enabled() else "⚪ API kalit yo'q (Railway → Variables → ANTHROPIC_API_KEY)")
+    avg = (r[1] / r[0]) if r[0] else 0
+    await m.answer(
+        f"🤖 <b>Avtomatik bajarish</b>: {state}\n\n"
+        f"Bu oy: <b>{r[0]}</b> ta ish avtomatik, {fails} ta qo'lda qoldi\n"
+        f"Bu oy sarf: <b>${r[1]:.2f}</b>" + (f" (o'rtacha ${avg:.2f} / ish)" if r[0] else "") + "\n"
+        + (f"API balansi: taxminan <b>${max(left, 0):.2f}</b> qoldi (to'ldirilgan ${top:.2f})\n" if left is not None
+           else "API balansi: kiritilmagan — <code>/avto +5</code> deb yozing\n")
+        + "\n<b>Avtomatik:</b> slayd (talaba), mustaqil ish, kurs ishi, referat, maqola, amaliy ish; ustozlar: taqdimot (Start), "
+          "tadbir, maqola, test, dars ishlanmasi.\n<b>Qo'lda:</b> portfolio, O'UM, Boshqa, toshbaqa o'qituvchi, guruh buyurtmalari.\n\n"
+          "<code>/avto off</code> — o'chirish · <code>/avto on</code> — yoqish\n"
+          "<code>/avto +5</code> — $5 to'ldirdim · <code>/avto balans 4.30</code> — aniq qoldiq")
+
+
 # ------------------------------------------------------------------ ⏰ eslatmalar (muddat va to'lov)
 PKG_HOURS = {"start": 3, "pro": 6, "premium": 12}  # to'lovdan keyin, soatda
 URGENT_HOURS = 2
@@ -2330,6 +2468,7 @@ async def admin_help(m: Message):
         "📊 /daromad — daromad · /stats — statistika · /orders — oxirgi buyurtmalar\n"
         "⏰ /muddat — ishdagi buyurtmalar muddati\n"
         "📤 /yubor 12 — tayyor ishni mijozga yuborish\n"
+        "🤖 /avto — avtomatik bajarish, API balansi\n"
         "📋 <code>/tz 12</code> — texnik topshiriq\n"
         "⭐ /reviews — sharhlar\n"
         "📦 /dokon — tayyor ishlar · fayl + <code>/sell 15000 Nomi</code> · rasm + <code>/preview ID</code> · "
@@ -2367,6 +2506,13 @@ async def admin_action(c: CallbackQuery, state: FSMContext, bot: Bot):
             set_status(oid, "work")
             o = get_order(oid)
             due = due_time(o)
+            if auto_ready(o):
+                await bot.send_message(o["user_id"], fx(ul, "auto_wait", oid=oid))
+                await c.message.answer(f"#{oid} — ✅ tasdiqlandi. 🤖 Ish avtomatik tayyorlanmoqda (1–5 daqiqa), tayyor bo'lgach "
+                                       "mijozga yuboriladi va sizga nusxasi keladi.")
+                asyncio.create_task(run_auto(bot, oid))
+                await c.answer()
+                return
             await bot.send_message(o["user_id"], tr(ul, "paid_ok", oid=oid, due=fmt_local(due) if due else "—"))
             if (o["qty"] or 1) >= 5 and GROUP_BONUS:
                 add_bonus(o["user_id"], GROUP_BONUS)
@@ -2393,6 +2539,17 @@ async def admin_action(c: CallbackQuery, state: FSMContext, bot: Bot):
                                "qo'yib mijozga yuboradi. Tugatgach /done yozing.")
     elif act == "rvpub":
         await publish_review(c, bot, oid)
+    elif act == "regen":
+        await c.message.answer(f"🔁 #{oid} qayta yaratilmoqda… Tayyor bo'lgach avval sizga keladi (mijozga emas).")
+        asyncio.create_task(run_auto(bot, oid, to_client=False))
+    elif act == "pushai":
+        fid = get_setting(f"ai_file_{oid}")
+        if not fid:
+            await c.answer("Fayl topilmadi", show_alert=True)
+            return
+        ul = L(o["user_id"])
+        await bot.send_document(o["user_id"], fid, caption=tr(ul, "file_cap", oid=oid) + " (yangilangan)")
+        await c.message.answer(f"#{oid} — yangi variant mijozga yuborildi ✅")
     elif act == "send":
         await state.set_state(AdminSend.file)
         await state.update_data(send_oid=oid)
