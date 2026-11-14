@@ -31,7 +31,7 @@ from aiogram.filters import Command, CommandObject, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import (CallbackQuery, FSInputFile, InlineKeyboardButton,
-                           InlineKeyboardMarkup, InputMediaPhoto, KeyboardButton, LinkPreviewOptions, BufferedInputFile,
+                           InlineKeyboardMarkup, InputMediaDocument, InputMediaPhoto, KeyboardButton, LinkPreviewOptions, BufferedInputFile,
                            Message, ReplyKeyboardMarkup, WebAppInfo)
 
 # ------------------------------------------------------------------ sozlamalar
@@ -94,7 +94,7 @@ def pe(key: str, fallback: str) -> str:
 
 logging.basicConfig(level=logging.INFO)
 
-from texts import (FX, SAMPLE_PKG, SAMPLE_TX, BRIEF_GROUPS, BRIEF_LABEL, BRIEF_LABEL_TR, BRIEF_Q, BRIEF_TX, SVC_GROUP,  # noqa: E402
+from texts import (FX, TPL, TPL_TX, tpl_label, SAMPLE_PKG, SAMPLE_TX, BRIEF_GROUPS, BRIEF_LABEL, BRIEF_LABEL_TR, BRIEF_Q, BRIEF_TX, SVC_GROUP,  # noqa: E402
                    BTN, CAT_TR, CHANNEL_LINE, COMMANDS, CURRENCY, DESCRIPTION, SHORT_DESC, DEFAULT_LANG, FROM, LANGS, NEGOTIABLE, TURTLE_ADDON_TX, TX,  # noqa: E402
                    DEADLINES as DL_TR, STATUS as ST_TR)
 
@@ -897,6 +897,7 @@ def sample_kb(k: int, i: int, lang: str):
              for j in SAMPLE_NAMES]]
     if sample_pptx(k):
         rows.append([(stx(lang, "download"), f"smp:dl:{k}", None, "down")])
+    rows.append([(ttx(lang, "btn"), "tpl:gallery", "primary", "image")])
     rows.append([(b(lang, "order"), "go_order", "success", "order")])
     return ikb(rows)
 
@@ -1069,7 +1070,9 @@ async def start_brief(m: Message, state: FSMContext, lang: str):
     qs = list(BRIEF_GROUPS[SVC_GROUP.get(data.get("svc"), "other")])
     if data.get("details") and "extra" in qs:  # Mini ilovada qo'shimcha yozilgan
         qs.remove("extra")
-    await state.update_data(bq=qs, bi=0, brief=[])
+    preset = data.get("preset_brief", [])  # Mini ilovada tanlangan shablon
+    qs = [q for q in qs if q not in {k for k, _ in preset}]
+    await state.update_data(bq=qs, bi=0, brief=list(preset), preset_brief=[])
     await state.set_state(Brief.q)
     await m.answer(btr(lang, "intro"))
     await ask_brief(m, state, lang)
@@ -1083,6 +1086,8 @@ async def ask_brief(m: Message, state: FSMContext, lang: str):
         await ask_files(m, state, lang)
         return
     q = BRIEF_Q[qs[i]]
+    if qs[i] in ("style", "cover"):
+        await send_tpl_album(m, "s" if qs[i] == "style" else "c", lang, "album_" + qs[i])
     await m.answer(f"<i>{btr(lang, 'step', i=i + 1, n=len(qs))}</i>\n{q.get(lang) or q['uz']}",
                    reply_markup=brief_kb(lang, qs[i]))
 
@@ -1136,7 +1141,10 @@ def tz_text(o) -> str:
         brief = json.loads(o["brief"] or "[]")
     except (TypeError, json.JSONDecodeError):
         brief = []
-    files = len(json.loads(o["files"] or "[]"))
+    flist = json.loads(o["files"] or "[]")
+    files = len(flist)
+    ph, dc = file_counts(flist)
+    notes = [f"  {i}) {f['cap']}" for i, f in enumerate(flist, 1) if f.get("cap")]
     tk = o["turtle"] if "turtle" in o.keys() else ""
     lines = [f"Buyurtma #{o['id']}: {service_label(o)}" + (f" — {o['qty']} ta ish" if o["qty"] and o["qty"] > 1 else ""),
              f"Kim uchun: {'Talabalar' if o['audience'] == 's' else 'Ustozlar'}",
@@ -1148,7 +1156,9 @@ def tz_text(o) -> str:
         lines.append("🐢 Toshbaqa o'qituvchi: HA" + (" (paketga kiradi)" if tk == "in" else f" (+{money(TURTLE_ADDON)})"))
     lines += [f"Muddat turi: {DEADLINES.get(o['deadline'], o['deadline'])}",
               f"Mijoz tili: {LANGS.get(L(o['user_id']), '')}",
-              f"Fayllar: {files} ta" + (" (yuqorida yuborildi)" if files else "")]
+              f"Mijoz rasmlari/fayllari: {files} ta" + (f" (rasm: {ph}, hujjat: {dc}) — yuqorida yuborildi" if files else "")]
+    if notes:
+        lines += ["Rasmlarga izohlar:"] + notes
     return "\n".join(lines)
 
 
@@ -1169,26 +1179,111 @@ async def tz_cmd(m: Message, command: CommandObject, bot: Bot):
     await m.answer(f"📋 <b>TEXNIK TOPSHIRIQ #{o['id']}</b>\n<pre>{html.escape(tz_text(o))[:3800]}</pre>")
 
 
+def ttx(lang: str, key: str) -> str:
+    return TPL_TX[key].get(lang) or TPL_TX[key]["uz"]
+
+
+async def send_tpl_album(m: Message, kind: str, lang: str, title_key: str):
+    """8 ta shablon rasmini albom qilib yuboradi (file_id keshlanadi)."""
+    paths = [str(SAMPLES / f"tpl_{kind}{n}.jpg") for n in TPL]
+    if not all(os.path.exists(x) for x in paths):
+        return
+    media = [InputMediaPhoto(media=PHOTO_CACHE.get(x) or FSInputFile(x),
+                             caption=ttx(lang, title_key) if i == 0 else None) for i, x in enumerate(paths)]
+    try:
+        msgs = await m.answer_media_group(media)
+        for x, mm in zip(paths, msgs):
+            remember_photo(x, mm)
+    except Exception as e:
+        logging.warning("Shablon albomi yuborilmadi: %s", e)
+
+
+@router.message(Command("shablon", "templates"))
+async def templates_cmd(m: Message):
+    lang = L(m.from_user.id)
+    await m.answer(ttx(lang, "gallery"))
+    await send_tpl_album(m, "s", lang, "album_style")
+    await send_tpl_album(m, "c", lang, "album_cover")
+
+
+@router.callback_query(F.data == "tpl:gallery")
+async def templates_cb(c: CallbackQuery):
+    await c.answer()
+    lang = L(c.from_user.id)
+    await send_tpl_album(c.message, "s", lang, "album_style")
+    await send_tpl_album(c.message, "c", lang, "album_cover")
+
+
 async def ask_files(m: Message, state: FSMContext, lang: str = DEFAULT_LANG):
     await state.set_state(Order.files)
     await state.update_data(files=[])
-    await m.answer(tr(lang, "files_ask"), reply_markup=ikb([[(b(lang, "files_done"), "files_done", "success")]]))
+    await m.answer(tr(lang, "files_ask", mx=MAX_FILES), reply_markup=ikb([[(b(lang, "files_done"), "files_done", "success")]]))
 
 
-@router.message(Order.files, F.document | F.photo)
+MAX_FILES = 30
+_FILE_LOCKS: dict = {}
+_ALBUM_ACK: set = set()
+
+
+def file_counts(files) -> tuple:
+    ph = sum(1 for f in files if f["type"] == "photo" or f.get("img"))
+    return ph, len(files) - ph
+
+
+@router.message(Order.files, F.document | F.photo | F.video)
 async def got_file(m: Message, state: FSMContext):
+    """Mijoz rasmlarini yuboradi: bittadan yoki galereyadan albom qilib (bir nechta birdan)."""
+    lang = L(m.from_user.id)
+    lock = _FILE_LOCKS.setdefault(m.from_user.id, asyncio.Lock())
+    async with lock:  # albomdagi rasmlar bir vaqtda keladi — yo'qolmasligi uchun navbat bilan
+        data = await state.get_data()
+        files = data.get("files", [])
+        if len(files) >= MAX_FILES:
+            if (m.media_group_id or m.message_id) not in _ALBUM_ACK:
+                _ALBUM_ACK.add(m.media_group_id or m.message_id)
+                await m.answer(tr(lang, "files_max", n=MAX_FILES),
+                               reply_markup=ikb([[(b(lang, "ready"), "files_done", "success")]]))
+            return
+        cap = (m.caption or "").strip()[:200]
+        if m.photo:
+            f = {"type": "photo", "id": m.photo[-1].file_id}
+        elif m.video:
+            f = {"type": "video", "id": m.video.file_id}
+        else:
+            mime = m.document.mime_type or ""
+            f = {"type": "doc", "id": m.document.file_id, "name": (m.document.file_name or "")[:60]}
+            if mime.startswith("image/"):
+                f["img"] = 1
+        if cap:
+            f["cap"] = cap
+        f["mid"] = m.message_id
+        files.append(f)
+        files.sort(key=lambda x: x.get("mid", 0))  # albom tartibi saqlansin
+        await state.update_data(files=files)
+    if m.media_group_id:  # albom: bitta javob, hammasi kelgach
+        if m.media_group_id in _ALBUM_ACK:
+            return
+        _ALBUM_ACK.add(m.media_group_id)
+        await asyncio.sleep(1.5)
+        _ALBUM_ACK.discard(m.media_group_id)
+        files = (await state.get_data()).get("files", [])
+    ph, dc = file_counts(files)
+    await m.answer(tr(lang, "files_got", n=len(files), ph=ph, dc=dc, mx=MAX_FILES),
+                   reply_markup=ikb([[(b(lang, "ready"), "files_done", "success")]]))
+
+
+@router.message(Order.files, F.text, ~F.text.startswith("/"), ~F.text.in_(MENU_TEXTS))
+async def files_note(m: Message, state: FSMContext):
+    """Rasmlar bosqichida matn yozsa — oxirgi rasmga izoh sifatida saqlaymiz."""
     lang = L(m.from_user.id)
     data = await state.get_data()
     files = data.get("files", [])
-    if len(files) >= 10:
-        await m.answer(tr(lang, "files_max"))
+    if not files:
+        await m.answer(tr(lang, "files_first"), reply_markup=ikb([[(b(lang, "files_done"), "files_done", "success")]]))
         return
-    if m.document:
-        files.append({"type": "doc", "id": m.document.file_id})
-    else:
-        files.append({"type": "photo", "id": m.photo[-1].file_id})
+    files[-1]["cap"] = ((files[-1].get("cap", "") + " " + m.text.strip()).strip())[:300]
     await state.update_data(files=files)
-    await m.answer(tr(lang, "files_got", n=len(files)), reply_markup=ikb([[(b(lang, "ready"), "files_done", "success")]]))
+    await m.answer(tr(lang, "files_note_ok", n=len(files)), reply_markup=ikb([[(b(lang, "ready"), "files_done", "success")]]))
 
 
 @router.callback_query(Order.files, F.data == "files_done")
@@ -1349,6 +1444,13 @@ async def webapp_data(m: Message, state: FSMContext):
                             details=str(d.get("details", "")).strip()[:1000], uid=uid, turtle=bool(d.get("turtle")),
                             deadline="urgent" if d.get("deadline") == "urgent" else "normal")
     await m.answer(tr(lang, "wa_ok"), reply_markup=MAIN_KBS[lang])
+    try:
+        tpl = int(d.get("tpl") or 0)
+    except (TypeError, ValueError):
+        tpl = 0
+    if tpl in TPL:
+        key = "cover" if d.get("tpl_kind") == "c" else "style"
+        await state.update_data(preset_brief=[[key, tpl_label(tpl, lang)]])
     code = str(d.get("promo", "")).strip().upper()[:32]
     if code:
         if get_promo(code):
@@ -1406,17 +1508,43 @@ async def confirm(c: CallbackQuery, state: FSMContext, bot: Bot):
     head = "🆕 Yangi so'rov — NARX BELGILANG" if quote else "🆕 Yangi buyurtma (to'lov kutilmoqda)"
     head += f"\n🌐 Mijoz tili: {LANGS[lang]}"
     await notify_admins(bot, head + "\n\n" + order_text(o, True), admin_kb(oid, o["status"]))
-    for f in data.get("files", []):
-        for aid in ADMIN_IDS:
-            try:
-                if f["type"] == "photo":
-                    await bot.send_photo(aid, f["id"], caption=f"#{oid} fayli")
-                else:
-                    await bot.send_document(aid, f["id"], caption=f"#{oid} fayli")
-            except Exception as e:
-                logging.warning("Fayl yuborilmadi: %s", e)
+    await send_order_files(bot, oid, data.get("files", []))
     await send_tz(bot, o)
     await c.answer()
+
+
+async def send_order_files(bot: Bot, oid: int, files: list):
+    """Mijoz rasmlari/fayllarini adminlarga albom qilib (10 tadan) yuboradi, izohlari bilan."""
+    if not files:
+        return
+    n = len(files)
+    def cap(i, f):
+        c = f"#{oid} · {i}/{n}"
+        return c + (f"\n💬 {f['cap']}" if f.get("cap") else "")
+    photos = [(i, f) for i, f in enumerate(files, 1) if f["type"] in ("photo", "video")]
+    docs = [(i, f) for i, f in enumerate(files, 1) if f["type"] == "doc"]
+    for aid in ADMIN_IDS:
+        for group, kind in ((photos, "p"), (docs, "d")):
+            for k in range(0, len(group), 10):
+                chunk = group[k:k + 10]
+                try:
+                    if len(chunk) == 1:
+                        i, f = chunk[0]
+                        if f["type"] == "photo":
+                            await bot.send_photo(aid, f["id"], caption=cap(i, f))
+                        elif f["type"] == "video":
+                            await bot.send_video(aid, f["id"], caption=cap(i, f))
+                        else:
+                            await bot.send_document(aid, f["id"], caption=cap(i, f))
+                    elif kind == "p":
+                        from aiogram.types import InputMediaVideo
+                        await bot.send_media_group(aid, [
+                            (InputMediaPhoto if f["type"] == "photo" else InputMediaVideo)(media=f["id"], caption=cap(i, f))
+                            for i, f in chunk])
+                    else:
+                        await bot.send_media_group(aid, [InputMediaDocument(media=f["id"], caption=cap(i, f)) for i, f in chunk])
+                except Exception as e:
+                    logging.warning("Fayllar yuborilmadi #%s: %s", oid, e)
 
 
 def payment_text(oid: int, price: int, lang: str = DEFAULT_LANG) -> str:

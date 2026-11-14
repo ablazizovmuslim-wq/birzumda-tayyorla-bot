@@ -247,14 +247,35 @@ TX = {
         "ru": "ℹ️ <b>Дополнительные требования?</b>\nНапример: предмет, преподаватель, число слайдов, ФИО, цвет…\nЕсли нет — пропустите.",
         "en": "ℹ️ <b>Any extra requirements?</b>\nE.g. subject, teacher, number of slides, full name, colour…\nIf not — skip."},
     "files_ask": {
-        "uz": "📎 <b>Fayl yoki rasm bormi?</b> (namuna, topshiriq sharti, rasmlar)\nYuboring, tugatgach «✅ Tayyor» tugmasini bosing. Bo'lmasa — o'tkazib yuboring.",
-        "ru": "📎 <b>Есть файлы или фото?</b> (образец, условие задания, картинки)\nОтправьте и нажмите «✅ Готово». Если нет — пропустите.",
-        "en": "📎 <b>Any files or photos?</b> (sample, task, images)\nSend them, then tap «✅ Done». If not — skip."},
-    "files_max": {"uz": "Ko'pi bilan 10 ta fayl. «✅ Tayyor» ni bosing.", "ru": "Максимум 10 файлов. Нажмите «✅ Готово».",
-                  "en": "10 files at most. Tap «✅ Done»."},
-    "files_got": {"uz": "Qabul qilindi ({n} ta). Yana yuboring yoki «✅ Tayyor» ni bosing.",
-                  "ru": "Принято ({n}). Отправьте ещё или нажмите «✅ Готово».",
-                  "en": "Received ({n}). Send more or tap «✅ Done»."},
+        "uz": "📸 <b>Ishga qo'yiladigan rasmlaringiz bormi?</b>\n"
+              "Galereyadan tanlab yuboring — <b>bir nechtasini birdaniga</b> (albom) ham bo'ladi. Ko'pi bilan {mx} ta.\n\n"
+              "💡 Rasm ostiga izoh yozing, masalan: <i>«3-slaydga»</i>, <i>«muqovaga»</i>.\n"
+              "💎 Sifat yo'qolmasin desangiz — <b>📎 → Fayl</b> qilib yuboring.\n"
+              "📄 Namuna, topshiriq sharti, Word/PDF ham yuborsangiz bo'ladi.\n\n"
+              "Tugatgach «✅ Tayyor», rasm bo'lmasa — «O'tkazish».",
+        "ru": "📸 <b>Есть фото, которые нужно вставить в работу?</b>\n"
+              "Выберите в галерее и отправьте — можно <b>сразу несколько</b> (альбомом). Максимум {mx}.\n\n"
+              "💡 Подпишите фото, например: <i>«на 3-й слайд»</i>, <i>«на обложку»</i>.\n"
+              "💎 Чтобы не терялось качество — отправьте <b>📎 → Файл</b>.\n"
+              "📄 Образец, условие задания, Word/PDF — тоже можно.\n\n"
+              "Когда закончите — «✅ Готово», если фото нет — «Пропустить».",
+        "en": "📸 <b>Any photos to put into the work?</b>\n"
+              "Pick them in your gallery and send — <b>several at once</b> (album) is fine. Up to {mx}.\n\n"
+              "💡 Add a caption, e.g. <i>«for slide 3»</i>, <i>«for the cover»</i>.\n"
+              "💎 To keep full quality, send via <b>📎 → File</b>.\n"
+              "📄 Samples, task conditions, Word/PDF are welcome too.\n\n"
+              "When finished tap «✅ Done», no photos — «Skip»."},
+    "files_max": {"uz": "Ko'pi bilan {n} ta rasm/fayl. «✅ Tayyor» ni bosing.", "ru": "Максимум {n} фото/файлов. Нажмите «✅ Готово».",
+                  "en": "{n} photos/files at most. Tap «✅ Done»."},
+    "files_got": {"uz": "✅ Qabul qilindi: <b>{n}</b> ta (rasm: {ph}, fayl: {dc}).\nYana yuboring yoki «✅ Tayyor» ni bosing.",
+                  "ru": "✅ Принято: <b>{n}</b> (фото: {ph}, файлов: {dc}).\nОтправьте ещё или нажмите «✅ Готово».",
+                  "en": "✅ Received: <b>{n}</b> (photos: {ph}, files: {dc}).\nSend more or tap «✅ Done»."},
+    "files_first": {"uz": "Avval rasmni yuboring 📸 — keyin izoh yozasiz. Rasm bo'lmasa «O'tkazish».",
+                    "ru": "Сначала отправьте фото 📸 — потом подпись. Если фото нет — «Пропустить».",
+                    "en": "Send the photo first 📸, then the note. No photos — «Skip»."},
+    "files_note_ok": {"uz": "📝 Izoh {n}-rasmga yozib qo'yildi. Yana yuboring yoki «✅ Tayyor».",
+                      "ru": "📝 Подпись добавлена к фото №{n}. Отправьте ещё или «✅ Готово».",
+                      "en": "📝 Note added to photo #{n}. Send more or tap «✅ Done»."},
     "deadline_ask": {"uz": "⏱ <b>Muddatni tanlang:</b>", "ru": "⏱ <b>Выберите срок:</b>", "en": "⏱ <b>Choose the deadline:</b>"},
     "confirm_title": {"uz": "{e[check]} <b>Buyurtmangizni tekshiring:</b>", "ru": "{e[check]} <b>Проверьте заказ:</b>",
                       "en": "{e[check]} <b>Check your order:</b>"},
@@ -444,13 +465,13 @@ TX = {
 # Bot menyusidagi buyruqlar (chap pastdagi «Menu» tugmasi)
 COMMANDS = {
     "uz": [("start", "Botni ishga tushirish"), ("order", "Buyurtma berish"), ("bonus", "Bonus va aksiyalar"),
-           ("info", "Bot haqida ma'lumot"), ("tayyor", "Tayyor ishlar do'koni"), ("channel", "Kanalimizga obuna bo'lish"), ("lang", "Tilni o'zgartirish"),
+           ("info", "Bot haqida ma'lumot"), ("tayyor", "Tayyor ishlar do'koni"), ("shablon", "Dizayn shablonlari"), ("channel", "Kanalimizga obuna bo'lish"), ("lang", "Tilni o'zgartirish"),
            ("privacy", "Maxfiylik siyosati")],
     "ru": [("start", "Запустить бота"), ("order", "Сделать заказ"), ("bonus", "Бонусы и акции"),
-           ("info", "Информация о боте"), ("tayyor", "Магазин готовых работ"), ("channel", "Подписаться на канал"), ("lang", "Сменить язык"),
+           ("info", "Информация о боте"), ("tayyor", "Магазин готовых работ"), ("shablon", "Шаблоны дизайна"), ("channel", "Подписаться на канал"), ("lang", "Сменить язык"),
            ("privacy", "Политика конфиденциальности")],
     "en": [("start", "Start the bot"), ("order", "Place an order"), ("bonus", "Bonuses & promos"),
-           ("info", "About the bot"), ("tayyor", "Ready works shop"), ("channel", "Subscribe to our channel"), ("lang", "Change language"),
+           ("info", "About the bot"), ("tayyor", "Ready works shop"), ("shablon", "Design templates"), ("channel", "Subscribe to our channel"), ("lang", "Change language"),
            ("privacy", "Privacy policy")],
 }
 
@@ -495,9 +516,9 @@ SHORT_DESC = {
 # Har bir xizmat turi uchun savollar ketma-ketligi
 BRIEF_GROUPS = {
     "slides": ["subject", "slides", "wlang", "title", "plan", "style", "date", "extra"],
-    "paper": ["subject", "pages", "wlang", "title", "plan", "format", "date", "extra"],
+    "paper": ["subject", "pages", "wlang", "title", "cover", "plan", "format", "date", "extra"],
     "portfolio": ["who", "sections", "style", "date", "extra"],
-    "teach": ["subject", "grade", "count", "wlang", "plan", "date", "extra"],
+    "teach": ["subject", "grade", "count", "wlang", "cover", "plan", "date", "extra"],
     "other": ["free", "date"],
 }
 SVC_GROUP = {"taqdimot": "slides", "dars": "slides", "tadbir": "slides",
@@ -550,7 +571,7 @@ BRIEF_Q = {
 }
 # Admin uchun texnik topshiriqdagi nomlar (o'zbekcha)
 BRIEF_LABEL = {"subject": "Fan", "slides": "Slaydlar soni", "pages": "Hajmi (bet)", "wlang": "Ish tili",
-               "title": "Titul ma'lumotlari", "plan": "Reja / bo'limlar", "style": "Dizayn", "format": "Rasmiylashtirish",
+               "title": "Titul ma'lumotlari", "plan": "Reja / bo'limlar", "style": "Dizayn shabloni", "cover": "Muqova shabloni", "format": "Rasmiylashtirish",
                "who": "Kim uchun", "sections": "Bo'limlar", "grade": "Kurs / sinf", "count": "Hajm",
                "free": "Batafsil", "date": "Qachongacha", "extra": "Qo'shimcha istaklar",
                "group": "Guruh mavzulari"}
@@ -567,11 +588,11 @@ BRIEF_TX = {
 }
 BRIEF_LABEL_TR = {
     "ru": {"subject": "Предмет", "slides": "Слайдов", "pages": "Страниц", "wlang": "Язык работы", "title": "Титул",
-           "plan": "План", "style": "Дизайн", "format": "Оформление", "who": "Для кого", "sections": "Разделы",
+           "plan": "План", "style": "Шаблон дизайна", "cover": "Шаблон обложки", "format": "Оформление", "who": "Для кого", "sections": "Разделы",
            "grade": "Курс / класс", "count": "Объём", "free": "Подробно", "date": "Срок", "extra": "Пожелания",
            "group": "Темы группы"},
     "en": {"subject": "Subject", "slides": "Slides", "pages": "Pages", "wlang": "Language", "title": "Title page",
-           "plan": "Outline", "style": "Design", "format": "Formatting", "who": "For", "sections": "Sections",
+           "plan": "Outline", "style": "Design template", "cover": "Cover template", "format": "Formatting", "who": "For", "sections": "Sections",
            "grade": "Year / grade", "count": "Size", "free": "Details", "date": "Deadline", "extra": "Extra",
            "group": "Group topics"},
 }
@@ -685,4 +706,49 @@ FX = {
                    "ru": "⏰ Ожидаем оплату заказа #{oid}.\nОплатите и пришлите фото чека — сразу начнём работу.",
                    "en": "⏰ Order #{oid} is awaiting payment.\nPay and send a photo of the receipt — we'll start right away."},
     "post_btn": {"uz": "✨ Buyurtma berish", "ru": "✨ Заказать", "en": "✨ Order now"},
+}
+
+
+# ------------------------------------------------------------------ 🎨 dizayn shablonlari (8 ta)
+TPL = {
+    1: {"uz": "Binafsha Neon", "ru": "Фиолетовый неон", "en": "Purple Neon"},
+    2: {"uz": "Ko'k Kosmos", "ru": "Синий космос", "en": "Blue Cosmos"},
+    3: {"uz": "Yashil Zumrad", "ru": "Изумрудный", "en": "Emerald"},
+    4: {"uz": "Oq Premium", "ru": "Белый премиум", "en": "White Premium"},
+    5: {"uz": "Qizil Olov", "ru": "Красный огонь", "en": "Red Fire"},
+    6: {"uz": "Oltin Lyuks", "ru": "Золотой люкс", "en": "Gold Luxe"},
+    7: {"uz": "Pastel Orzu", "ru": "Пастельная мечта", "en": "Pastel Dream"},
+    8: {"uz": "Aurora Gradient", "ru": "Аврора", "en": "Aurora Gradient"},
+}
+TPL_ANY = {"uz": "🤷 Farqi yo'q", "ru": "🤷 Неважно", "en": "🤷 No preference"}
+TPL_TX = {
+    "album_style": {"uz": "🎨 <b>Slayd dizayn shablonlari</b> — 8 ta uslub. Pastdagi tugmalardan raqamini tanlang 👇",
+                    "ru": "🎨 <b>Шаблоны дизайна слайдов</b> — 8 стилей. Выберите номер кнопкой ниже 👇",
+                    "en": "🎨 <b>Slide design templates</b> — 8 styles. Pick a number with the buttons below 👇"},
+    "album_cover": {"uz": "📄 <b>Muqova shablonlari</b> — 8 ta uslub. Pastdagi tugmalardan raqamini tanlang 👇",
+                    "ru": "📄 <b>Шаблоны обложки</b> — 8 стилей. Выберите номер кнопкой ниже 👇",
+                    "en": "📄 <b>Cover templates</b> — 8 styles. Pick a number with the buttons below 👇"},
+    "gallery": {"uz": "🎨 <b>Dizayn shablonlari</b>\nBuyurtma berishda o'zingizga yoqqanini tanlaysiz.",
+                "ru": "🎨 <b>Шаблоны дизайна</b>\nВыберете понравившийся при оформлении заказа.",
+                "en": "🎨 <b>Design templates</b>\nYou pick the one you like when ordering."},
+    "btn": {"uz": "🎨 Dizayn shablonlari", "ru": "🎨 Шаблоны дизайна", "en": "🎨 Design templates"},
+}
+
+
+def tpl_label(n: int, lang: str) -> str:
+    return f"№{n} {TPL[n].get(lang) or TPL[n]['uz']}"
+
+
+# so'rovnomada: rasm albomi + raqamli tugmalar
+BRIEF_Q["style"] = {
+    "uz": "🎨 <b>Dizayn shablonini tanlang</b> (yuqoridagi rasmlardan):",
+    "ru": "🎨 <b>Выберите шаблон дизайна</b> (на картинках выше):",
+    "en": "🎨 <b>Choose a design template</b> (pictures above):",
+    "opts": {lg: [tpl_label(n, lg) for n in TPL] + [TPL_ANY[lg]] for lg in ("uz", "ru", "en")},
+}
+BRIEF_Q["cover"] = {
+    "uz": "📄 <b>Muqova shablonini tanlang</b> (yuqoridagi rasmlardan):",
+    "ru": "📄 <b>Выберите шаблон обложки</b> (на картинках выше):",
+    "en": "📄 <b>Choose a cover template</b> (pictures above):",
+    "opts": BRIEF_Q["style"]["opts"],
 }

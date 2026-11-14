@@ -150,6 +150,14 @@ nav button.on svg{animation:navBounce .5s cubic-bezier(.2,1.6,.4,1)}
 @keyframes snd{0%{opacity:0}40%{opacity:1}100%{opacity:0;transform:translateX(4px)}}
 .tsvg .tlegs ellipse{animation:paddle 1.4s ease-in-out infinite}.tsvg .tlegs ellipse:nth-child(2){animation-delay:-.7s}
 @keyframes paddle{50%{transform:translateY(-2px)}}
+.tpls{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 2px 8px;-webkit-overflow-scrolling:touch}
+.tp{flex:none;width:156px;border-radius:14px;border:2px solid var(--line);overflow:hidden;background:#160F24;cursor:pointer;scroll-snap-align:start;transition:transform .15s,border-color .2s,box-shadow .2s}
+.tp.c{width:112px}.tp img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover}.tp.c img{aspect-ratio:600/848}
+.tp span{display:block;padding:7px 9px;font-size:12px;font-weight:700;line-height:1.25}
+.tp.on{border-color:var(--a);box-shadow:0 0 18px rgba(160,107,255,.65);transform:translateY(-2px)}
+.tp.on span::before{content:"✅ "}
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.tgrid.c{grid-template-columns:1fr 1fr 1fr}
+.tgrid .tp{width:auto}
 .peek{position:absolute;right:6px;top:-6px;width:70px;height:58px}
 /* ---------- konfetti */
 .cf{position:fixed;top:-12px;width:9px;height:14px;border-radius:2px;z-index:30;pointer-events:none;animation:fall 1.1s cubic-bezier(.2,.6,.4,1) forwards}
@@ -226,6 +234,10 @@ nav button.on svg{animation:navBounce .5s cubic-bezier(.2,1.6,.4,1)}
 <ellipse class="tmouth" cx="98" cy="65" rx="4" ry="2.5" fill="#1C1430"/></g>
 <g class="tsound" stroke="#FF8FDA" stroke-width="2.5" fill="none" stroke-linecap="round"><path d="M114 58 q4 4 0 8"/><path d="M118 54 q7 8 0 16"/></g>
 </svg><div><b data-i="turtleT">Toshbaqa o'qituvchi</b><span class="badge" data-i="turtleBadge">👩‍🏫 Pro · Premium · 🎓 +10 000</span><div class="say" style="margin-top:8px" data-i="turtleSay">Salom! Men slayd ichida gapirib, mavzuni sodda qilib tushuntiraman 🎙</div></div></div>
+  <h2 style="margin-top:22px" data-i="tplTitle">Dizayn shablonlari</h2>
+  <div class="seg" id="seg4" style="margin-bottom:12px"><div class="ind"></div><button data-k="s" data-i="tplSlides">🖼 Slayd</button><button data-k="c" data-i="tplCovers">📄 Muqova</button></div>
+  <div class="tgrid" id="tplGallery"></div>
+  <p class="m" style="font-size:13px;margin:10px 0 4px;text-align:center" data-i="tplGalHint">Buyurtma berishda o'zingizga yoqqanini tanlaysiz</p>
   <button class="btn ghost" onclick="sendCmd('samples')" data-i="sendSamples">📎 PPTX namunalarni chatga yuborish</button>
 </section>
 
@@ -246,9 +258,12 @@ nav button.on svg{animation:navBounce .5s cubic-bezier(.2,1.6,.4,1)}
   <div class="seg" id="seg2"><div class="ind"></div><button data-a="s" data-i="students">🎓 Talabalar</button><button data-a="t" data-i="teachers">👩‍🏫 Ustozlar</button></div>
   <label data-i="lService">Xizmat</label><div class="opts" id="svcOpts"></div>
   <div id="pkgWrap" style="display:none"><label data-i="lPkg">Paket</label><div class="opts" id="pkgOpts"></div></div>
+  <div id="tplWrap" style="display:none"><label data-i="lTpl">🎨 Dizayn shabloni</label><div class="tpls" id="tplOpts"></div>
+    <p class="m" style="font-size:12px;margin-top:2px" data-i="tplHint">Tanlamasangiz — bot keyin so'raydi</p></div>
   <div id="turtleWrap" style="display:none;margin-top:10px"><div class="opt" id="turtleOpt" onclick="order.turtle=!order.turtle;hap();renderOrder()"><span id="turtleTxt"></span><span class="v" id="turtleV"></span></div></div>
   <label data-i="lTopic">Mavzu</label><input id="topic" maxlength="300" data-p="phTopic" placeholder="Masalan: Sun'iy intellekt ta'limda">
   <label data-i="lDetails">Qo'shimcha talablar</label><textarea id="details" maxlength="1000" data-p="phDetails" placeholder="Fan, o'qituvchi, slayd soni, ism-familiya…"></textarea>
+  <div style="display:flex;gap:10px;align-items:center;padding:10px 12px;margin-top:8px;border-radius:14px;background:linear-gradient(90deg,rgba(160,107,255,.16),rgba(255,95,200,.10));border:1px solid var(--line)"><span style="font-size:22px">📸</span><p class="m" style="font-size:12.5px;line-height:1.4" data-i="photoHint">Rasmlaringizni (galereyadan) buyurtmadan keyin botga yuborasiz — ishga qo'yib beramiz</p></div>
   <label data-h="lPromo">🎟 Promokod <span style="opacity:.6;font-weight:400">(ixtiyoriy)</span></label><input id="promo" maxlength="32" data-p="phPromo" placeholder="Masalan: YANGI20" style="text-transform:uppercase">
   <label data-i="lDeadline">Muddat</label><div class="opts" id="dlOpts"></div>
   <div class="total"><span data-i="total">Jami</span><b id="total">—</b></div>
@@ -269,7 +284,8 @@ const tg = window.Telegram ? Telegram.WebApp : null;
 if (tg) { tg.ready(); tg.expand(); try { tg.setHeaderColor('#0B0812'); tg.setBackgroundColor('#0B0812'); } catch (e) {} }
 const hap = t => { try { tg && tg.HapticFeedback.impactOccurred(t || 'light'); } catch (e) {} };
 const T = {
-  uz: { turtleAdd: "🐢 Toshbaqa o'qituvchi qo'shish", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +10 000', close: 'Yopish', heroK: 'Professional dizayn', heroH: 'Chiroyli ishlar<br><span class="grad">bir zumda</span>', heroP: "— o'z vaqtida, bepul tuzatish bilan.",
+  uz: { photoHint: "Rasmlaringizni (galereyadan) buyurtmadan keyin botga yuborasiz — ishga qo'yib beramiz", lTpl: "🎨 Dizayn shabloni", tplHint: "Tanlamasangiz — bot keyin so'raydi", tplTitle: "Dizayn shablonlari", tplSlides: "🖼 Slayd", tplCovers: "📄 Muqova", tplGalHint: "Buyurtma berishda o'zingizga yoqqanini tanlaysiz", tplNames: ["Binafsha Neon", "Ko'k Kosmos", "Yashil Zumrad", "Oq Premium", "Qizil Olov", "Oltin Lyuks", "Pastel Orzu", "Aurora Gradient"],
+    turtleAdd: "🐢 Toshbaqa o'qituvchi qo'shish", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +10 000', close: 'Yopish', heroK: 'Professional dizayn', heroH: 'Chiroyli ishlar<br><span class="grad">bir zumda</span>', heroP: "— o'z vaqtida, bepul tuzatish bilan.",
     chipAud: '🎓 Talaba · 👩‍🏫 Ustoz ›', chipFast: '⚡ Tez ›', chipFix: '🔁 Bepul tuzatish ›', chipTurtle: "🐢 Toshbaqa o'qituvchi ›", orderBtn: '🛒 Buyurtma berish',
     prices: 'Narxlar', students: '🎓 Talabalar', teachers: '👩‍🏫 Ustozlar', priceNote: '⚡ Shoshilinch: +50% · 🔁 Tuzatish bepul · 🐢 ustozlarga Pro/Premium, talabalarga +10 000',
     samples: 'Namunalar', mS: 'Zamonaviy dizayn', mP: 'Animatsiya + diagramma', mX: "Neon nur, Morph o'tishlari, nutq matni, video",
@@ -287,7 +303,8 @@ const T = {
       tez: { t: '⚡ Tez tayyorlash', b: "<p><b>Oddiy muddat:</b> Start — 1 kun, Professional — 1–2 kun, Premium — 2–3 kun.</p><p><b>Shoshilinch (+50%):</b> ishni shu kunning o'zida tayyorlaymiz. Buyurtmada «⚡ Shoshilinch» ni tanlang.</p>" },
       fix: { t: '🔁 Bepul tuzatish', b: "<p>Ish tayyor bo'lgach, nimanidir o'zgartirmoqchi bo'lsangiz — bepul tuzatamiz.</p><p><b>Start</b> — 1 marta, <b>Professional</b> — 2 marta, <b>Premium</b> — 3 marta. Boshqa xizmatlarda — 1 marta.</p>" },
       turtle: { t: "🐢 Toshbaqa o'qituvchi", b: "<p>Slaydda animatsion toshbaqa o'qituvchi paydo bo'ladi va <b>gapirib</b>, mavzuni sodda tilda tushuntiradi.</p><p>👩‍🏫 <b>Ustozlarga</b> — Professional va Premium paketlarga kiradi.<br>🎓 <b>Talabalarga</b> — xohlasangiz, buyurtmada qo'shasiz: <b>+10 000 so'm</b>.</p>" } } },
-  ru: { turtleAdd: "🐢 Добавить черепаху-учителя", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +10 000', close: 'Закрыть', heroK: 'Профессиональный дизайн', heroH: 'Красивые работы<br><span class="grad">в один миг</span>', heroP: '— вовремя, с бесплатными правками.',
+  ru: { photoHint: "Свои фото (из галереи) отправите боту после заказа — вставим их в работу", lTpl: "🎨 Шаблон дизайна", tplHint: "Не выберете — бот спросит позже", tplTitle: "Шаблоны дизайна", tplSlides: "🖼 Слайды", tplCovers: "📄 Обложки", tplGalHint: "Понравившийся выберете при заказе", tplNames: ["Фиолетовый неон", "Синий космос", "Изумрудный", "Белый премиум", "Красный огонь", "Золотой люкс", "Пастельная мечта", "Аврора"],
+    turtleAdd: "🐢 Добавить черепаху-учителя", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +10 000', close: 'Закрыть', heroK: 'Профессиональный дизайн', heroH: 'Красивые работы<br><span class="grad">в один миг</span>', heroP: '— вовремя, с бесплатными правками.',
     chipAud: '🎓 Студент · 👩‍🏫 Преподаватель ›', chipFast: '⚡ Срочно ›', chipFix: '🔁 Бесплатные правки ›', chipTurtle: '🐢 Черепаха-учитель ›', orderBtn: '🛒 Заказать',
     prices: 'Цены', students: '🎓 Студентам', teachers: '👩‍🏫 Преподавателям', priceNote: '⚡ Срочно: +50% · 🔁 Правки бесплатно · 🐢 учителям Pro/Premium, студентам +10 000',
     samples: 'Примеры', mS: 'Современный дизайн', mP: 'Анимация + диаграммы', mX: "Неон, Morph-переходы, текст речи, видео",
@@ -305,7 +322,8 @@ const T = {
       tez: { t: '⚡ Срочно', b: '<p><b>Обычный срок:</b> Start — 1 день, Professional — 1–2 дня, Premium — 2–3 дня.</p><p><b>Срочно (+50%):</b> сделаем в тот же день. Выберите «⚡ Срочно» в заказе.</p>' },
       fix: { t: '🔁 Бесплатные правки', b: '<p>Если после сдачи захотите что-то изменить — поправим бесплатно.</p><p><b>Start</b> — 1 раз, <b>Professional</b> — 2 раза, <b>Premium</b> — 3 раза. В остальных услугах — 1 раз.</p>' },
       turtle: { t: '🐢 Черепаха-учитель', b: '<p>На слайдах появляется анимированная черепаха-учитель и <b>голосом</b> простыми словами объясняет тему.</p><p>👩‍🏫 <b>Преподавателям</b> — входит в пакеты Professional и Premium.<br>🎓 <b>Студентам</b> — по желанию при заказе: <b>+10 000 сум</b>.</p>' } } },
-  en: { turtleAdd: "🐢 Add the Turtle teacher", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +10 000', close: 'Close', heroK: 'Professional design', heroH: 'Beautiful work<br><span class="grad">in a flash</span>', heroP: '— on time, with free revisions.',
+  en: { photoHint: "Send your photos (from gallery) to the bot after ordering — we'll put them into the work", lTpl: "🎨 Design template", tplHint: "Skip it — the bot will ask later", tplTitle: "Design templates", tplSlides: "🖼 Slides", tplCovers: "📄 Covers", tplGalHint: "Pick the one you like when ordering", tplNames: ["Purple Neon", "Blue Cosmos", "Emerald", "White Premium", "Red Fire", "Gold Luxe", "Pastel Dream", "Aurora Gradient"],
+    turtleAdd: "🐢 Add the Turtle teacher", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +10 000', close: 'Close', heroK: 'Professional design', heroH: 'Beautiful work<br><span class="grad">in a flash</span>', heroP: '— on time, with free revisions.',
     chipAud: '🎓 Student · 👩‍🏫 Teacher ›', chipFast: '⚡ Fast ›', chipFix: '🔁 Free revisions ›', chipTurtle: '🐢 Turtle teacher ›', orderBtn: '🛒 Place an order',
     prices: 'Prices', students: '🎓 Students', teachers: '👩‍🏫 Teachers', priceNote: '⚡ Urgent: +50% · 🔁 Free revisions · 🐢 teachers Pro/Premium, students +10 000',
     samples: 'Samples', mS: 'Modern design', mP: 'Animation + charts', mX: "Neon glow, Morph transitions, speech text, video",
@@ -344,6 +362,7 @@ function applyLang() {
   document.querySelectorAll('.fl').forEach(b => b.classList.toggle('on', b.dataset.l === lang));
   wi = 0; document.getElementById('rot').textContent = t('words')[0];
   document.getElementById('pkDesc').textContent = t('pkd')[pk];
+  if (typeof renderGallery === 'function' && document.getElementById('tplGallery')) renderGallery();
   if (CAT) { renderHome(); const on = document.querySelector('.page.on').id; if (on === 'p-prices') renderPrices(); if (on === 'p-order') renderOrder(); }
 }
 document.querySelectorAll('.fl').forEach(b => b.onclick = () => { lang = b.dataset.l; try { localStorage.setItem('lang', lang); } catch (e) {} hap(); applyLang(); });
@@ -411,6 +430,14 @@ function renderPrices() {
 function pickPkg(a, svc, pkg) { aud = a; order = { aud: a, svc, pkg, deadline: 'normal' }; go('order'); setTimeout(() => document.getElementById('topic').scrollIntoView({ behavior: 'smooth', block: 'center' }), 350); toast(t('picked')(pName(a, svc, pkg))); }
 function pick(a, svc) { aud = a; order = { aud: a, svc, pkg: '', deadline: 'normal' }; go('order'); setTimeout(() => document.getElementById(CAT[a].services[svc].packages ? 'pkgWrap' : 'topic').scrollIntoView({ behavior: 'smooth', block: 'center' }), 350); toast(t('picked')(sName(a, svc))); }
 const turtleAvail = () => order.aud === 's' && order.svc === 'taqdimot';
+const TPL_KIND = { taqdimot: 's', dars: 's', tadbir: 's', portfolio: 's', mustaqil: 'c', kurs: 'c', maqola: 'c', amaliy: 'c', referat: 'c', oum: 'c', ishlanma: 'c', test: 'c' };
+const tplKind = () => TPL_KIND[order.svc] || '';
+const tplCard = (k, n, sel, onclick) => `<div class="tp ${k === 'c' ? 'c' : ''} ${sel ? 'on' : ''}" onclick="${onclick}"><img loading="lazy" src="tpl_${k}${n}.jpg" alt=""><span>№${n} ${t('tplNames')[n - 1]}</span></div>`;
+let galKind = 's';
+function renderGallery() {
+  document.getElementById('tplGallery').className = 'tgrid ' + (galKind === 'c' ? 'c' : '');
+  document.getElementById('tplGallery').innerHTML = [1, 2, 3, 4, 5, 6, 7, 8].map(n => tplCard(galKind, n, false, `toast('№${n} ' + t('tplNames')[${n - 1}])`)).join('');
+}
 function price() {
   const s = CAT[order.aud].services[order.svc]; if (!s) return 0;
   let p = s.packages ? (order.pkg ? s.packages[order.pkg][1] : 0) : s.price;
@@ -427,6 +454,9 @@ function renderOrder() {
   document.getElementById('pkgWrap').style.display = s && s.packages ? 'block' : 'none';
   if (s && s.packages) document.getElementById('pkgOpts').innerHTML = Object.entries(s.packages).map(([k, p]) =>
     `<div class="opt ${order.pkg === k ? 'on' : ''}" onclick="order.pkg='${k}';hap();renderOrder()"><span><b>${pName(aud, order.svc, k)}</b><br><small style="color:var(--m)">${pDesc(aud, order.svc, k)}</small></span><span class="v">${fmt(p[1])}</span></div>`).join('');
+  const kind = tplKind(); document.getElementById('tplWrap').style.display = kind ? 'block' : 'none';
+  if (kind) document.getElementById('tplOpts').innerHTML = [1, 2, 3, 4, 5, 6, 7, 8].map(n => tplCard(kind, n, order.tpl === n,
+    `order.tpl=order.tpl===${n}?0:${n};hap();renderOrder()`)).join('');
   const tw = document.getElementById('turtleWrap'); tw.style.display = turtleAvail() ? 'block' : 'none';
   if (turtleAvail()) {
     document.getElementById('turtleOpt').classList.toggle('on', !!order.turtle);
@@ -440,6 +470,8 @@ function renderOrder() {
   if (tot.textContent !== nv) { tot.textContent = nv; tot.classList.remove('bump'); tot.offsetHeight; tot.classList.add('bump'); }
 }
 bindSeg('seg', renderPrices); bindSeg('seg2', renderOrder);
+document.querySelectorAll('#seg4 button').forEach(b => b.onclick = () => { galKind = b.dataset.k; document.querySelectorAll('#seg4 button').forEach(x => x.classList.toggle('on', x === b)); hap(); renderGallery(); });
+document.querySelector('#seg4 button').classList.add('on'); renderGallery();
 
 function sendCmd(cmd) {
   if (!tg || !tg.sendData) return toast(t('openTg'));
@@ -451,7 +483,7 @@ document.getElementById('sendBtn').onclick = () => {
   if (!s) return toast(t('chooseSvc'));
   if (s.packages && !order.pkg) return toast(t('choosePkg'));
   if (topic.length < 2) return toast(t('writeTopic'));
-  const data = { cmd: 'order', aud: order.aud, svc: order.svc, pkg: order.pkg, deadline: order.deadline, turtle: !!(order.turtle && turtleAvail()), topic, details: document.getElementById('details').value.trim(), promo: document.getElementById('promo').value.trim(), lang };
+  const data = { cmd: 'order', aud: order.aud, svc: order.svc, pkg: order.pkg, deadline: order.deadline, turtle: !!(order.turtle && turtleAvail()), tpl: tplKind() ? (order.tpl || 0) : 0, tpl_kind: tplKind(), topic, details: document.getElementById('details').value.trim(), promo: document.getElementById('promo').value.trim(), lang };
   if (!tg || !tg.sendData) return toast(t('openTg'));
   try { tg.HapticFeedback.notificationOccurred('success'); } catch (e) {}
   confetti(); setTimeout(() => tg.sendData(JSON.stringify(data)), 750);
