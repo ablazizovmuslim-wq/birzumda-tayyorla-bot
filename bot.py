@@ -31,7 +31,7 @@ from aiogram.filters import Command, CommandObject, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import (CallbackQuery, FSInputFile, InlineKeyboardButton,
-                           InlineKeyboardMarkup, InputMediaPhoto, KeyboardButton, LinkPreviewOptions,
+                           InlineKeyboardMarkup, InputMediaPhoto, KeyboardButton, LinkPreviewOptions, BufferedInputFile,
                            Message, ReplyKeyboardMarkup, WebAppInfo)
 
 # ------------------------------------------------------------------ sozlamalar
@@ -54,6 +54,11 @@ REF_BONUS = int(os.getenv("REF_BONUS", "5000"))       # taklif qilganga: do'sti 
 REF_WELCOME = int(os.getenv("REF_WELCOME", "5000"))   # taklif qilinganga: birinchi buyurtmaga chegirma
 BONUS_MAX_PCT = int(os.getenv("BONUS_MAX_PCT", "30"))  # bonus bilan buyurtmaning ko'pi bilan 30% to'lanadi
 TURTLE_ADDON = int(os.getenv("TURTLE_ADDON", "10000"))  # talabalar uchun 🐢 qo'shimcha narxi
+GROUP_RULES = [(5, 20), (3, 15)]   # guruh: 5+ ish −20%, 3+ ish −15%
+GROUP_BONUS = int(os.getenv("GROUP_BONUS", "5000"))   # 5+ ishli guruhni yig'ganga bonus
+LOYALTY_LEVELS = [(10, 10), (5, 5)]  # 10+ buyurtma −10% (Oltin), 5+ −5% (Kumush); har 5-buyurtma −50%
+REMIND_PAY_HOURS = 3                 # to'lanmagan buyurtma haqida mijozga eslatma
+TZ_OFFSET = 5                        # Toshkent vaqti (UTC+5)
 MAX_DISCOUNT_PCT = 50                                   # barcha chegirmalar jami ko'pi bilan 50%
 WEBAPP_URL = os.getenv("WEBAPP_URL", "").rstrip("/")
 if WEBAPP_URL and not WEBAPP_URL.startswith("http"):
@@ -89,7 +94,7 @@ def pe(key: str, fallback: str) -> str:
 
 logging.basicConfig(level=logging.INFO)
 
-from texts import (SAMPLE_PKG, SAMPLE_TX, BRIEF_GROUPS, BRIEF_LABEL, BRIEF_LABEL_TR, BRIEF_Q, BRIEF_TX, SVC_GROUP,  # noqa: E402
+from texts import (FX, SAMPLE_PKG, SAMPLE_TX, BRIEF_GROUPS, BRIEF_LABEL, BRIEF_LABEL_TR, BRIEF_Q, BRIEF_TX, SVC_GROUP,  # noqa: E402
                    BTN, CAT_TR, CHANNEL_LINE, COMMANDS, CURRENCY, DESCRIPTION, SHORT_DESC, DEFAULT_LANG, FROM, LANGS, NEGOTIABLE, TURTLE_ADDON_TX, TX,  # noqa: E402
                    DEADLINES as DL_TR, STATUS as ST_TR)
 
@@ -225,13 +230,21 @@ def init_db():
             code TEXT PRIMARY KEY, percent INTEGER, uses_left INTEGER, used INTEGER DEFAULT 0,
             active INTEGER DEFAULT 1, created_at TEXT)""")
         con.execute("CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT)")
+        con.execute("""CREATE TABLE IF NOT EXISTS reviews(
+            order_id INTEGER PRIMARY KEY, user_id INTEGER, stars INTEGER, text TEXT DEFAULT '',
+            consent INTEGER DEFAULT 0, published INTEGER DEFAULT 0, created_at TEXT)""")
+        con.execute("""CREATE TABLE IF NOT EXISTS shop(
+            id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, price INTEGER, file_id TEXT, file_type TEXT,
+            preview_id TEXT, sold INTEGER DEFAULT 0, active INTEGER DEFAULT 1, created_at TEXT)""")
         # eski bazaga yangi ustunlar (bir marta qo'shiladi)
         for table, col, decl in [
             ("users", "referred_by", "INTEGER"), ("users", "bonus", "INTEGER DEFAULT 0"),
             ("users", "ref_rewarded", "INTEGER DEFAULT 0"), ("users", "welcome_used", "INTEGER DEFAULT 0"), ("users", "lang", "TEXT"),
             ("orders", "full_price", "INTEGER DEFAULT 0"), ("orders", "discount", "INTEGER DEFAULT 0"),
             ("orders", "promo", "TEXT DEFAULT ''"), ("orders", "bonus_used", "INTEGER DEFAULT 0"),
-            ("orders", "welcome", "INTEGER DEFAULT 0"), ("orders", "brief", "TEXT DEFAULT '[]'"), ("orders", "turtle", "INTEGER DEFAULT 0")]:
+            ("orders", "welcome", "INTEGER DEFAULT 0"), ("orders", "brief", "TEXT DEFAULT '[]'"), ("orders", "turtle", "INTEGER DEFAULT 0"),
+            ("orders", "qty", "INTEGER DEFAULT 1"), ("orders", "paid_at", "TEXT"), ("orders", "remind_pay", "INTEGER DEFAULT 0"),
+            ("orders", "remind_adm", "INTEGER DEFAULT 0"), ("orders", "shop_id", "INTEGER")]:
             cols = {r["name"] for r in con.execute(f"PRAGMA table_info({table})")}
             if col not in cols:
                 con.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
@@ -298,13 +311,14 @@ def create_order(data: dict, user) -> int:
         cur = con.execute(
             """INSERT INTO orders(user_id, username, full_name, phone, audience, service, package, price,
                topic, details, deadline, files, status, created_at, full_price, discount, promo, bonus_used, welcome, brief,
-               turtle) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               turtle, qty, shop_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (user.id, user.username or "", user.full_name, data.get("phone", ""), data["aud"], data["svc"],
              data.get("pkg", ""), data["price"], data["topic"], data.get("details", ""), data["deadline"],
              json.dumps(data.get("files", [])), "new", datetime.now().strftime("%Y-%m-%d %H:%M"),
              data.get("full_price", data["price"]), data.get("discount", 0), data.get("promo", ""),
              data.get("bonus_used", 0), data.get("welcome", 0), json.dumps(data.get("brief", []), ensure_ascii=False),
-             turtle_kind(data.get("aud"), data.get("svc"), data.get("pkg"), data.get("turtle")) or ""))
+             turtle_kind(data.get("aud"), data.get("svc"), data.get("pkg"), data.get("turtle")) or "",
+             data.get("qty", 1), data.get("shop_id")))
         return cur.lastrowid
 
 
@@ -388,21 +402,60 @@ def ref_link(uid: int) -> str:
     return f"https://t.me/{BOT_USERNAME}?start=ref_{uid}"
 
 
-def calc_price(uid: int, price: int, promo_pct: int = 0, use_bonus: bool = False) -> dict:
-    """Chegirmalarni hisoblaydi: do'st chegirmasi → promokod → bonus. Jami ko'pi bilan MAX_DISCOUNT_PCT%."""
-    res = {"full_price": price, "welcome": 0, "promo_off": 0, "bonus_used": 0, "discount": 0, "price": price}
+def fx(lang: str, key: str, **kw):
+    v = FX[key].get(lang) or FX[key]["uz"]
+    return v.format(e=E, **kw) if isinstance(v, str) else v
+
+
+def group_pct(qty: int) -> int:
+    for need, pct in GROUP_RULES:
+        if qty >= need:
+            return pct
+    return 0
+
+
+def paid_count(uid: int) -> int:
+    """To'langan (ishga olingan yoki topshirilgan) buyurtmalar soni — do'kondan tashqari."""
+    with db() as con:
+        return con.execute("SELECT COUNT(*) FROM orders WHERE user_id=? AND status IN ('work','done') "
+                           "AND service!='shop'", (uid,)).fetchone()[0]
+
+
+def loyalty_level(n: int) -> int:
+    return 2 if n >= 10 else 1 if n >= 5 else 0
+
+
+def loyalty_pct(uid: int) -> int:
+    n = paid_count(uid)
+    if (n + 1) % 5 == 0:  # har 5-buyurtma
+        return 50
+    for need, pct in LOYALTY_LEVELS:
+        if n >= need:
+            return pct
+    return 0
+
+
+def calc_price(uid: int, price: int, promo_pct: int = 0, use_bonus: bool = False, qty: int = 1) -> dict:
+    """Chegirmalar: guruh → sodiqlik → do'st → promokod → bonus. Jami ko'pi bilan MAX_DISCOUNT_PCT%."""
+    total = price * max(1, qty)
+    res = {"full_price": total, "unit": price, "qty": qty, "group_off": 0, "grp_pct": 0, "loyalty_off": 0, "loy_pct": 0,
+           "welcome": 0, "promo_off": 0, "bonus_used": 0, "discount": 0, "price": total}
     if not price:
         return res
-    cap = price * MAX_DISCOUNT_PCT // 100
+    cap = total * MAX_DISCOUNT_PCT // 100
+    used = 0
+    res["grp_pct"] = group_pct(qty)
+    res["group_off"] = min(total * res["grp_pct"] // 100, cap - used); used += res["group_off"]
+    res["loy_pct"] = loyalty_pct(uid)
+    res["loyalty_off"] = min(total * res["loy_pct"] // 100, cap - used); used += res["loyalty_off"]
     if welcome_available(uid):
-        res["welcome"] = min(REF_WELCOME, cap)
+        res["welcome"] = min(REF_WELCOME, cap - used); used += res["welcome"]
     if promo_pct:
-        res["promo_off"] = min(price * promo_pct // 100, cap - res["welcome"])
+        res["promo_off"] = min(total * promo_pct // 100, cap - used); used += res["promo_off"]
     if use_bonus:
-        left = cap - res["welcome"] - res["promo_off"]
-        res["bonus_used"] = max(0, min(bonus_balance(uid), price * BONUS_MAX_PCT // 100, left))
-    res["discount"] = res["welcome"] + res["promo_off"] + res["bonus_used"]
-    res["price"] = price - res["discount"]
+        res["bonus_used"] = max(0, min(bonus_balance(uid), total * BONUS_MAX_PCT // 100, cap - used)); used += res["bonus_used"]
+    res["discount"] = used
+    res["price"] = total - used
     return res
 
 
@@ -427,7 +480,11 @@ def last_orders(n=15):
 
 
 def service_label(o, lang: str = "uz") -> str:
+    if o["service"] == "shop":
+        return f"Do'kon: {o['topic']}"
     label = svc_tr(o["audience"], o["service"], lang)[0]
+    if (o["qty"] if "qty" in o.keys() else 1) > 1:
+        label = f"👥 {o['qty']} × " + label
     if o["package"]:
         label += f" — {pkg_tr(o['audience'], o['service'], o['package'], lang)[0]}"
     return label
@@ -481,7 +538,7 @@ def main_kb(lang: str = DEFAULT_LANG):
         rows = [[kbtn(b(lang, "order"), "success", "order")]]
     rows += [
         [kbtn(b(lang, "prices"), "primary", "prices"), kbtn(b(lang, "samples"), "primary", "samples")],
-        [kbtn(b(lang, "bonus"), "danger", "heart")],
+        [kbtn(b(lang, "shop"), "primary", "fire"), kbtn(b(lang, "bonus"), "danger", "heart")],
         [kbtn(b(lang, "info"), "primary", "book"), kbtn(b(lang, "channel"), "success", "channel")],
         [kbtn(b(lang, "orders"), None, "orders"), kbtn(b(lang, "contact"), None, "contact"),
          kbtn(b(lang, "lang"), None, "globe")],
@@ -593,8 +650,11 @@ def deadline_kb(lang):
 
 
 def confirm_kb(has_price: bool, promo: str, balance: int, use_bonus: bool, lang: str = DEFAULT_LANG,
-               turtle: str | None = None):
+               turtle: str | None = None, qty: int = 1):
     rows = [[(b(lang, "confirm"), "confirm", "success", "ok")]]
+    if has_price:
+        rows.append([(b(lang, "group") if qty <= 1 else b(lang, "group_off"), "grp:start" if qty <= 1 else "grp:off",
+                      "primary" if qty <= 1 else None, "student")])
     if turtle is not None:  # None — mumkin emas; "" — tanlanmagan; "on" — tanlangan
         rows.append([(ttr(lang, "btn_off") if turtle else ttr(lang, "btn_add", sum=money(TURTLE_ADDON, lang)),
                       "turtle:toggle", None if turtle else "danger")])
@@ -616,7 +676,10 @@ def admin_kb(oid, status):
     if status == "paid":
         return ikb([[("✅ To'lov tasdiqlandi", f"adm:ok:{oid}", "success", "ok"), ("❌ Rad etish", f"adm:no:{oid}", "danger", "cancel")]])
     if status == "work":
-        return ikb([[("📤 Tayyor ishni yuborish", f"adm:send:{oid}", "primary")]])
+        return ikb([[("📤 Tayyor ishni yuborish", f"adm:send:{oid}", "primary")],
+                    [("👀 Namuna yuborish", f"adm:prev:{oid}", None)]])
+    if status == "new":
+        return ikb([[("👀 Namuna yuborish (to'lovdan oldin)", f"adm:prev:{oid}", None)]])
     return None
 
 
@@ -628,6 +691,8 @@ class Order(StatesGroup):
     deadline = State()
     confirm = State()
     promo = State()
+    group = State()
+    gtopics = State()
     cheque = State()
 
 
@@ -635,7 +700,14 @@ class Brief(StatesGroup):
     q = State()
 
 
+class Review(StatesGroup):
+    text = State()
+
+
 class AdminSend(StatesGroup):
+    preview = State()
+    post = State()
+    post_confirm = State()
     file = State()
     price = State()
     broadcast = State()
@@ -1025,7 +1097,7 @@ async def brief_next(m: Message, state: FSMContext, lang: str, answer: str | Non
 
 
 MENU_TEXTS = set().union(*(btn_texts(k) for k in ("app", "order", "prices", "samples", "bonus", "orders",
-                                                    "contact", "lang", "info", "channel")))
+                                                    "contact", "lang", "info", "channel", "shop")))
 
 
 @router.message(Brief.q, F.text, ~F.text.startswith("/"), ~F.text.in_(MENU_TEXTS))
@@ -1066,7 +1138,7 @@ def tz_text(o) -> str:
         brief = []
     files = len(json.loads(o["files"] or "[]"))
     tk = o["turtle"] if "turtle" in o.keys() else ""
-    lines = [f"Buyurtma #{o['id']}: {service_label(o)}",
+    lines = [f"Buyurtma #{o['id']}: {service_label(o)}" + (f" — {o['qty']} ta ish" if o["qty"] and o["qty"] > 1 else ""),
              f"Kim uchun: {'Talabalar' if o['audience'] == 's' else 'Ustozlar'}",
              f"Mavzu: {o['topic']}"]
     if o["details"]:
@@ -1155,7 +1227,8 @@ async def show_confirm(m: Message, state: FSMContext):
     p = get_promo(promo) if promo else None
     if promo and not p:  # muddati tugagan bo'lsa
         promo = ""
-    calc = calc_price(uid, price, p["percent"] if p else 0, data.get("use_bonus", False))
+    qty = data.get("qty", 1) if price else 1
+    calc = calc_price(uid, price, p["percent"] if p else 0, data.get("use_bonus", False), qty)
     await state.update_data(price=calc["price"], full_price=calc["full_price"], discount=calc["discount"],
                             bonus_used=calc["bonus_used"], welcome=calc["welcome"], promo=promo)
     await state.set_state(Order.confirm)
@@ -1167,8 +1240,14 @@ async def show_confirm(m: Message, state: FSMContext):
     elif tk == "add":
         label += f"\n{ttr(lang, 'line_add', sum=money(TURTLE_ADDON, lang))}"
     lines = []
+    if qty > 1:
+        lines.append(fx(lang, "grp_line", n=qty, unit=money(calc["unit"], lang)))
     if calc["discount"]:
         lines.append(f"{tr(lang, 'f_price')}: <s>{money(calc['full_price'], lang)}</s>")
+        if calc["group_off"]:
+            lines.append(f"{fx(lang, 'grp_off', pct=calc['grp_pct'])}: −{money(calc['group_off'], lang)}")
+        if calc["loyalty_off"]:
+            lines.append(f"{fx(lang, 'loy_off', pct=calc['loy_pct'])}: −{money(calc['loyalty_off'], lang)}")
         if calc["welcome"]:
             lines.append(f"{tr(lang, 'f_welcome')}: −{money(calc['welcome'], lang)}")
         if calc["promo_off"]:
@@ -1181,6 +1260,7 @@ async def show_confirm(m: Message, state: FSMContext):
            f"📦 {label}\n{tr(lang, 'f_topic')}: {html.escape(data['topic'])}\n"
            + (f"{tr(lang, 'f_details')}: {html.escape(data['details'])}\n" if data.get("details") else "")
            + (btr(lang, "summary") + "\n" + "\n".join(brief_lines(data["brief"], lang)) + "\n" if data.get("brief") else "")
+           + (f"📝 {html.escape(data['group_topics'][:300])}\n" if qty > 1 and data.get("group_topics") else "")
            + f"{tr(lang, 'f_files', n=len(data.get('files', [])))}\n"
            f"{tr(lang, 'f_deadline')}: {dl_name(dl, lang)}\n\n{price_block}")
     can_turtle = bool(price) and turtle_available(data["aud"], data["svc"])
@@ -1189,7 +1269,7 @@ async def show_confirm(m: Message, state: FSMContext):
     elif can_turtle and tk != "add":
         txt += "\n\n" + ttr(lang, "hint", sum=money(TURTLE_ADDON, lang))
     await m.answer(txt, reply_markup=confirm_kb(bool(price), promo, bonus_balance(uid), data.get("use_bonus", False),
-                                                lang, ("on" if tk == "add" else "") if can_turtle else None))
+                                                lang, ("on" if tk == "add" else "") if can_turtle else None, qty))
 
 
 @router.callback_query(Order.confirm, F.data == "turtle:toggle")
@@ -1306,6 +1386,8 @@ async def confirm(c: CallbackQuery, state: FSMContext, bot: Bot):
         data["price"] += data["bonus_used"]
         data["discount"] -= data["bonus_used"]
         data["bonus_used"] = 0
+    if data.get("qty", 1) > 1 and data.get("group_topics"):
+        data["brief"] = list(data.get("brief", [])) + [["group", data["group_topics"]]]
     oid = create_order(data, c.from_user)
     if data.get("promo"):
         use_promo(data["promo"])
@@ -1467,6 +1549,11 @@ async def bonus_menu(m: Message):
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=b(lang, "share"), url=share, style="success")],
         [ibtn(b(lang, "order"), "go_order", "primary", "order")]])
+    n = paid_count(uid)
+    left = 4 - (n % 5)
+    loy = fx(lang, "loy_menu", lvl=fx(lang, "lvl")[loyalty_level(n)], n=n,
+             next=fx(lang, "loy_now") if left == 0 else fx(lang, "loy_next", k=left)) + "<i>" + fx(lang, "loy_rules") + "</i>"
+    txt = txt + "\n\n" + loy
     await m.answer(txt, reply_markup=kb, link_preview_options=LinkPreviewOptions(is_disabled=True))
 
 
@@ -1562,6 +1649,559 @@ async def addbonus_cmd(m: Message, command: CommandObject, bot: Bot):
             pass
 
 
+# ------------------------------------------------------------------ 👥 guruh buyurtmasi
+def group_kb(lang: str):
+    return ikb([[("2", "grp:n:2", None), ("3", "grp:n:3", "primary"), ("5", "grp:n:5", "success"), ("10", "grp:n:10", "success")],
+                [(fx(lang, "grp_other"), "grp:other", None)],
+                [(b(lang, "back"), "grp:back", "danger", "cancel")]])
+
+
+@router.callback_query(Order.confirm, F.data == "grp:start")
+async def group_start(c: CallbackQuery, state: FSMContext):
+    lang = L(c.from_user.id)
+    (n2, p2), (n1, p1) = GROUP_RULES[0], GROUP_RULES[1]
+    await state.set_state(Order.group)
+    await c.message.answer(fx(lang, "grp_ask", n1=n1, p1=p1, n2=n2, p2=p2), reply_markup=group_kb(lang))
+    await c.answer()
+
+
+@router.callback_query(StateFilter(Order.group, Order.gtopics, Order.confirm), F.data.in_({"grp:back", "grp:off", "grp:skip"}))
+async def group_back(c: CallbackQuery, state: FSMContext):
+    if c.data == "grp:off":
+        await state.update_data(qty=1, group_topics="")
+    await c.answer()
+    await show_confirm(c.message, state)
+
+
+@router.callback_query(Order.group, F.data == "grp:other")
+async def group_other(c: CallbackQuery):
+    await c.message.answer(fx(L(c.from_user.id), "grp_custom"))
+    await c.answer()
+
+
+async def group_set(m: Message, state: FSMContext, qty: int, lang: str):
+    await state.update_data(qty=qty)
+    await state.set_state(Order.gtopics)
+    await m.answer(fx(lang, "grp_topics"), reply_markup=ikb([[(b(lang, "skip"), "grp:skip", "primary")]]))
+
+
+@router.callback_query(Order.group, F.data.startswith("grp:n:"))
+async def group_pick(c: CallbackQuery, state: FSMContext):
+    await c.answer()
+    await group_set(c.message, state, int(c.data.split(":")[2]), L(c.from_user.id))
+
+
+@router.message(Order.group, F.text, ~F.text.startswith("/"))
+async def group_custom(m: Message, state: FSMContext):
+    lang = L(m.from_user.id)
+    n = "".join(ch for ch in m.text if ch.isdigit())
+    if not n or not 2 <= int(n) <= 50:
+        await m.answer(fx(lang, "grp_custom"))
+        return
+    await group_set(m, state, int(n), lang)
+
+
+@router.message(Order.gtopics, F.text, ~F.text.startswith("/"))
+async def group_topics(m: Message, state: FSMContext):
+    await state.update_data(group_topics=m.text.strip()[:1500])
+    await show_confirm(m, state)
+
+
+# ------------------------------------------------------------------ ⭐ baho va sharhlar
+def stars_kb(oid: int):
+    return ikb([[(f"{n}⭐", f"rv:s:{oid}:{n}", "success" if n >= 4 else None) for n in range(1, 6)]])
+
+
+async def ask_review(bot: Bot, o):
+    try:
+        await bot.send_message(o["user_id"], fx(L(o["user_id"]), "rv_ask", oid=o["id"]), reply_markup=stars_kb(o["id"]))
+    except Exception as e:
+        logging.info("Baho so'ralmadi: %s", e)
+
+
+def get_review(oid: int):
+    with db() as con:
+        return con.execute("SELECT * FROM reviews WHERE order_id=?", (oid,)).fetchone()
+
+
+@router.callback_query(F.data.startswith("rv:s:"))
+async def review_stars(c: CallbackQuery, state: FSMContext):
+    _, _, oid, n = c.data.split(":")
+    oid, n = int(oid), int(n)
+    o = get_order(oid)
+    lang = L(c.from_user.id)
+    if not o or o["user_id"] != c.from_user.id or not 1 <= n <= 5:
+        await c.answer()
+        return
+    with db() as con:
+        con.execute("INSERT INTO reviews(order_id, user_id, stars, created_at) VALUES(?,?,?,?) "
+                    "ON CONFLICT(order_id) DO UPDATE SET stars=excluded.stars",
+                    (oid, c.from_user.id, n, datetime.now().strftime("%Y-%m-%d %H:%M")))
+    await c.answer("⭐" * n)
+    try:
+        await c.message.edit_text(fx(lang, "rv_ask", oid=oid) + "\n\n" + "⭐" * n)
+    except Exception:
+        pass
+    await state.set_state(Review.text)
+    await state.update_data(rv_oid=oid)
+    await c.message.answer(fx(lang, "rv_comment"), reply_markup=ikb([[(b(lang, "skip"), f"rv:skip:{oid}", "primary")]]))
+
+
+@router.message(Review.text, F.text, ~F.text.startswith("/"))
+async def review_text(m: Message, state: FSMContext):
+    lang = L(m.from_user.id)
+    oid = (await state.get_data()).get("rv_oid")
+    await state.clear()
+    with db() as con:
+        con.execute("UPDATE reviews SET text=? WHERE order_id=?", (m.text.strip()[:700], oid))
+    rv = get_review(oid)
+    if rv and rv["stars"] >= 4:
+        await m.answer(fx(lang, "rv_consent"), reply_markup=ikb([[(fx(lang, "rv_yes"), f"rv:c:{oid}:1", "success"),
+                                                                 (fx(lang, "rv_no"), f"rv:c:{oid}:0", None)]]))
+    else:
+        await review_finish(m, m.bot, oid, lang)
+
+
+@router.callback_query(F.data.startswith("rv:skip:"))
+async def review_skip(c: CallbackQuery, state: FSMContext, bot: Bot):
+    await state.clear()
+    await c.answer()
+    await review_finish(c.message, bot, int(c.data.split(":")[2]), L(c.from_user.id))
+
+
+@router.callback_query(F.data.startswith("rv:c:"))
+async def review_consent(c: CallbackQuery, bot: Bot):
+    _, _, oid, yes = c.data.split(":")
+    with db() as con:
+        con.execute("UPDATE reviews SET consent=? WHERE order_id=? AND user_id=?", (int(yes), int(oid), c.from_user.id))
+    await c.answer()
+    await review_finish(c.message, bot, int(oid), L(c.from_user.id))
+
+
+async def review_finish(m: Message, bot: Bot, oid: int, lang: str):
+    rv, o = get_review(oid), get_order(oid)
+    if not rv or not o:
+        return
+    await m.answer(fx(lang, "rv_thanks") if rv["stars"] >= 4 else fx(lang, "rv_low"))
+    who = f"@{o['username']}" if o["username"] else html.escape(o["full_name"] or "")
+    head = ("⭐" * rv["stars"]) + f" — #{oid} {service_label(o)}\n👤 {who}"
+    body = f"\n\n«{html.escape(rv['text'])}»" if rv["text"] else ""
+    if rv["stars"] <= 3:
+        head = "⚠️ <b>Past baho!</b> Mijoz bilan bog'laning.\n" + head
+    kb = None
+    if rv["stars"] >= 4 and rv["text"] and rv["consent"] and channel_url():
+        kb = ikb([[("📢 Kanalga joylash", f"adm:rvpub:{oid}", "success")]])
+    elif rv["stars"] >= 4 and rv["text"] and not rv["consent"]:
+        body += "\n<i>(mijoz kanalga joylashga rozi emas)</i>"
+    await notify_admins(bot, head + body, kb)
+
+
+def channel_chat() -> str:
+    url = channel_url()
+    return "@" + url.rstrip("/").split("/")[-1] if url else ""
+
+
+def order_button(lang: str = "uz"):
+    return InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(
+        text=fx(lang, "post_btn"), url=f"https://t.me/{BOT_USERNAME}?start=kanal", style="success")]])
+
+
+async def publish_review(c: CallbackQuery, bot: Bot, oid: int):
+    rv, o = get_review(oid), get_order(oid)
+    if not rv or not rv["consent"] or not rv["text"]:
+        await c.message.answer("Bu sharhni joylab bo'lmaydi (rozilik yoki matn yo'q).")
+        return
+    if rv["published"]:
+        await c.message.answer("Bu sharh allaqachon kanalda.")
+        return
+    name = (o["full_name"] or "").split()[0] if o["full_name"] else "Mijoz"
+    text = (f"{'⭐' * rv['stars']}\n\n«{html.escape(rv['text'])}»\n\n— <b>{html.escape(name)}</b>, "
+            f"{html.escape(service_label(o).replace("Do'kon: ", ''))}\n\n💜 Birzumda Tayyorla")
+    try:
+        await bot.send_message(channel_chat(), text, reply_markup=order_button())
+    except Exception as e:
+        await c.message.answer(f"❌ Kanalga yuborilmadi: {html.escape(str(e))[:200]}\n"
+                               "Botni kanalga <b>admin</b> qilib qo'shing (xabar yuborish huquqi bilan).")
+        return
+    with db() as con:
+        con.execute("UPDATE reviews SET published=1 WHERE order_id=?", (oid,))
+    await c.message.answer("✅ Sharh kanalga joylandi!")
+
+
+@router.message(Command("reviews", "sharhlar"))
+async def reviews_cmd(m: Message):
+    if not is_admin(m.from_user.id):
+        return
+    with db() as con:
+        rows = con.execute("SELECT * FROM reviews ORDER BY created_at DESC LIMIT 10").fetchall()
+        avg = con.execute("SELECT AVG(stars), COUNT(*) FROM reviews").fetchone()
+    if not rows:
+        await m.answer("Hali sharhlar yo'q.")
+        return
+    lines = [f"{'⭐' * r['stars']} #{r['order_id']}" + (f" — {html.escape(r['text'][:80])}" if r["text"] else "")
+             + (" 📢" if r["published"] else "") for r in rows]
+    await m.answer(f"⭐ <b>Sharhlar</b> · o'rtacha {avg[0]:.1f} ({avg[1]} ta)\n\n" + "\n".join(lines))
+
+
+# ------------------------------------------------------------------ 📦 tayyor ishlar do'koni
+def shop_items(active_only=True):
+    with db() as con:
+        q = "SELECT * FROM shop" + (" WHERE active=1" if active_only else "") + " ORDER BY id DESC LIMIT 40"
+        return con.execute(q).fetchall()
+
+
+def shop_item(sid: int):
+    with db() as con:
+        return con.execute("SELECT * FROM shop WHERE id=?", (sid,)).fetchone()
+
+
+def shop_list_kb(lang: str):
+    rows = [[(f"{it['title'][:40]} — {money(it['price'], lang)}", f"shop:i:{it['id']}", "primary")] for it in shop_items()]
+    return ikb(rows) if rows else None
+
+
+@router.message(F.text.in_(btn_texts("shop")))
+@router.message(Command("tayyor", "shop"))
+async def shop_menu(m: Message):
+    lang = L(m.from_user.id)
+    if m.text and m.text.startswith("/shop") and is_admin(m.from_user.id):
+        await shop_admin_list(m)
+        return
+    kb = shop_list_kb(lang)
+    await m.answer(fx(lang, "shop_title") if kb else fx(lang, "shop_empty"), reply_markup=kb)
+
+
+@router.callback_query(F.data.startswith("shop:"))
+async def shop_cb(c: CallbackQuery, state: FSMContext, bot: Bot):
+    lang = L(c.from_user.id)
+    _, act, *rest = c.data.split(":")
+    await c.answer()
+    if act == "list":
+        kb = shop_list_kb(lang)
+        await c.message.answer(fx(lang, "shop_title") if kb else fx(lang, "shop_empty"), reply_markup=kb)
+        return
+    it = shop_item(int(rest[0]))
+    if not it or not it["active"]:
+        await c.message.answer(fx(lang, "shop_empty"))
+        return
+    if act == "i":
+        rows = [[(fx(lang, "shop_buy"), f"shop:b:{it['id']}", "success", "money")]]
+        if it["preview_id"]:
+            rows.append([(fx(lang, "shop_prev"), f"shop:p:{it['id']}", "primary")])
+        rows.append([(fx(lang, "shop_back"), "shop:list", None)])
+        await c.message.answer(fx(lang, "shop_item", title=html.escape(it["title"]), price=money(it["price"], lang)),
+                               reply_markup=ikb(rows))
+    elif act == "p" and it["preview_id"]:
+        img = await watermark(bot, it["preview_id"])
+        await c.message.answer_photo(BufferedInputFile(img, "namuna.jpg"),
+                                     reply_markup=ikb([[(fx(lang, "shop_buy"), f"shop:b:{it['id']}", "success", "money")]]))
+    elif act == "b":
+        data = {"aud": "s", "svc": "shop", "pkg": "", "price": it["price"], "full_price": it["price"], "topic": it["title"],
+                "deadline": "normal", "files": [], "brief": [], "shop_id": it["id"]}
+        oid = create_order(data, c.from_user)
+        await state.clear()
+        await state.set_state(Order.cheque)
+        await state.update_data(order_id=oid)
+        await c.message.answer(payment_text(oid, it["price"], lang), reply_markup=mkb(c.from_user.id))
+        await notify_admins(bot, f"🛒 <b>Do'kon</b>: #{oid} «{html.escape(it['title'])}» — {money(it['price'])}\n"
+                                 f"👤 {html.escape(c.from_user.full_name)} · to'lov kutilmoqda")
+
+
+async def deliver_shop(bot: Bot, o):
+    it = shop_item(o["shop_id"]) if o["shop_id"] else None
+    lang = L(o["user_id"])
+    set_status(o["id"], "done")
+    if not it:
+        await notify_admins(bot, f"⚠️ #{o['id']} do'kon mahsuloti topilmadi — faylni qo'lda yuboring.")
+        return
+    await bot.send_message(o["user_id"], fx(lang, "shop_paid"))
+    if it["file_type"] == "photo":
+        await bot.send_photo(o["user_id"], it["file_id"], caption=tr(lang, "file_cap", oid=o["id"]))
+    else:
+        await bot.send_document(o["user_id"], it["file_id"], caption=tr(lang, "file_cap", oid=o["id"]))
+    with db() as con:
+        con.execute("UPDATE shop SET sold=sold+1 WHERE id=?", (it["id"],))
+    await ask_review(bot, o)
+
+
+@router.message(F.document | F.photo, F.caption.regexp(r"^/(sell|preview)\b"))
+async def shop_admin_upload(m: Message):
+    if not is_admin(m.from_user.id):
+        return
+    parts = m.caption.split(maxsplit=2)
+    if parts[0] == "/preview":
+        if len(parts) < 2 or not parts[1].isdigit() or not m.photo or not shop_item(int(parts[1])):
+            await m.answer("Namuna qo'shish: rasm yuboring, izohiga <code>/preview ID</code> yozing.")
+            return
+        with db() as con:
+            con.execute("UPDATE shop SET preview_id=? WHERE id=?", (m.photo[-1].file_id, int(parts[1])))
+        await m.answer(f"✅ #{parts[1]} uchun namuna rasmi saqlandi (mijozga «NAMUNA» belgisi bilan ko'rinadi).")
+        return
+    if len(parts) < 3 or not parts[1].isdigit():
+        await m.answer("Tayyor ish qo'shish: faylni yuboring, izohiga yozing:\n<code>/sell 15000 Sun'iy intellekt — slayd, 12 slayd</code>")
+        return
+    fid, ftype = (m.document.file_id, "doc") if m.document else (m.photo[-1].file_id, "photo")
+    with db() as con:
+        cur = con.execute("INSERT INTO shop(title, price, file_id, file_type, created_at) VALUES(?,?,?,?,?)",
+                          (parts[2][:120], int(parts[1]), fid, ftype, datetime.now().strftime("%Y-%m-%d %H:%M")))
+    await m.answer(f"✅ Do'konga qo'shildi: #{cur.lastrowid} «{html.escape(parts[2][:120])}» — {money(int(parts[1]))}\n"
+                   f"Namuna rasmi: rasm yuborib, izohiga <code>/preview {cur.lastrowid}</code> yozing.\nRo'yxat: /dokon")
+
+
+async def shop_admin_list(m: Message):
+    rows = shop_items(active_only=False)
+    if not rows:
+        await m.answer("Do'kon bo'sh. Qo'shish: fayl + izoh <code>/sell 15000 Nomi</code>")
+        return
+    lines = [f"{'🟢' if r['active'] else '⚪️'} #{r['id']} {html.escape(r['title'][:50])} — {money(r['price'])} · "
+             f"sotildi {r['sold']}" + (" · 👀" if r["preview_id"] else "") for r in rows]
+    await m.answer("📦 <b>Do'kon</b>\n\n" + "\n".join(lines) + "\n\nO'chirish: <code>/delshop ID</code>")
+
+
+@router.message(Command("dokon"))
+async def dokon_cmd(m: Message):
+    if is_admin(m.from_user.id):
+        await shop_admin_list(m)
+
+
+@router.message(Command("delshop"))
+async def delshop_cmd(m: Message, command: CommandObject):
+    if not is_admin(m.from_user.id):
+        return
+    arg = (command.args or "").strip().lstrip("#")
+    with db() as con:
+        cur = con.execute("UPDATE shop SET active=0 WHERE id=?", (int(arg),)) if arg.isdigit() else None
+    await m.answer(f"⚪️ #{arg} o'chirildi." if cur and cur.rowcount else "Ishlatish: <code>/delshop 3</code>")
+
+
+# ------------------------------------------------------------------ 👀 to'lovdan oldin namuna (suv belgisi bilan)
+async def watermark(bot: Bot, file_id: str) -> bytes:
+    from io import BytesIO
+    from PIL import Image, ImageDraw, ImageFont
+    buf = BytesIO()
+    await bot.download(file_id, destination=buf)
+    img = Image.open(BytesIO(buf.getvalue())).convert("RGB")
+    w, h = img.size
+    layer = Image.new("RGBA", (w * 2, h * 2), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    size = max(18, w // 22)
+    try:
+        font = ImageFont.load_default(size=size)
+    except TypeError:
+        font = ImageFont.load_default()
+    text = "BIRZUMDA  -  NAMUNA     "
+    tw = d.textlength(text, font=font)
+    for y in range(0, h * 2, size * 4):
+        x = -((y // (size * 4)) % 2) * tw / 2
+        while x < w * 2:
+            d.text((x, y), text, font=font, fill=(255, 255, 255, 85))
+            x += tw
+    layer = layer.rotate(28, resample=Image.BICUBIC).crop((w // 2, h // 2, w // 2 + w, h // 2 + h))
+    out = Image.alpha_composite(img.convert("RGBA"), layer).convert("RGB")
+    res = BytesIO()
+    out.save(res, "JPEG", quality=85)
+    return res.getvalue()
+
+
+@router.message(AdminSend.preview, F.photo)
+async def preview_photo(m: Message, state: FSMContext, bot: Bot):
+    data = await state.get_data()
+    o = get_order(data["prev_oid"])
+    lang = L(o["user_id"])
+    img = await watermark(bot, m.photo[-1].file_id)
+    cap = fx(lang, "prev_msg", oid=o["id"]) if not data.get("prev_n") else None
+    await bot.send_photo(o["user_id"], BufferedInputFile(img, "namuna.jpg"), caption=cap)
+    await state.update_data(prev_n=data.get("prev_n", 0) + 1)
+    await m.answer("Yuborildi (suv belgisi bilan). Yana rasm yoki /done.")
+
+
+@router.message(AdminSend.preview, Command("done"))
+async def preview_done(m: Message, state: FSMContext, bot: Bot):
+    oid = (await state.get_data())["prev_oid"]
+    await state.clear()
+    o = get_order(oid)
+    lang = L(o["user_id"])
+    if o["status"] == "new":
+        await bot.send_message(o["user_id"], fx(lang, "prev_ok") + "\n\n" + payment_text(oid, o["price"], lang))
+    await m.answer(f"#{oid} — namuna mijozga yuborildi ✅")
+
+
+@router.message(AdminSend.preview, ~F.text.startswith("/"))
+async def preview_wrong(m: Message):
+    await m.answer("Rasm (skrinshot) yuboring yoki /done.")
+
+
+# ------------------------------------------------------------------ 📊 daromad
+def parse_dt(s: str):
+    try:
+        return datetime.strptime(s, "%Y-%m-%d %H:%M")
+    except (TypeError, ValueError):
+        return None
+
+
+@router.message(Command("daromad", "income"))
+async def daromad_cmd(m: Message):
+    if not is_admin(m.from_user.id):
+        return
+    from datetime import timedelta
+    now = datetime.now()
+    with db() as con:
+        rows = con.execute("SELECT * FROM orders WHERE status IN ('work','done')").fetchall()
+    per = {"today": [0, 0], "week": [0, 0], "month": [0, 0], "all": [0, 0]}
+    top: dict[str, list] = {}
+    for o in rows:
+        d = parse_dt(o["paid_at"] or o["created_at"]) or now
+        local_today = (now + timedelta(hours=TZ_OFFSET)).date()
+        age = now - d
+        keys = ["all"] + (["month"] if age.days < 30 else []) + (["week"] if age.days < 7 else []) + \
+               (["today"] if (d + timedelta(hours=TZ_OFFSET)).date() == local_today else [])
+        for k in keys:
+            per[k][0] += o["price"] or 0
+            per[k][1] += 1
+        name = "📦 Do'kon" if o["service"] == "shop" else svc_tr(o["audience"], o["service"], "uz")[0]
+        top.setdefault(name, [0, 0])
+        top[name][0] += o["price"] or 0
+        top[name][1] += 1
+    best = sorted(top.items(), key=lambda kv: -kv[1][0])[:6]
+    lines = "\n".join(f"{i + 1}. {html.escape(n)} — <b>{money(v[0])}</b> ({v[1]} ta)" for i, (n, v) in enumerate(best))
+    await m.answer("📊 <b>Daromad</b>\n\n"
+                   f"Bugun: <b>{som(per['today'][0])}</b> ({per['today'][1]} ta)\n"
+                   f"7 kun: <b>{som(per['week'][0])}</b> ({per['week'][1]} ta)\n"
+                   f"30 kun: <b>{som(per['month'][0])}</b> ({per['month'][1]} ta)\n"
+                   f"Jami: <b>{som(per['all'][0])}</b> ({per['all'][1]} ta)\n\n"
+                   f"🏆 <b>Eng ko'p daromad:</b>\n{lines or '—'}")
+
+
+# ------------------------------------------------------------------ ⏰ eslatmalar (muddat va to'lov)
+PKG_HOURS = {"start": 24, "pro": 48, "premium": 72}
+
+
+def due_time(o):
+    from datetime import timedelta
+    start = parse_dt(o["paid_at"] or o["created_at"])
+    if not start:
+        return None
+    hours = 24 if o["deadline"] == "urgent" else PKG_HOURS.get(o["package"] or "", 72)
+    return start + timedelta(hours=hours)
+
+
+def fmt_local(d) -> str:
+    from datetime import timedelta
+    return (d + timedelta(hours=TZ_OFFSET)).strftime("%d.%m %H:%M")
+
+
+async def check_reminders(bot: Bot):
+    from datetime import timedelta
+    now = datetime.now()
+    with db() as con:
+        unpaid = con.execute("SELECT * FROM orders WHERE status='new' AND remind_pay=0").fetchall()
+        working = con.execute("SELECT * FROM orders WHERE status='work' AND remind_adm<2").fetchall()
+    for o in unpaid:
+        created = parse_dt(o["created_at"])
+        if created and now - created >= timedelta(hours=REMIND_PAY_HOURS):
+            with db() as con:
+                con.execute("UPDATE orders SET remind_pay=1 WHERE id=?", (o["id"],))
+            try:
+                await bot.send_message(o["user_id"], fx(L(o["user_id"]), "pay_remind", oid=o["id"]))
+            except Exception as e:
+                logging.info("To'lov eslatmasi yuborilmadi: %s", e)
+    for o in working:
+        due = due_time(o)
+        if not due:
+            continue
+        level = 2 if now >= due else 1 if now >= due - timedelta(hours=6) else 0
+        if level > o["remind_adm"]:
+            with db() as con:
+                con.execute("UPDATE orders SET remind_adm=? WHERE id=?", (level, o["id"]))
+            head = "🔴 <b>Muddat o'tdi!</b>" if level == 2 else "⏰ <b>Muddat yaqin</b> (6 soatdan kam)"
+            await notify_admins(bot, f"{head} — #{o['id']} {html.escape(service_label(o))}\n"
+                                     f"📝 {html.escape(o['topic'][:80])}\n🕐 Muddat: {fmt_local(due)}",
+                                admin_kb(o["id"], "work"))
+
+
+async def reminders_loop(bot: Bot):
+    await asyncio.sleep(20)
+    while True:
+        try:
+            await check_reminders(bot)
+        except Exception as e:
+            logging.warning("Eslatmalar xatosi: %s", e)
+        await asyncio.sleep(900)  # har 15 daqiqada
+
+
+@router.message(Command("muddat", "deadlines"))
+async def muddat_cmd(m: Message):
+    if not is_admin(m.from_user.id):
+        return
+    with db() as con:
+        rows = con.execute("SELECT * FROM orders WHERE status='work'").fetchall()
+    items = sorted(((due_time(o), o) for o in rows if due_time(o)), key=lambda x: x[0])
+    if not items:
+        await m.answer("Hozir ishda buyurtma yo'q ✅")
+        return
+    now = datetime.now()
+    lines = [f"{'🔴' if d <= now else '🟡' if (d - now).total_seconds() < 6 * 3600 else '🟢'} #{o['id']} "
+             f"{html.escape(service_label(o))} — <b>{fmt_local(d)}</b>" for d, o in items]
+    await m.answer("⏰ <b>Ishdagi buyurtmalar muddati</b>\n\n" + "\n".join(lines))
+
+
+# ------------------------------------------------------------------ 📢 kanalga post
+@router.message(Command("post"))
+async def post_start(m: Message, state: FSMContext):
+    if not is_admin(m.from_user.id):
+        return
+    if not channel_chat():
+        await m.answer("Kanal sozlanmagan (CHANNEL).")
+        return
+    await state.set_state(AdminSend.post)
+    await m.answer(f"📢 {channel_chat()} kanaliga post: matn, rasm yoki video yuboring.\n"
+                   "Postga «✨ Buyurtma berish» tugmasi avtomatik qo'shiladi. Bekor qilish: /cancel")
+
+
+@router.message(AdminSend.post, ~F.text.startswith("/"))
+async def post_preview(m: Message, state: FSMContext, bot: Bot):
+    await state.update_data(post_chat=m.chat.id, post_msg=m.message_id)
+    await state.set_state(AdminSend.post_confirm)
+    await bot.copy_message(m.chat.id, m.chat.id, m.message_id, reply_markup=order_button())
+    await m.answer("👆 Kanalda shunday ko'rinadi. Yuboraymi?",
+                   reply_markup=ikb([[("📢 Kanalga yuborish", "post:go", "success"), ("❌ Bekor", "post:no", "danger")]]))
+
+
+@router.callback_query(AdminSend.post_confirm, F.data.startswith("post:"))
+async def post_go(c: CallbackQuery, state: FSMContext, bot: Bot):
+    data = await state.get_data()
+    await state.clear()
+    await c.answer()
+    if c.data == "post:no":
+        await c.message.answer("Bekor qilindi.")
+        return
+    try:
+        await bot.copy_message(channel_chat(), data["post_chat"], data["post_msg"], reply_markup=order_button())
+        await c.message.answer(f"✅ Post {channel_chat()} kanaliga joylandi!")
+    except Exception as e:
+        await c.message.answer(f"❌ Yuborilmadi: {html.escape(str(e))[:200]}\n"
+                               "Botni kanalga <b>admin</b> qilib qo'shing (xabar yuborish huquqi bilan).")
+
+
+# ------------------------------------------------------------------ admin yordam
+@router.message(Command("admin"))
+async def admin_help(m: Message):
+    if not is_admin(m.from_user.id):
+        return
+    await m.answer(
+        "🛠 <b>Admin buyruqlari</b>\n\n"
+        "📊 /daromad — daromad · /stats — statistika · /orders — oxirgi buyurtmalar\n"
+        "⏰ /muddat — ishdagi buyurtmalar muddati\n"
+        "📋 <code>/tz 12</code> — texnik topshiriq\n"
+        "⭐ /reviews — sharhlar\n"
+        "📦 /dokon — tayyor ishlar · fayl + <code>/sell 15000 Nomi</code> · rasm + <code>/preview ID</code> · "
+        "<code>/delshop ID</code>\n"
+        "🎟 <code>/promo KOD FOIZ [SONI]</code> · /promos · <code>/delpromo KOD</code>\n"
+        "🔥 <code>/aksiya matn</code> · 🎁 <code>/addbonus ID SUMMA</code>\n"
+        "📢 /post — kanalga post · /broadcast — hammaga xabar\n"
+        "👀 Buyurtmadagi «Namuna yuborish» — to'lovdan oldin suv belgili rasmlar")
+
+
 # ------------------------------------------------------------------ admin
 @router.callback_query(F.data.startswith("adm:"))
 async def admin_action(c: CallbackQuery, state: FSMContext, bot: Bot):
@@ -1578,10 +2218,20 @@ async def admin_action(c: CallbackQuery, state: FSMContext, bot: Bot):
         if o["status"] != "paid":
             await c.answer(f"Holat: {STATUS.get(o['status'], o['status'])}", show_alert=True)
             return
-        set_status(oid, "work")
-        await bot.send_message(o["user_id"], tr(L(o["user_id"]), "paid_ok", oid=oid))
+        with db() as con:
+            con.execute("UPDATE orders SET paid_at=? WHERE id=?", (datetime.now().strftime("%Y-%m-%d %H:%M"), oid))
+        ul = L(o["user_id"])
         await reward_referrer(bot, o["user_id"])
-        await c.message.answer(f"#{oid} — ishga olindi. Tayyor bo'lgach tugmani bosing:", reply_markup=admin_kb(oid, "work"))
+        if o["service"] == "shop":  # tayyor ish — faylni darhol yuboramiz
+            await deliver_shop(bot, o)
+            await c.message.answer(f"#{oid} — do'kon fayli mijozga avtomatik yuborildi ✅")
+        else:
+            set_status(oid, "work")
+            await bot.send_message(o["user_id"], tr(ul, "paid_ok", oid=oid))
+            if (o["qty"] or 1) >= 5 and GROUP_BONUS:
+                add_bonus(o["user_id"], GROUP_BONUS)
+                await bot.send_message(o["user_id"], fx(ul, "grp_bonus", sum=money(GROUP_BONUS, ul)))
+            await c.message.answer(f"#{oid} — ishga olindi. Tayyor bo'lgach tugmani bosing:", reply_markup=admin_kb(oid, "work"))
     elif act == "no":
         if o["status"] in ("rejected", "done"):
             await c.answer("Bu buyurtma allaqachon yopilgan", show_alert=True)
@@ -1594,6 +2244,13 @@ async def admin_action(c: CallbackQuery, state: FSMContext, bot: Bot):
         await state.set_state(AdminSend.price)
         await state.update_data(price_oid=oid)
         await c.message.answer(f"#{oid} uchun narxni yozing (faqat raqam, masalan 150000):")
+    elif act == "prev":
+        await state.set_state(AdminSend.preview)
+        await state.update_data(prev_oid=oid, prev_n=0)
+        await c.message.answer(f"#{oid} uchun 2–3 ta slayd rasmini (skrinshot) yuboring — bot ularga «NAMUNA» suv belgisini "
+                               "qo'yib mijozga yuboradi. Tugatgach /done yozing.")
+    elif act == "rvpub":
+        await publish_review(c, bot, oid)
     elif act == "send":
         await state.set_state(AdminSend.file)
         await state.update_data(send_oid=oid)
@@ -1626,7 +2283,8 @@ async def admin_done(m: Message, state: FSMContext, bot: Bot):
     await state.clear()
     o = get_order(oid)
     await bot.send_message(o["user_id"], tr(L(o["user_id"]), "done", oid=oid, contact=CONTACT))
-    await m.answer(f"#{oid} — topshirildi ✅")
+    await ask_review(bot, o)
+    await m.answer(f"#{oid} — topshirildi ✅ Mijozdan baho so'raldi.")
 
 
 @router.message(AdminSend.file, F.document | F.photo | F.video)
@@ -1885,6 +2543,7 @@ async def main():
 
     dp.include_router(router)
     await set_commands(bot)
+    asyncio.create_task(reminders_loop(bot))
     global BOT_USERNAME
     try:
         BOT_USERNAME = (await bot.get_me()).username or BOT_USERNAME
