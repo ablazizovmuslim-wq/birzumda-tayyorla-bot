@@ -67,9 +67,9 @@ CAT_TR = {
     "ru": {
         "s": {"title": "🎓 Для студентов", "services": {
             "taqdimot": {"name": "Слайды (презентация)", "packages": {
-                "start": ("Start", "10–12 слайдов, современный дизайн, 1 день"),
-                "pro": ("Professional", "15–20 слайдов, анимация, диаграммы, 1–2 дня"),
-                "premium": ("Premium", "20–25 слайдов, Morph, неон, текст речи, 2–3 дня")}},
+                "start": ("Start", "10–12 слайдов, современный дизайн, 3 часа"),
+                "pro": ("Professional", "15–20 слайдов, анимация, диаграммы, 6 часов"),
+                "premium": ("Premium", "20–25 слайдов, Morph, неон, текст речи, 12 часов")}},
             "mustaqil": {"name": "Самостоятельная работа", "desc": "В Word, с красивой обложкой"},
             "kurs": {"name": "Курсовая работа", "desc": "План, главы, заключение, список литературы"},
             "maqola": {"name": "Статья / тезисы", "desc": "Научная статья или тезисы конференции"},
@@ -98,9 +98,9 @@ CAT_TR = {
     "en": {
         "s": {"title": "🎓 For students", "services": {
             "taqdimot": {"name": "Slides (presentation)", "packages": {
-                "start": ("Start", "10–12 slides, modern design, 1 day"),
-                "pro": ("Professional", "15–20 slides, animation, charts, 1–2 days"),
-                "premium": ("Premium", "20–25 slides, Morph, neon design, speech text, 2–3 days")}},
+                "start": ("Start", "10–12 slides, modern design, 3 hours"),
+                "pro": ("Professional", "15–20 slides, animation, charts, 6 hours"),
+                "premium": ("Premium", "20–25 slides, Morph, neon design, speech text, 12 hours")}},
             "mustaqil": {"name": "Independent work", "desc": "In Word, with a nice cover page"},
             "kurs": {"name": "Term paper", "desc": "Outline, chapters, conclusion, references"},
             "maqola": {"name": "Article / abstract", "desc": "Research article or conference abstract"},

@@ -122,9 +122,9 @@ CATALOG = {
         "title": "🎓 Talabalar uchun",
         "services": {
             "taqdimot": {"name": "Slayd (taqdimot)", "packages": {
-                "start": ("Start", 20000, "10–12 slayd, zamonaviy dizayn, 1 kun"),
-                "pro": ("Professional", 25000, "15–20 slayd, animatsiya, diagrammalar, 1–2 kun"),
-                "premium": ("Premium", 30000, "20–25 slayd, Morph, neon dizayn, nutq matni, 2–3 kun"),
+                "start": ("Start", 20000, "10–12 slayd, zamonaviy dizayn, 3 soat"),
+                "pro": ("Professional", 25000, "15–20 slayd, animatsiya, diagrammalar, 6 soat"),
+                "premium": ("Premium", 30000, "20–25 slayd, Morph, neon dizayn, nutq matni, 12 soat"),
             }},
             "mustaqil": {"name": "Mustaqil ish", "price": 25000, "desc": "Word formatda, chiroyli muqova bilan"},
             "kurs": {"name": "Kurs ishi", "price": 30000, "desc": "Reja, boblar, xulosa, adabiyotlar ro'yxati"},
@@ -2201,16 +2201,25 @@ async def daromad_cmd(m: Message):
 
 
 # ------------------------------------------------------------------ ⏰ eslatmalar (muddat va to'lov)
-PKG_HOURS = {"start": 24, "pro": 48, "premium": 72}
+PKG_HOURS = {"start": 3, "pro": 6, "premium": 12}  # to'lovdan keyin, soatda
+URGENT_HOURS = 2
+OTHER_HOURS = 6                                       # paketsiz xizmatlar (mustaqil ish, referat…)
+WORK_FROM, WORK_TO = 10, 22                           # tunda tushsa — ertalab 10:00 ga
 
 
 def due_time(o):
+    """Tayyor bo'lish muddati (UTC). Tunga (22:00–10:00, Toshkent) tushsa — ertalab 10:00."""
     from datetime import timedelta
     start = parse_dt(o["paid_at"] or o["created_at"])
     if not start:
         return None
-    hours = 24 if o["deadline"] == "urgent" else PKG_HOURS.get(o["package"] or "", 72)
-    return start + timedelta(hours=hours)
+    hours = URGENT_HOURS if o["deadline"] == "urgent" else PKG_HOURS.get(o["package"] or "", OTHER_HOURS)
+    local = start + timedelta(hours=TZ_OFFSET + hours)
+    if local.hour >= WORK_TO:
+        local = (local + timedelta(days=1)).replace(hour=WORK_FROM, minute=0)
+    elif local.hour < WORK_FROM:
+        local = local.replace(hour=WORK_FROM, minute=0)
+    return local - timedelta(hours=TZ_OFFSET)
 
 
 def fmt_local(d) -> str:
@@ -2237,11 +2246,11 @@ async def check_reminders(bot: Bot):
         due = due_time(o)
         if not due:
             continue
-        level = 2 if now >= due else 1 if now >= due - timedelta(hours=6) else 0
+        level = 2 if now >= due else 1 if now >= due - timedelta(hours=1) else 0
         if level > o["remind_adm"]:
             with db() as con:
                 con.execute("UPDATE orders SET remind_adm=? WHERE id=?", (level, o["id"]))
-            head = "🔴 <b>Muddat o'tdi!</b>" if level == 2 else "⏰ <b>Muddat yaqin</b> (6 soatdan kam)"
+            head = "🔴 <b>Muddat o'tdi!</b>" if level == 2 else "⏰ <b>Muddat yaqin</b> — 1 soatdan kam qoldi"
             await notify_admins(bot, f"{head} — #{o['id']} {html.escape(service_label(o))}\n"
                                      f"📝 {html.escape(o['topic'][:80])}\n🕐 Muddat: {fmt_local(due)}\n📤 Yuborish: /yubor_{o['id']}",
                                 admin_kb(o["id"], "work"))
@@ -2254,7 +2263,7 @@ async def reminders_loop(bot: Bot):
             await check_reminders(bot)
         except Exception as e:
             logging.warning("Eslatmalar xatosi: %s", e)
-        await asyncio.sleep(900)  # har 15 daqiqada
+        await asyncio.sleep(300)  # har 5 daqiqada
 
 
 @router.message(Command("muddat", "deadlines"))
@@ -2268,7 +2277,7 @@ async def muddat_cmd(m: Message):
         await m.answer("Hozir ishda buyurtma yo'q ✅")
         return
     now = datetime.now()
-    lines = [f"{'🔴' if d <= now else '🟡' if (d - now).total_seconds() < 6 * 3600 else '🟢'} #{o['id']} "
+    lines = [f"{'🔴' if d <= now else '🟡' if (d - now).total_seconds() < 3600 else '🟢'} #{o['id']} "
              f"{html.escape(service_label(o))} — <b>{fmt_local(d)}</b>  /yubor_{o['id']}" for d, o in items]
     await m.answer("⏰ <b>Ishdagi buyurtmalar muddati</b>\n\n" + "\n".join(lines))
 
