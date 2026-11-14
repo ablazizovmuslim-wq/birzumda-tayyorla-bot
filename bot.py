@@ -15,6 +15,7 @@ Muhit o'zgaruvchilari (Railway → Variables):
 """
 import asyncio
 import html
+import io
 import json
 import logging
 import os
@@ -1558,12 +1559,22 @@ async def accept_cheque(m: Message, bot: Bot, oid: int):
     await m.answer(tr(L(m.from_user.id), "cheque_ok"), reply_markup=mkb(m.from_user.id))
     o = get_order(oid)
     text = "🧾 Chek keldi!\n\n" + order_text(o, True)
-    if auto_ready(o):
+    smart = auto_ready(o) and get_setting("auto_cheque", "on") == "on"
+    if smart:
+        text += "\n\n🤖 <b>Chek avtomatik tekshirilmoqda…</b> To'g'ri bo'lsa, ish o'zi boshlanadi — sizga xabar keladi."
+    elif auto_ready(o):
         text += "\n\n🤖 <b>Tasdiqlasangiz — ish avtomatik tayyorlanib, mijozga darhol yuboriladi.</b>"
     if m.photo:
         await notify_admins(bot, text, admin_kb(oid, "paid"), photo=m.photo[-1].file_id)
     else:
         await notify_admins(bot, text, admin_kb(oid, "paid"), document=m.document.file_id)
+    if smart:
+        if m.photo:
+            fid, uid, mime = m.photo[-1].file_id, m.photo[-1].file_unique_id, "image/jpeg"
+        else:
+            fid, uid, mime = m.document.file_id, m.document.file_unique_id, m.document.mime_type or ""
+        if mime.startswith("image/") or mime == "application/pdf":
+            asyncio.create_task(check_cheque(bot, oid, fid, uid, mime))
 
 
 def awaiting_payment(uid: int):
@@ -2096,6 +2107,44 @@ async def dokon_cmd(m: Message):
         await shop_admin_list(m)
 
 
+@router.message(Command("ochir", "delorder"))
+async def ochir_cmd(m: Message, command: CommandObject):
+    """Admin: /ochir 1 2 — sinov buyurtmalarini butunlay o'chirish (tasdiq bilan)."""
+    if not is_admin(m.from_user.id):
+        return
+    ids = sorted({int(x) for x in (command.args or "").replace(",", " ").replace("#", " ").split() if x.isdigit()})
+    rows = [get_order(i) for i in ids]
+    rows = [o for o in rows if o]
+    if not rows:
+        await m.answer("Ishlatish: <code>/ochir 1 2</code> — buyurtma raqamlari")
+        return
+    lines = "\n".join(f"#{o['id']} · {html.escape(service_label(o))} · {html.escape((o['topic'] or '')[:40])} · "
+                      f"{STATUS.get(o['status'], o['status'])}" for o in rows)
+    key = "-".join(str(o["id"]) for o in rows)
+    await m.answer(f"🗑 Shu buyurtmalar <b>butunlay o'chiriladi</b> (statistika va daromaddan ham):\n\n{lines}\n\nTasdiqlaysizmi?",
+                   reply_markup=ikb([[("🗑 Ha, o'chirish", f"del:{key}", "danger"), ("Bekor", "del:no", None)]]))
+
+
+@router.callback_query(F.data.startswith("del:"))
+async def ochir_cb(c: CallbackQuery):
+    if not is_admin(c.from_user.id):
+        await c.answer("Ruxsat yo'q", show_alert=True)
+        return
+    arg = c.data.split(":", 1)[1]
+    if arg == "no":
+        await c.answer("Bekor qilindi")
+        await c.message.edit_reply_markup(reply_markup=None)
+        return
+    ids = [int(x) for x in arg.split("-") if x.isdigit()]
+    with db() as con:
+        for i in ids:
+            con.execute("DELETE FROM orders WHERE id=?", (i,))
+            con.execute("DELETE FROM reviews WHERE order_id=?", (i,))
+            con.execute("DELETE FROM settings WHERE key=?", (f"ai_file_{i}",))
+    await c.answer("O'chirildi")
+    await c.message.edit_text("✅ O'chirildi: " + ", ".join(f"#{i}" for i in ids))
+
+
 @router.message(Command("delshop"))
 async def delshop_cmd(m: Message, command: CommandObject):
     if not is_admin(m.from_user.id):
@@ -2291,6 +2340,98 @@ async def run_auto(bot: Bot, oid: int, to_client: bool = True):
     await check_low_balance(bot)
 
 
+async def approve_order(bot: Bot, oid: int, reply_to: Message | None = None, auto_note: str = ""):
+    """To'lovni tasdiqlash: admin tugmasi yoki avtomatik chek tekshiruvi."""
+    o = get_order(oid)
+    with db() as con:
+        con.execute("UPDATE orders SET paid_at=? WHERE id=?", (datetime.now().strftime("%Y-%m-%d %H:%M"), oid))
+    ul = L(o["user_id"])
+    await reward_referrer(bot, o["user_id"])
+
+    async def tell(text, kb=None):
+        if reply_to is not None:
+            await reply_to.answer(text, reply_markup=kb)
+        else:
+            await notify_admins(bot, text, kb)
+
+    if o["service"] == "shop":  # tayyor ish — faylni darhol yuboramiz
+        await deliver_shop(bot, o)
+        await tell(f"#{oid} — do'kon fayli mijozga avtomatik yuborildi ✅")
+        return
+    set_status(oid, "work")
+    o = get_order(oid)
+    due = due_time(o)
+    if auto_ready(o):
+        await bot.send_message(o["user_id"], fx(ul, "auto_wait", oid=oid))
+        await tell((auto_note or f"#{oid} — ✅ tasdiqlandi.") + "\n🤖 Ish avtomatik tayyorlanmoqda (1–5 daqiqa), tayyor bo'lgach "
+                   "mijozga yuboriladi va sizga nusxasi keladi.",
+                   ikb([[("🚩 Soxta chek", f"adm:fake:{oid}", "danger")]]) if auto_note else None)
+        asyncio.create_task(run_auto(bot, oid))
+        return
+    await bot.send_message(o["user_id"], tr(ul, "paid_ok", oid=oid, due=fmt_local(due) if due else "—"))
+    if (o["qty"] or 1) >= 5 and GROUP_BONUS:
+        add_bonus(o["user_id"], GROUP_BONUS)
+        await bot.send_message(o["user_id"], fx(ul, "grp_bonus", sum=money(GROUP_BONUS, ul)))
+    await tell(f"#{oid} — ishga olindi ✅ Mijozga muddat yozildi: <b>{fmt_local(due) if due else '—'}</b>\n\n"
+               f"Tayyor bo'lgach: tugmani bosing yoki /yubor_{oid} → faylni tashlang → /done", admin_kb(oid, "work"))
+
+
+def _digits(s) -> str:
+    return "".join(ch for ch in str(s or "") if ch.isdigit())
+
+
+async def check_cheque(bot: Bot, oid: int, file_id: str, unique_id: str, mime: str):
+    """🧾 Chekni Claude bilan o'qib tekshiradi: summa, karta, sana, takror chek. Hammasi mos — avtomatik tasdiq."""
+    from datetime import timedelta
+    acc = AG.cost_tracker()
+    reasons, info = [], {}
+    try:
+        if get_setting(f"cheque_{unique_id}"):
+            reasons.append("bu chek avval boshqa buyurtmada ishlatilgan")
+        buf = io.BytesIO()
+        await bot.download(file_id, destination=buf)
+        info = await asyncio.wait_for(AG.read_cheque(buf.getvalue(), mime if mime == "application/pdf" else "image/jpeg"), timeout=90)
+        o = get_order(oid)
+        need = int(o["price"] or 0)
+        amount = int(_digits(info.get("amount")) or 0)
+        last4 = _digits(info.get("recipient_card_last4"))[-4:]
+        mine = _digits(CARD_NUMBER)[-4:]
+        if not info.get("is_receipt"):
+            reasons.append("rasm to'lov chekiga o'xshamaydi")
+        if info.get("success") is False:
+            reasons.append("chekda to'lov muvaffaqiyatli emas")
+        if info.get("edited_signs"):
+            reasons.append("tahrirlangan belgilar bor")
+        if not need or amount < need - 500:
+            reasons.append(f"summa mos emas ({money(amount) if amount else 'o‘qilmadi'} / kerak {money(need)})")
+        if not last4 or last4 != mine:
+            reasons.append(f"qabul qiluvchi karta mos emas (*{last4 or '?'} / sizniki *{mine})")
+        dt = None
+        try:
+            dt = datetime.strptime(str(info.get("datetime"))[:16], "%Y-%m-%d %H:%M") - timedelta(hours=TZ_OFFSET)
+        except (TypeError, ValueError):
+            pass
+        if not dt:
+            reasons.append("chekda sana o'qilmadi")
+        elif not (datetime.now() - timedelta(hours=36) <= dt <= datetime.now() + timedelta(minutes=30)):
+            reasons.append("chek sanasi eski yoki noto'g'ri")
+    except Exception as e:
+        reasons.append(f"chek o'qilmadi ({str(e)[:120]})")
+    with db() as con:
+        con.execute("UPDATE orders SET ai_cost=COALESCE(ai_cost,0)+? WHERE id=?", (acc[0], oid))
+    o = get_order(oid)
+    if not o or o["status"] != "paid":  # admin allaqachon qaror qilgan
+        return
+    if reasons:
+        await notify_admins(bot, f"🧾 #{oid} — <b>chek avtomatik tasdiqlanmadi</b>:\n• " + "\n• ".join(html.escape(r) for r in reasons)
+                            + "\n\nKartangizni tekshirib, o'zingiz qaror qiling:", admin_kb(oid, "paid"))
+        return
+    set_setting(f"cheque_{unique_id}", str(oid))
+    note = (f"✅ #{oid} — <b>chek avtomatik tasdiqlandi</b>: {money(int(_digits(info.get('amount'))))} → karta "
+            f"*{_digits(CARD_NUMBER)[-4:]}, {html.escape(str(info.get('datetime')))}.\nVaqtingiz bo'lganda kartangizga tushganini tekshirib qo'ying.")
+    await approve_order(bot, oid, None, note)
+
+
 @router.message(Command("avto", "auto"))
 async def avto_cmd(m: Message, command: CommandObject, bot: Bot):
     if not is_admin(m.from_user.id):
@@ -2300,6 +2441,8 @@ async def avto_cmd(m: Message, command: CommandObject, bot: Bot):
         set_setting("auto_mode", "on")
     elif arg in ("off", "o'chir", "ochir"):
         set_setting("auto_mode", "off")
+    elif arg in ("chek on", "chek off"):
+        set_setting("auto_cheque", arg.split()[1])
     elif arg.startswith("+"):
         try:
             add = float(arg[1:].replace("$", ""))
@@ -2335,6 +2478,8 @@ async def avto_cmd(m: Message, command: CommandObject, bot: Bot):
         + "\n<b>Avtomatik:</b> slayd (talaba), mustaqil ish, kurs ishi, referat, maqola, amaliy ish; ustozlar: taqdimot (Start), "
           "tadbir, maqola, test, dars ishlanmasi.\n<b>Qo'lda:</b> portfolio, O'UM, Boshqa, toshbaqa o'qituvchi, guruh buyurtmalari.\n\n"
           "<code>/avto off</code> — o'chirish · <code>/avto on</code> — yoqish\n"
+          f"🧾 Chekni avtomatik tekshirish: <b>{'yoqilgan' if get_setting('auto_cheque', 'on') == 'on' else 'o‘chirilgan'}</b> — "
+          "<code>/avto chek off</code> / <code>/avto chek on</code>\n"
           "<code>/avto +5</code> — $5 to'ldirdim · <code>/avto balans 4.30</code> — aniq qoldiq")
 
 
@@ -2469,6 +2614,7 @@ async def admin_help(m: Message):
         "⏰ /muddat — ishdagi buyurtmalar muddati\n"
         "📤 /yubor 12 — tayyor ishni mijozga yuborish\n"
         "🤖 /avto — avtomatik bajarish, API balansi\n"
+        "🗑 /ochir 1 2 — sinov buyurtmalarini o'chirish\n"
         "📋 <code>/tz 12</code> — texnik topshiriq\n"
         "⭐ /reviews — sharhlar\n"
         "📦 /dokon — tayyor ishlar · fayl + <code>/sell 15000 Nomi</code> · rasm + <code>/preview ID</code> · "
@@ -2495,31 +2641,14 @@ async def admin_action(c: CallbackQuery, state: FSMContext, bot: Bot):
         if o["status"] != "paid":
             await c.answer(f"Holat: {STATUS.get(o['status'], o['status'])}", show_alert=True)
             return
-        with db() as con:
-            con.execute("UPDATE orders SET paid_at=? WHERE id=?", (datetime.now().strftime("%Y-%m-%d %H:%M"), oid))
-        ul = L(o["user_id"])
-        await reward_referrer(bot, o["user_id"])
-        if o["service"] == "shop":  # tayyor ish — faylni darhol yuboramiz
-            await deliver_shop(bot, o)
-            await c.message.answer(f"#{oid} — do'kon fayli mijozga avtomatik yuborildi ✅")
-        else:
-            set_status(oid, "work")
-            o = get_order(oid)
-            due = due_time(o)
-            if auto_ready(o):
-                await bot.send_message(o["user_id"], fx(ul, "auto_wait", oid=oid))
-                await c.message.answer(f"#{oid} — ✅ tasdiqlandi. 🤖 Ish avtomatik tayyorlanmoqda (1–5 daqiqa), tayyor bo'lgach "
-                                       "mijozga yuboriladi va sizga nusxasi keladi.")
-                asyncio.create_task(run_auto(bot, oid))
-                await c.answer()
-                return
-            await bot.send_message(o["user_id"], tr(ul, "paid_ok", oid=oid, due=fmt_local(due) if due else "—"))
-            if (o["qty"] or 1) >= 5 and GROUP_BONUS:
-                add_bonus(o["user_id"], GROUP_BONUS)
-                await bot.send_message(o["user_id"], fx(ul, "grp_bonus", sum=money(GROUP_BONUS, ul)))
-            await c.message.answer(f"#{oid} — ishga olindi ✅ Mijozga muddat yozildi: <b>{fmt_local(due) if due else '—'}</b>\n\n"
-                                   f"Tayyor bo'lgach: tugmani bosing yoki /yubor_{oid} → faylni tashlang → /done",
-                                   reply_markup=admin_kb(oid, "work"))
+        await approve_order(bot, oid, c.message)
+    elif act == "fake":
+        set_status(oid, "rejected")
+        try:
+            await bot.send_message(o["user_id"], tr(L(o["user_id"]), "rejected", oid=oid, contact=CONTACT))
+        except Exception:
+            pass
+        await c.message.answer(f"🚩 #{oid} — soxta chek deb belgilandi, mijozga xabar yuborildi.")
     elif act == "no":
         if o["status"] in ("rejected", "done"):
             await c.answer("Bu buyurtma allaqachon yopilgan", show_alert=True)

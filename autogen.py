@@ -850,3 +850,30 @@ async def generate(bot, o, svc_name: str, client_lang: str):
     words = sum(len(str(b.get("p", ""))) // 7 for body in bodies for b in body if isinstance(b, dict))
     return (f"{safe_name(outline.get('title') or o['topic'])}.docx", paper.bytes(),
             f"{len(secs)} bo'lim, ~{max(words // WORDS_PER_PAGE, 1) + 3} bet" + (f", muqova №{paper.tn}" if paper.tn else ""))
+
+
+# ------------------------------------------------------------------ 🧾 chek o'qish
+CHEQUE_SYSTEM = """Sen to'lov cheklarini (Click, Payme, Uzum, Paynet, bank ilovalari skrinshotlari) o'qiydigan yordamchisan.
+Faqat JSON qaytar. Ko'rmagan narsangni o'ylab topma — bilmasang null yoz."""
+
+CHEQUE_PROMPT = """Bu rasm to'lov chekimi? Undan ma'lumotlarni ol.
+JSON:
+{"is_receipt": true/false,
+ "success": true/false/null,            // to'lov muvaffaqiyatli o'tganmi (Успешно, Muvaffaqiyatli, Выполнено, ✓)
+ "amount": 25000,                        // o'tkazilgan summa so'mda, butun son (komissiyasiz asosiy summa); bo'lmasa null
+ "recipient_card_last4": "9012",         // QABUL QILUVCHI karta raqamining oxirgi 4 raqami; bo'lmasa null
+ "recipient_name": "…",                  // qabul qiluvchi ismi (bo'lsa)
+ "datetime": "2026-11-14 15:30",         // chekdagi sana va vaqt (YYYY-MM-DD HH:MM); bo'lmasa null
+ "edited_signs": false}                  // tahrirlangan/soxta belgilar ko'rinsa true (shriftlar mos emas, raqamlar ustidan yozilgan)"""
+
+
+async def read_cheque(data: bytes, mime: str = "image/jpeg") -> dict:
+    if mime == "application/pdf":
+        block = {"type": "document", "source": {"type": "base64", "media_type": mime, "data": base64.b64encode(data).decode()}}
+    else:
+        im = Image.open(io.BytesIO(data)).convert("RGB")
+        im.thumbnail((1600, 1600))
+        out = io.BytesIO(); im.save(out, "JPEG", quality=90)
+        block = {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": base64.b64encode(out.getvalue()).decode()}}
+    raw = await claude(CHEQUE_SYSTEM, [block, {"type": "text", "text": CHEQUE_PROMPT}], max_tokens=600, retries=1)
+    return parse_json(raw)
