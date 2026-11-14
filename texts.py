@@ -34,6 +34,7 @@ BTN = {
     "bonus_use": {"uz": "💰 Bonus ({sum})", "ru": "💰 Бонус ({sum})", "en": "💰 Bonus ({sum})"},
     "bonus_off": {"uz": "💰 Bonusni olib tashlash", "ru": "💰 Без бонуса", "en": "💰 Don't use bonus"},
     "share":    {"uz": "📤 Do'stlarga ulashish", "ru": "📤 Поделиться с друзьями", "en": "📤 Share with friends"},
+    "sub": {"uz": "💎 Obuna", "ru": "💎 Подписка", "en": "💎 Subscription"},
     "shop":     {"uz": "📦 Tayyor ishlar", "ru": "📦 Готовые работы", "en": "📦 Ready works"},
     "group":    {"uz": "👥 Guruh uchun", "ru": "👥 Для группы", "en": "👥 For a group"},
     "group_off": {"uz": "👥 Guruhni bekor qilish", "ru": "👥 Без группы", "en": "👥 Not a group"},

@@ -232,6 +232,9 @@ def init_db():
             code TEXT PRIMARY KEY, percent INTEGER, uses_left INTEGER, used INTEGER DEFAULT 0,
             active INTEGER DEFAULT 1, created_at TEXT)""")
         con.execute("CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT)")
+        con.execute("""CREATE TABLE IF NOT EXISTS subs(
+            id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, plan TEXT, starts TEXT, ends TEXT,
+            quota INTEGER, used INTEGER DEFAULT 0, order_id INTEGER, created_at TEXT)""")
         con.execute("""CREATE TABLE IF NOT EXISTS reviews(
             order_id INTEGER PRIMARY KEY, user_id INTEGER, stars INTEGER, text TEXT DEFAULT '',
             consent INTEGER DEFAULT 0, published INTEGER DEFAULT 0, created_at TEXT)""")
@@ -486,6 +489,8 @@ def last_orders(n=15):
 def service_label(o, lang: str = "uz") -> str:
     if o["service"] == "shop":
         return f"Do'kon: {o['topic']}"
+    if o["service"] == "sub":
+        return f"💎 {SUB_TX['name'][lang].get(o['package'], o['package'])}"
     label = svc_tr(o["audience"], o["service"], lang)[0]
     if (o["qty"] if "qty" in o.keys() else 1) > 1:
         label = f"👥 {o['qty']} × " + label
@@ -542,7 +547,8 @@ def main_kb(lang: str = DEFAULT_LANG):
         rows = [[kbtn(b(lang, "order"), "success", "order")]]
     rows += [
         [kbtn(b(lang, "prices"), "primary", "prices"), kbtn(b(lang, "samples"), "primary", "samples")],
-        [kbtn(b(lang, "shop"), "primary", "fire"), kbtn(b(lang, "bonus"), "danger", "heart")],
+        [kbtn(b(lang, "sub"), "success", "fire"), kbtn(b(lang, "bonus"), "danger", "heart")],
+        [kbtn(b(lang, "shop"), "primary", "fire")],
         [kbtn(b(lang, "info"), "primary", "book"), kbtn(b(lang, "channel"), "success", "channel")],
         [kbtn(b(lang, "orders"), None, "orders"), kbtn(b(lang, "contact"), None, "contact"),
          kbtn(b(lang, "lang"), None, "globe")],
@@ -1123,7 +1129,7 @@ async def brief_next(m: Message, state: FSMContext, lang: str, answer: str | Non
 
 
 MENU_TEXTS = set().union(*(btn_texts(k) for k in ("app", "order", "prices", "samples", "bonus", "orders",
-                                                    "contact", "lang", "info", "channel", "shop")))
+                                                    "contact", "lang", "info", "channel", "shop", "sub")))
 
 
 @router.message(Brief.q, F.text, ~F.text.startswith("/"), ~F.text.in_(MENU_TEXTS))
@@ -1393,8 +1399,20 @@ async def show_confirm(m: Message, state: FSMContext):
         promo = ""
     qty = data.get("qty", 1) if price else 1
     calc = calc_price(uid, price, p["percent"] if p else 0, data.get("use_bonus", False), qty)
+    sub = active_sub(uid) if price and qty == 1 else None
+    sub_line, sub_use = "", False
+    if sub:
+        if sub_covers(data["aud"], data["svc"], tk, data.get("pkg") or ""):
+            sub_use = True
+            calc.update(price=0, discount=calc["full_price"], bonus_used=0, welcome=0, promo_off=0)
+            sub_line = SUB_TX["covered"][lang].format(left=sub["quota"] - sub["used"] - 1)
+        else:
+            off = round(calc["price"] * SUB_DISC / 100 / 1000) * 1000
+            calc["price"] -= off
+            calc["discount"] += off
+            sub_line = SUB_TX["disc"][lang].format(pct=SUB_DISC, sum=money(off, lang))
     await state.update_data(price=calc["price"], full_price=calc["full_price"], discount=calc["discount"],
-                            bonus_used=calc["bonus_used"], welcome=calc["welcome"], promo=promo)
+                            bonus_used=calc["bonus_used"], welcome=calc["welcome"], promo=promo, sub_use=sub_use)
     await state.set_state(Order.confirm)
     label = svc_tr(data["aud"], data["svc"], lang)[0]
     if data.get("pkg"):
@@ -1418,6 +1436,8 @@ async def show_confirm(m: Message, state: FSMContext):
             lines.append(f"{tr(lang, 'f_promo')} {promo} ({p['percent']}%): −{money(calc['promo_off'], lang)}")
         if calc["bonus_used"]:
             lines.append(f"{tr(lang, 'f_bonus')}: −{money(calc['bonus_used'], lang)}")
+    if sub_line:
+        lines.append(sub_line)
     price_block = (("\n".join(lines) + "\n" if lines else "")
                    + f"{E['money']} {tr(lang, 'f_total')}: <b>{money(calc['price'], lang)}</b>")
     txt = (f"{tr(lang, 'confirm_title')}\n\n"
@@ -1551,6 +1571,25 @@ async def confirm(c: CallbackQuery, state: FSMContext, bot: Bot):
     lang = L(c.from_user.id)
     data = await state.get_data()
     quote = not data.get("full_price", data.get("price"))
+    if data.get("sub_use") and not quote:
+        sub = active_sub(c.from_user.id)
+        if not sub:
+            await c.answer(SUB_TX["gone"][lang], show_alert=True)
+            await show_confirm(c.message, state)
+            return
+        oid = create_order(dict(data, price=0, bonus_used=0, welcome=0, promo=""), c.from_user)
+        with db() as con:
+            con.execute("UPDATE subs SET used=used+1 WHERE id=?", (sub["id"],))
+            con.execute("UPDATE orders SET status='paid', details=details || ? WHERE id=?", (f" [💎 obuna #{sub['id']}]", oid))
+        await state.clear()
+        await c.message.answer(SUB_TX["used_ok"][lang].format(left=sub["quota"] - sub["used"] - 1), reply_markup=MAIN_KBS[lang])
+        o = get_order(oid)
+        await notify_admins(bot, f"💎 <b>Obuna bilan buyurtma</b> (to'lovsiz)\n🌐 {LANGS[lang]}\n\n" + order_text(o, True))
+        await send_order_files(bot, oid, data.get("files", []))
+        await send_tz(bot, o)
+        await approve_order(bot, oid, None, f"💎 #{oid} — obuna hisobidan (qoldi {sub['quota'] - sub['used'] - 1} ta).")
+        await c.answer()
+        return
     if quote:
         data.update(price=0, full_price=0, discount=0, bonus_used=0, welcome=0, promo="")
     # bonusni yechib olamiz (balans o'zgargan bo'lsa — bonussiz)
@@ -1626,7 +1665,7 @@ async def accept_cheque(m: Message, bot: Bot, oid: int):
     await m.answer(tr(L(m.from_user.id), "cheque_ok"), reply_markup=mkb(m.from_user.id))
     o = get_order(oid)
     text = "🧾 Chek keldi!\n\n" + order_text(o, True)
-    smart = auto_ready(o) and get_setting("auto_cheque", "on") == "on"
+    smart = (auto_ready(o) or (o["service"] == "sub" and AG.enabled())) and get_setting("auto_cheque", "on") == "on"
     if smart:
         text += "\n\n🤖 <b>Chek avtomatik tekshirilmoqda…</b> To'g'ri bo'lsa, ish o'zi boshlanadi — sizga xabar keladi."
     elif auto_ready(o):
@@ -2311,7 +2350,8 @@ async def daromad_cmd(m: Message):
         for k in keys:
             per[k][0] += o["price"] or 0
             per[k][1] += 1
-        name = "📦 Do'kon" if o["service"] == "shop" else svc_tr(o["audience"], o["service"], "uz")[0]
+        name = ("📦 Do'kon" if o["service"] == "shop" else "💎 Obuna" if o["service"] == "sub"
+                else svc_tr(o["audience"], o["service"], "uz")[0])
         top.setdefault(name, [0, 0])
         top[name][0] += o["price"] or 0
         top[name][1] += 1
@@ -2429,6 +2469,14 @@ async def approve_order(bot: Bot, oid: int, reply_to: Message | None = None, aut
     if o["service"] == "shop":  # tayyor ish — faylni darhol yuboramiz
         await deliver_shop(bot, o)
         await tell(f"#{oid} — do'kon fayli mijozga avtomatik yuborildi ✅")
+        return
+    if o["service"] == "sub":
+        s = activate_sub(o)
+        set_status(oid, "done")
+        await bot.send_message(o["user_id"], SUB_TX["active"][ul].format(
+            plan=SUB_TX["name"][ul][o["package"]], till=fmt_local(datetime.strptime(s["ends"], "%Y-%m-%d %H:%M")), n=s["quota"]),
+            reply_markup=MAIN_KBS[ul])
+        await tell((auto_note + "\n" if auto_note else "") + f"💎 #{oid} — obuna faollashtirildi: {o['package']}, {s['quota']} ta ish.")
         return
     set_status(oid, "work")
     o = get_order(oid)
@@ -2553,6 +2601,113 @@ async def avto_cmd(m: Message, command: CommandObject, bot: Bot):
           f"🧾 Chekni avtomatik tekshirish: <b>{'yoqilgan' if get_setting('auto_cheque', 'on') == 'on' else 'o‘chirilgan'}</b> — "
           "<code>/avto chek off</code> / <code>/avto chek on</code>\n"
           "<code>/avto +5</code> — $5 to'ldirdim · <code>/avto balans 4.30</code> — aniq qoldiq")
+
+
+# ------------------------------------------------------------------ 💎 obuna
+SUB_PLANS = {"day": (20000, 1, 3), "week": (50000, 7, 10), "month": (100000, 30, 25), "year": (300000, 365, 150)}
+SUB_DISC = 30  # obunachilarga qolgan (qo'lda) ishlarga chegirma, %
+SUB_TX = {
+    "name": {"uz": {"day": "Kunlik obuna", "week": "Haftalik obuna", "month": "Oylik obuna", "year": "Yillik obuna"},
+             "ru": {"day": "Подписка на день", "week": "Подписка на неделю", "month": "Подписка на месяц", "year": "Подписка на год"},
+             "en": {"day": "Daily plan", "week": "Weekly plan", "month": "Monthly plan", "year": "Yearly plan"}},
+    "menu": {"uz": "💎 <b>Obuna — ko'p ish, kam pul</b>\n\nObuna davomida <b>avtomatik ishlar</b> (slayd Start/Pro, mustaqil ish, referat, kurs ishi, maqola, test, dars ishlanmasi) <b>to'lovsiz</b> — bir necha daqiqada tayyor.\nPremium, portfolio, O'UM va boshqa ishlarga — <b>−{pct}%</b>.\n\n{plans}\n\n{status}",
+             "ru": "💎 <b>Подписка — больше работ, меньше денег</b>\n\nВо время подписки <b>автоматические работы</b> (слайды Start/Pro, самостоятельная, реферат, курсовая, статья, тест, разработка урока) — <b>без оплаты</b>, готово за минуты.\nНа Premium, портфолио, УМК и др. — <b>−{pct}%</b>.\n\n{plans}\n\n{status}",
+             "en": "💎 <b>Subscription — more work, less money</b>\n\nWhile subscribed, <b>automatic works</b> (Start/Pro slides, papers, essays, term papers, articles, tests, lesson plans) are <b>free</b> — ready in minutes.\nPremium, portfolio and other works — <b>−{pct}%</b>.\n\n{plans}\n\n{status}"},
+    "plan": {"uz": "• <b>{name}</b> — {price} · {n} ta ish", "ru": "• <b>{name}</b> — {price} · {n} работ", "en": "• <b>{name}</b> — {price} · {n} works"},
+    "none": {"uz": "Hozir obunangiz yo'q 👇 Tarifni tanlang:", "ru": "Сейчас подписки нет 👇 Выберите тариф:", "en": "No active plan 👇 Pick one:"},
+    "have": {"uz": "✅ <b>Faol obuna:</b> {plan}\n⏰ {till} gacha · qoldi <b>{left}</b> ta ish", "ru": "✅ <b>Активна:</b> {plan}\n⏰ до {till} · осталось <b>{left}</b> работ",
+             "en": "✅ <b>Active:</b> {plan}\n⏰ until {till} · <b>{left}</b> works left"},
+    "covered": {"uz": "💎 Obuna hisobidan: <b>0 so'm</b> (keyin qoladi: {left} ta)", "ru": "💎 По подписке: <b>0 сум</b> (останется: {left})",
+                "en": "💎 Covered by plan: <b>0</b> ({left} left after)"},
+    "disc": {"uz": "💎 Obunachi chegirmasi {pct}%: −{sum}", "ru": "💎 Скидка подписчика {pct}%: −{sum}", "en": "💎 Subscriber discount {pct}%: −{sum}"},
+    "used_ok": {"uz": "💎 Obuna hisobidan qabul qilindi! Ish hozir tayyorlanmoqda ⚡ (qoldi: {left} ta)", "ru": "💎 Принято по подписке! Работа уже готовится ⚡ (осталось: {left})",
+                "en": "💎 Accepted on your plan! Your work is being prepared ⚡ ({left} left)"},
+    "gone": {"uz": "Obuna tugagan yoki limit tugadi", "ru": "Подписка закончилась или лимит исчерпан", "en": "Plan expired or limit reached"},
+    "active": {"uz": "🎉 <b>{plan} faollashtirildi!</b>\n⏰ {till} gacha · {n} ta ish.\nEndi buyurtma berganda avtomatik ishlar to'lovsiz bo'ladi 💎",
+               "ru": "🎉 <b>{plan} активирована!</b>\n⏰ до {till} · {n} работ.\nТеперь автоматические работы — без оплаты 💎",
+               "en": "🎉 <b>{plan} activated!</b>\n⏰ until {till} · {n} works.\nAutomatic works are now free for you 💎"},
+}
+
+
+def active_sub(uid: int):
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    with db() as con:
+        return con.execute("SELECT * FROM subs WHERE user_id=? AND ends>? AND used<quota ORDER BY ends DESC LIMIT 1",
+                           (uid, now)).fetchone()
+
+
+def sub_covers(aud: str, svc: str, tk, pkg: str = "") -> bool:
+    """Obuna faqat avtomatik ishlarni qoplaydi; Premium va toshbaqa — chegirma bilan."""
+    return svc in AG.AUTO_SERVICES.get(aud, {}) and not tk and pkg != "premium"
+
+
+def activate_sub(o):
+    from datetime import timedelta
+    price, days, quota = SUB_PLANS[o["package"]]
+    now = datetime.now()
+    with db() as con:
+        cur = con.execute("SELECT * FROM subs WHERE user_id=? AND ends>? ORDER BY ends DESC LIMIT 1", (o["user_id"], now.strftime("%Y-%m-%d %H:%M"))).fetchone()
+        start = datetime.strptime(cur["ends"], "%Y-%m-%d %H:%M") if cur else now  # uzaytirish — oxiriga qo'shiladi
+        ends = (start + timedelta(days=days)).strftime("%Y-%m-%d %H:%M")
+        con.execute("INSERT INTO subs(user_id, plan, starts, ends, quota, used, order_id, created_at) VALUES(?,?,?,?,?,0,?,?)",
+                    (o["user_id"], o["package"], start.strftime("%Y-%m-%d %H:%M"), ends, quota, o["id"], now.strftime("%Y-%m-%d %H:%M")))
+        return con.execute("SELECT * FROM subs WHERE order_id=?", (o["id"],)).fetchone()
+
+
+def sub_menu_text(uid: int, lang: str) -> str:
+    plans = "\n".join(SUB_TX["plan"][lang].format(name=SUB_TX["name"][lang][k], price=money(p, lang), n=q) for k, (p, d, q) in SUB_PLANS.items())
+    s = active_sub(uid)
+    status = (SUB_TX["have"][lang].format(plan=SUB_TX["name"][lang][s["plan"]], till=fmt_local(datetime.strptime(s["ends"], "%Y-%m-%d %H:%M")),
+                                         left=s["quota"] - s["used"]) if s else SUB_TX["none"][lang])
+    return SUB_TX["menu"][lang].format(pct=SUB_DISC, plans=plans, status=status)
+
+
+def sub_kb(lang: str):
+    btns = [(f"{SUB_TX['name'][lang][k]} · {money(p, lang)}", f"sub:{k}", "success" if k == "month" else "primary")
+            for k, (p, d, q) in SUB_PLANS.items()]
+    return ikb([btns[:2], btns[2:]])
+
+
+@router.message(F.text.in_(btn_texts("sub")))
+@router.message(Command("obuna", "sub", "podpiska"))
+async def sub_menu(m: Message):
+    lang = L(m.from_user.id)
+    await m.answer(sub_menu_text(m.from_user.id, lang), reply_markup=sub_kb(lang))
+
+
+@router.callback_query(F.data.startswith("sub:"))
+async def sub_buy(c: CallbackQuery, state: FSMContext, bot: Bot):
+    plan = c.data.split(":")[1]
+    if plan not in SUB_PLANS:
+        await c.answer()
+        return
+    lang = L(c.from_user.id)
+    price = SUB_PLANS[plan][0]
+    data = {"aud": "s", "svc": "sub", "pkg": plan, "price": price, "full_price": price, "topic": SUB_TX["name"]["uz"][plan],
+            "deadline": "normal"}
+    oid = create_order(data, c.from_user)
+    await state.set_state(Order.cheque)
+    await state.update_data(order_id=oid)
+    await c.answer()
+    await c.message.answer(payment_text(oid, price, lang), reply_markup=MAIN_KBS[lang])
+    await notify_admins(bot, f"💎 Yangi obuna so'rovi #{oid}: {SUB_TX['name']['uz'][plan]} — {money(price)}\n"
+                             f"👤 {html.escape(c.from_user.full_name)} (<code>{c.from_user.id}</code>) — chek kutilmoqda")
+
+
+@router.message(Command("obunalar"))
+async def subs_admin(m: Message):
+    if not is_admin(m.from_user.id):
+        return
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    with db() as con:
+        rows = con.execute("SELECT s.*, u.full_name FROM subs s LEFT JOIN users u ON u.user_id=s.user_id WHERE s.ends>? ORDER BY s.ends",
+                           (now,)).fetchall()
+    if not rows:
+        await m.answer("Faol obuna yo'q.")
+        return
+    lines = [f"• {html.escape(r['full_name'] or str(r['user_id']))} — {r['plan']}, {r['used']}/{r['quota']}, "
+             f"{fmt_local(datetime.strptime(r['ends'], '%Y-%m-%d %H:%M'))} gacha" for r in rows]
+    await m.answer("💎 <b>Faol obunalar</b>\n\n" + "\n".join(lines))
 
 
 # ------------------------------------------------------------------ 🎬 reklama, ✏️ tuzatish, 💬 yordam, ❓ FAQ
@@ -2841,6 +2996,7 @@ async def admin_help(m: Message):
         "🗑 /ochir 1 2 — sinov buyurtmalarini o'chirish\n"
         "🎬 Video + izoh /reklama — /start reklamasini almashtirish\n"
         "💬 /javob ID matn — mijoz savoliga javob\n"
+        "💎 /obunalar — faol obunalar\n"
         "📋 <code>/tz 12</code> — texnik topshiriq\n"
         "⭐ /reviews — sharhlar\n"
         "📦 /dokon — tayyor ishlar · fayl + <code>/sell 15000 Nomi</code> · rasm + <code>/preview ID</code> · "
