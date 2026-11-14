@@ -2243,7 +2243,7 @@ async def check_reminders(bot: Bot):
                 con.execute("UPDATE orders SET remind_adm=? WHERE id=?", (level, o["id"]))
             head = "🔴 <b>Muddat o'tdi!</b>" if level == 2 else "⏰ <b>Muddat yaqin</b> (6 soatdan kam)"
             await notify_admins(bot, f"{head} — #{o['id']} {html.escape(service_label(o))}\n"
-                                     f"📝 {html.escape(o['topic'][:80])}\n🕐 Muddat: {fmt_local(due)}",
+                                     f"📝 {html.escape(o['topic'][:80])}\n🕐 Muddat: {fmt_local(due)}\n📤 Yuborish: /yubor_{o['id']}",
                                 admin_kb(o["id"], "work"))
 
 
@@ -2269,7 +2269,7 @@ async def muddat_cmd(m: Message):
         return
     now = datetime.now()
     lines = [f"{'🔴' if d <= now else '🟡' if (d - now).total_seconds() < 6 * 3600 else '🟢'} #{o['id']} "
-             f"{html.escape(service_label(o))} — <b>{fmt_local(d)}</b>" for d, o in items]
+             f"{html.escape(service_label(o))} — <b>{fmt_local(d)}</b>  /yubor_{o['id']}" for d, o in items]
     await m.answer("⏰ <b>Ishdagi buyurtmalar muddati</b>\n\n" + "\n".join(lines))
 
 
@@ -2320,6 +2320,7 @@ async def admin_help(m: Message):
         "🛠 <b>Admin buyruqlari</b>\n\n"
         "📊 /daromad — daromad · /stats — statistika · /orders — oxirgi buyurtmalar\n"
         "⏰ /muddat — ishdagi buyurtmalar muddati\n"
+        "📤 /yubor 12 — tayyor ishni mijozga yuborish\n"
         "📋 <code>/tz 12</code> — texnik topshiriq\n"
         "⭐ /reviews — sharhlar\n"
         "📦 /dokon — tayyor ishlar · fayl + <code>/sell 15000 Nomi</code> · rasm + <code>/preview ID</code> · "
@@ -2355,11 +2356,15 @@ async def admin_action(c: CallbackQuery, state: FSMContext, bot: Bot):
             await c.message.answer(f"#{oid} — do'kon fayli mijozga avtomatik yuborildi ✅")
         else:
             set_status(oid, "work")
-            await bot.send_message(o["user_id"], tr(ul, "paid_ok", oid=oid))
+            o = get_order(oid)
+            due = due_time(o)
+            await bot.send_message(o["user_id"], tr(ul, "paid_ok", oid=oid, due=fmt_local(due) if due else "—"))
             if (o["qty"] or 1) >= 5 and GROUP_BONUS:
                 add_bonus(o["user_id"], GROUP_BONUS)
                 await bot.send_message(o["user_id"], fx(ul, "grp_bonus", sum=money(GROUP_BONUS, ul)))
-            await c.message.answer(f"#{oid} — ishga olindi. Tayyor bo'lgach tugmani bosing:", reply_markup=admin_kb(oid, "work"))
+            await c.message.answer(f"#{oid} — ishga olindi ✅ Mijozga muddat yozildi: <b>{fmt_local(due) if due else '—'}</b>\n\n"
+                                   f"Tayyor bo'lgach: tugmani bosing yoki /yubor_{oid} → faylni tashlang → /done",
+                                   reply_markup=admin_kb(oid, "work"))
     elif act == "no":
         if o["status"] in ("rejected", "done"):
             await c.answer("Bu buyurtma allaqachon yopilgan", show_alert=True)
@@ -2402,6 +2407,36 @@ async def admin_price(m: Message, state: FSMContext, bot: Bot):
     ul = L(o["user_id"])
     await bot.send_message(o["user_id"], tr(ul, "price_set", oid=oid) + payment_text(oid, price, ul))
     await m.answer(f"#{oid} — narx {money(price)} mijozga yuborildi ✅")
+
+
+async def start_send(m: Message, state: FSMContext, arg: str):
+    """Admin: tayyor ishni yuborish rejimi (tugmani qidirmasdan)."""
+    o = get_order(int(arg)) if arg.isdigit() else None
+    if not o:
+        with db() as con:
+            rows = con.execute("SELECT id, topic FROM orders WHERE status='work' ORDER BY id").fetchall()
+        lst = "\n".join(f"/yubor_{r['id']} — {html.escape((r['topic'] or '')[:40])}" for r in rows) or "Ishdagi buyurtma yo'q ✅"
+        await m.answer("Qaysi buyurtma? Masalan: <code>/yubor 12</code>\n\n<b>Ishdagilar:</b>\n" + lst)
+        return
+    if o["status"] in ("new", "quote"):
+        await m.answer(f"#{o['id']} hali to'lanmagan ({STATUS.get(o['status'], o['status'])}). Avval to'lovni tasdiqlang.")
+        return
+    await state.set_state(AdminSend.file)
+    await state.update_data(send_oid=o["id"])
+    await m.answer(f"📤 #{o['id']} — <b>{html.escape(service_label(o))}</b>\n📝 {html.escape(o['topic'][:80])}\n\n"
+                   "Tayyor fayl(lar)ni shu yerga tashlang (PPTX, DOCX, PDF…), keyin /done yozing.")
+
+
+@router.message(Command("yubor", "send"))
+async def yubor_cmd(m: Message, command: CommandObject, state: FSMContext):
+    if is_admin(m.from_user.id):
+        await start_send(m, state, (command.args or "").strip().lstrip("#"))
+
+
+@router.message(F.text.regexp(r"^/yubor_\d+"))
+async def yubor_link(m: Message, state: FSMContext):
+    if is_admin(m.from_user.id):
+        await start_send(m, state, m.text.split("_", 1)[1].split("@")[0].strip())
 
 
 @router.message(AdminSend.file, Command("done"))

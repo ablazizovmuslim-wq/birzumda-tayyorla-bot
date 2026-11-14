@@ -327,15 +327,22 @@ TX = {
         "en": "{e[check]} Receipt received! We'll check it and start soon. See the status in «📦 My orders»."},
     "cheque_wrong": {"uz": "Iltimos, to'lov <b>chekining rasmini</b> yuboring 📸", "ru": "Пожалуйста, отправьте <b>фото чека</b> об оплате 📸",
                      "en": "Please send a <b>photo of the payment receipt</b> 📸"},
-    "paid_ok": {"uz": "✅ To'lov tasdiqlandi! Buyurtma #{oid} tayyorlanmoqda 🛠", "ru": "✅ Оплата подтверждена! Заказ #{oid} в работе 🛠",
-                "en": "✅ Payment confirmed! Order #{oid} is in progress 🛠"},
+    "paid_ok": {"uz": "✅ <b>To'lov tasdiqlandi!</b> Buyurtma #{oid} tayyorlanmoqda 🛠\n\n"
+                      "⏰ Tayyor bo'ladi: <b>{due}</b> gacha\n"
+                      "📩 Tayyor bo'lishi bilan fayl <b>shu chatga avtomatik</b> keladi — hech narsa qilish shart emas.",
+                "ru": "✅ <b>Оплата подтверждена!</b> Заказ #{oid} в работе 🛠\n\n"
+                      "⏰ Будет готово: до <b>{due}</b>\n"
+                      "📩 Как только будет готово, файл <b>сам придёт в этот чат</b> — ничего делать не нужно.",
+                "en": "✅ <b>Payment confirmed!</b> Order #{oid} is in progress 🛠\n\n"
+                      "⏰ Ready by: <b>{due}</b>\n"
+                      "📩 As soon as it's ready, the file <b>arrives in this chat automatically</b> — nothing else to do."},
     "rejected": {"uz": "❌ Buyurtma #{oid} bo'yicha to'lov tasdiqlanmadi.\nSavol bo'lsa: {contact}",
                  "ru": "❌ Оплата по заказу #{oid} не подтверждена.\nВопросы: {contact}",
                  "en": "❌ Payment for order #{oid} was not confirmed.\nQuestions: {contact}"},
     "done": {"uz": "🎉 Buyurtma #{oid} tayyor! Rahmat 🙏\nTuzatish kerak bo'lsa yozing: {contact}",
              "ru": "🎉 Заказ #{oid} готов! Спасибо 🙏\nНужны правки — пишите: {contact}",
              "en": "🎉 Order #{oid} is ready! Thank you 🙏\nNeed changes? Write to: {contact}"},
-    "file_cap": {"uz": "📦 Buyurtma #{oid}", "ru": "📦 Заказ #{oid}", "en": "📦 Order #{oid}"},
+    "file_cap": {"uz": "📦 Buyurtma #{oid} — tayyor ish", "ru": "📦 Заказ #{oid} — готовая работа", "en": "📦 Order #{oid} — your finished work"},
     "loose_file": {"uz": "Fayl qabul qilindi. Buyurtma berish uchun «✨ Buyurtmalar uchun» tugmasini bosing.",
                    "ru": "Файл получен. Чтобы заказать, нажмите «✨ Для заказов».",
                    "en": "File received. To order, tap «✨ For orders»."},
