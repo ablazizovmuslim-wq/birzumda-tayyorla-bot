@@ -1514,10 +1514,26 @@ async def webapp_data(m: Message, state: FSMContext):
     if d.get("lang") in LANGS and d["lang"] != get_lang(uid):  # Mini ilovada til almashtirilgan
         set_lang(uid, d["lang"])
     lang = L(uid)
-    if d.get("cmd") == "samples":
+    cmd = d.get("cmd")
+    if cmd == "samples":
         await send_samples(m, lang)
         return
-    if d.get("cmd") != "order":
+    if cmd == "sub" and d.get("plan") in SUB_PLANS:
+        await start_sub_purchase(m, state, m.bot, d["plan"])
+        return
+    if cmd == "sub":
+        await sub_menu(m)
+        return
+    if cmd == "orders":
+        await my_orders(m)
+        return
+    if cmd == "bonus":
+        await bonus_menu(m)
+        return
+    if cmd == "help":
+        await m.answer(CX["faq"][lang], reply_markup=ikb([[(CX["sup_btn"][lang], "help:sup", "success")]]))
+        return
+    if cmd != "order":
         return
     aud, svc, pkg = d.get("aud"), d.get("svc"), d.get("pkg") or ""
     s = CATALOG.get(aud, {}).get("services", {}).get(svc)
@@ -2675,23 +2691,28 @@ async def sub_menu(m: Message):
     await m.answer(sub_menu_text(m.from_user.id, lang), reply_markup=sub_kb(lang))
 
 
+async def start_sub_purchase(m: Message, state: FSMContext, bot: Bot, plan: str, user=None):
+    user = user or m.from_user
+    lang = L(user.id)
+    price = SUB_PLANS[plan][0]
+    data = {"aud": "s", "svc": "sub", "pkg": plan, "price": price, "full_price": price, "topic": SUB_TX["name"]["uz"][plan],
+            "deadline": "normal"}
+    oid = create_order(data, user)
+    await state.set_state(Order.cheque)
+    await state.update_data(order_id=oid)
+    await m.answer(f"💎 <b>{SUB_TX['name'][lang][plan]}</b>\n\n" + payment_text(oid, price, lang), reply_markup=MAIN_KBS[lang])
+    await notify_admins(bot, f"💎 Yangi obuna so'rovi #{oid}: {SUB_TX['name']['uz'][plan]} — {money(price)}\n"
+                             f"👤 {html.escape(user.full_name)} (<code>{user.id}</code>) — chek kutilmoqda")
+
+
 @router.callback_query(F.data.startswith("sub:"))
 async def sub_buy(c: CallbackQuery, state: FSMContext, bot: Bot):
     plan = c.data.split(":")[1]
     if plan not in SUB_PLANS:
         await c.answer()
         return
-    lang = L(c.from_user.id)
-    price = SUB_PLANS[plan][0]
-    data = {"aud": "s", "svc": "sub", "pkg": plan, "price": price, "full_price": price, "topic": SUB_TX["name"]["uz"][plan],
-            "deadline": "normal"}
-    oid = create_order(data, c.from_user)
-    await state.set_state(Order.cheque)
-    await state.update_data(order_id=oid)
     await c.answer()
-    await c.message.answer(payment_text(oid, price, lang), reply_markup=MAIN_KBS[lang])
-    await notify_admins(bot, f"💎 Yangi obuna so'rovi #{oid}: {SUB_TX['name']['uz'][plan]} — {money(price)}\n"
-                             f"👤 {html.escape(c.from_user.full_name)} (<code>{c.from_user.id}</code>) — chek kutilmoqda")
+    await start_sub_purchase(c.message, state, bot, plan, c.from_user)
 
 
 @router.message(Command("obunalar"))
