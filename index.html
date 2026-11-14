@@ -39,7 +39,7 @@ p.m{color:var(--m);font-size:15px;line-height:1.45}
 .hero{position:relative;overflow:hidden;padding:20px;margin-bottom:14px}
 .hero .ring{position:absolute;right:-50px;top:-50px;width:170px;height:170px;border-radius:50%;border:18px dashed rgba(160,107,255,.35);animation:spin 18s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.sticker{position:absolute;right:16px;bottom:16px;width:64px;height:64px;animation:wob 2.6s ease-in-out infinite}
+.sticker{position:absolute;right:12px;top:12px;width:56px;height:56px;animation:wob 2.6s ease-in-out infinite}
 @keyframes wob{0%,100%{transform:rotate(-8deg) scale(1)}50%{transform:rotate(8deg) scale(1.08)}}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .chip{padding:8px 12px;border-radius:999px;background:#1C1430;border:1px solid var(--line);font-size:13px;font-weight:600}
@@ -121,7 +121,10 @@ button.chip{cursor:pointer;color:var(--t);transition:transform .15s}button.chip:
 @keyframes rip{to{transform:scale(1);opacity:0}}
 .opt.on{animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
 @keyframes pop{0%{transform:scale(.96)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
-.tile{animation:float3 5s ease-in-out infinite}.tile:nth-child(2n){animation-delay:-2.5s}
+/* .stag ichidagilar paydo bo'lish animatsiyasini yo'qotmasin */
+.stag>.tile{animation:up .5s cubic-bezier(.2,.8,.2,1) forwards,float3 5s ease-in-out infinite}
+.stag>.btn{animation:up .5s cubic-bezier(.2,.8,.2,1) forwards,breathe 3s ease-in-out infinite}
+.stag>.chip,.stag>.total{animation:up .5s cubic-bezier(.2,.8,.2,1) forwards}
 @keyframes float3{50%{transform:translateY(-4px)}}
 .tile .ico{transition:transform .3s}.tile:active .ico{transform:rotate(-12deg) scale(1.15)}
 .ico svg{animation:icoPulse 2.8s ease-in-out infinite}

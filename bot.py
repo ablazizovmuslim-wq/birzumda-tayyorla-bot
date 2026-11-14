@@ -138,8 +138,11 @@ CATALOG = {
                 "pro": ("Professional", 80000, "15–20 slayd, animatsiya, diagrammalar, 🐢 Toshbaqa o'qituvchi"),
                 "premium": ("Premium", 120000, "20–25 slayd, Morph, 🐢 Toshbaqa o'qituvchi, nutq matni, video"),
             }},
-            "portfolio": {"name": "Portfolio", "price": 90000, "desc": "Attestatsiya va «Eng yaxshi tyutor» tanlovi"},
-            "oum": {"name": "O'quv-uslubiy majmua", "price": 200000, "desc": "Ma'ruza, amaliy mashg'ulot, testlar"},
+            "portfolio": {"name": "Portfolio taqdimoti (rasmlar bilan)", "packages": {
+                "start": ("Start", 200000, "15–20 slayd, rasmlar, yutuqlar, sertifikatlar"),
+                "pro": ("Professional", 250000, "20–25 slayd, animatsiya, fotokollajlar, 🐢 Toshbaqa o'qituvchi"),
+                "premium": ("Premium", 300000, "25–30 slayd, Morph, video va musiqa, nutq matni, 🐢 Toshbaqa o'qituvchi")}},
+            "oum": {"name": "O'quv-uslubiy majmua", "price": 40000, "desc": "Ma'ruza, amaliy mashg'ulot, testlar"},
             "ishlanma": {"name": "Dars ishlanmasi", "price": 45000, "desc": "Ochiq dars yoki kundalik dars rejasi"},
             "maqola": {"name": "Ilmiy maqola / tezis", "price": 90000, "desc": "Jurnal yoki konferensiya uchun"},
             "test": {"name": "Test va topshiriqlar", "price": 40000, "desc": "Fan bo'yicha test, savollar, keyslar"},
@@ -564,7 +567,7 @@ TURTLE_PKGS = {"pro", "premium"}  # 🐢 ustozlar uchun Professional va Premium'
 
 def turtle_kind(aud, svc, pkg, chosen=False):
     """'in' — paketga kiradi (ustozlar Pro/Premium), 'add' — talaba qo'shimcha tanlagan, None — yo'q."""
-    if aud == "t" and svc == "dars" and pkg in TURTLE_PKGS:
+    if aud == "t" and svc in ("dars", "portfolio") and pkg in TURTLE_PKGS:
         return "in"
     if aud == "s" and svc == "taqdimot" and chosen:
         return "add"

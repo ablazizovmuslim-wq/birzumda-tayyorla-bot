@@ -80,7 +80,10 @@ CAT_TR = {
                 "start": ("Start", "12–15 слайдов, для открытого урока"),
                 "pro": ("Professional", "15–20 слайдов, анимация, диаграммы, 🐢 Черепаха-учитель"),
                 "premium": ("Premium", "20–25 слайдов, Morph, 🐢 Черепаха-учитель, текст речи, видео")}},
-            "portfolio": {"name": "Портфолио", "desc": "Аттестация и конкурс «Лучший тьютор»"},
+            "portfolio": {"name": "Портфолио-презентация (с фото)", "packages": {
+                "start": ("Start", "15–20 слайдов, фото, достижения, сертификаты"),
+                "pro": ("Professional", "20–25 слайдов, анимация, фотоколлажи, 🐢 Черепаха-учитель"),
+                "premium": ("Premium", "25–30 слайдов, Morph, видео и музыка, текст речи, 🐢 Черепаха-учитель")}},
             "oum": {"name": "Учебно-методический комплекс", "desc": "Лекции, практические занятия, тесты"},
             "ishlanma": {"name": "Разработка урока", "desc": "План открытого или обычного урока"},
             "maqola": {"name": "Научная статья / тезисы", "desc": "Для журнала или конференции"},
@@ -108,7 +111,10 @@ CAT_TR = {
                 "start": ("Start", "12–15 slides, for an open lesson"),
                 "pro": ("Professional", "15–20 slides, animation, charts, 🐢 Turtle teacher"),
                 "premium": ("Premium", "20–25 slides, Morph, 🐢 Turtle teacher, speech text, video")}},
-            "portfolio": {"name": "Portfolio", "desc": "Attestation and «Best tutor» contest"},
+            "portfolio": {"name": "Portfolio presentation (with photos)", "packages": {
+                "start": ("Start", "15–20 slides, photos, achievements, certificates"),
+                "pro": ("Professional", "20–25 slides, animation, photo collages, 🐢 Turtle teacher"),
+                "premium": ("Premium", "25–30 slides, Morph, video and music, speech text, 🐢 Turtle teacher")}},
             "oum": {"name": "Teaching materials set (O'UM)", "desc": "Lectures, practical classes, tests"},
             "ishlanma": {"name": "Lesson plan", "desc": "Open lesson or everyday lesson plan"},
             "maqola": {"name": "Research article / abstract", "desc": "For a journal or conference"},
