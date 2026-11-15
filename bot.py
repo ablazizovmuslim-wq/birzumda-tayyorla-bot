@@ -569,7 +569,7 @@ def mkb(uid: int):
     if uid in ADMIN_IDS:
         if lang not in _ADMIN_KBS:
             base = MAIN_KBS[lang]
-            _ADMIN_KBS[lang] = ReplyKeyboardMarkup(resize_keyboard=True, keyboard=[[KeyboardButton(text=ADMIN_BTN)]] + list(base.keyboard))
+            _ADMIN_KBS[lang] = ReplyKeyboardMarkup(resize_keyboard=True, keyboard=list(base.keyboard) + [[KeyboardButton(text=ADMIN_BTN)]])
         return _ADMIN_KBS[lang]
     return MAIN_KBS[lang]
 
