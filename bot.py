@@ -28,12 +28,20 @@ from aiohttp import web
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.filters import Command, CommandObject, CommandStart, StateFilter
+from aiogram.filters import Command as _Command, CommandObject, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import (CallbackQuery, FSInputFile, InlineKeyboardButton,
                            InlineKeyboardMarkup, InputMediaDocument, InputMediaPhoto, KeyboardButton, LinkPreviewOptions, BufferedInputFile,
                            Message, ReplyKeyboardMarkup, WebAppInfo)
+
+
+
+def Command(*names, **kw):
+    """Buyruqlar katta-kichik harfga qaramaydi: iPhone «/Reklama» deb bosh harf bilan yozsa ham ishlaydi."""
+    kw.setdefault("ignore_case", True)
+    return _Command(*names, **kw)
+
 
 # ------------------------------------------------------------------ sozlamalar
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
@@ -3179,7 +3187,7 @@ async def send_ad(m: Message):
         logging.warning("Reklama yuborilmadi: %s", e)
 
 
-@router.message(F.video, F.caption.regexp(r"^/reklama\b"))
+@router.message(F.video, F.caption.regexp(r"(?i)^/reklama\b"))
 async def set_ad(m: Message):
     if not is_admin(m.from_user.id):
         return
@@ -3690,6 +3698,19 @@ async def set_commands(bot: Bot):
                 await bot.set_my_commands(items)  # boshqa tildagi foydalanuvchilar uchun
     except Exception as e:
         logging.warning("set_my_commands: %s", e)
+    # adminlar uchun alohida «Menu»: oddiy buyruqlar + admin buyruqlari
+    from aiogram.types import BotCommandScopeChat
+    admin_extra = [("admin", "🛠 Barcha admin buyruqlari"), ("reklama", "🎬 Reklama videoni ko'rish (almashtirish: video + /reklama)"),
+                   ("orders", "📋 Oxirgi buyurtmalar"), ("daromad", "📊 Daromad"), ("avto", "🤖 Avto rejim va API balansi"),
+                   ("addpremium", "🎁 Bepul Premium ish berish: ID [soni]"), ("addprofessional", "🎁 Bepul Professional ish: ID [soni]"),
+                   ("addstart", "🎁 Bepul Start ish: ID [soni]"), ("credits", "🎁 Kimda nechta bepul ish bor")]
+    base = [(c, d) for c, d in COMMANDS.get(DEFAULT_LANG, [])]
+    for aid in ADMIN_IDS:
+        try:
+            await bot.set_my_commands([BotCommand(command=c, description=d) for c, d in admin_extra + base],
+                                      scope=BotCommandScopeChat(chat_id=aid))
+        except Exception as e:
+            logging.warning("admin menu %s: %s", aid, e)
     # bot profilidagi tavsif — hamma ko'radi («Bu bot nima qila oladi?» va bio)
     for lang in DESCRIPTION:
         ch = CHANNEL_LINE[lang].format(ch=channel_name()) if channel_url() else ""
