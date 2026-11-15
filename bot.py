@@ -20,7 +20,7 @@ import json
 import logging
 import os
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import quote
 from pathlib import Path
 
@@ -28,20 +28,12 @@ from aiohttp import web
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.filters import Command as _Command, CommandObject, CommandStart, StateFilter
+from aiogram.filters import Command, CommandObject, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import (CallbackQuery, FSInputFile, InlineKeyboardButton,
                            InlineKeyboardMarkup, InputMediaDocument, InputMediaPhoto, KeyboardButton, LinkPreviewOptions, BufferedInputFile,
                            Message, ReplyKeyboardMarkup, WebAppInfo)
-
-
-
-def Command(*names, **kw):
-    """Buyruqlar katta-kichik harfga qaramaydi: iPhone «/Reklama» deb bosh harf bilan yozsa ham ishlaydi."""
-    kw.setdefault("ignore_case", True)
-    return _Command(*names, **kw)
-
 
 # ------------------------------------------------------------------ sozlamalar
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
@@ -243,8 +235,6 @@ def init_db():
         con.execute("""CREATE TABLE IF NOT EXISTS subs(
             id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, plan TEXT, starts TEXT, ends TEXT,
             quota INTEGER, used INTEGER DEFAULT 0, order_id INTEGER, created_at TEXT)""")
-        con.execute("""CREATE TABLE IF NOT EXISTS credits(
-            user_id INTEGER, tier TEXT, left INTEGER DEFAULT 0, PRIMARY KEY(user_id, tier))""")
         con.execute("""CREATE TABLE IF NOT EXISTS reviews(
             order_id INTEGER PRIMARY KEY, user_id INTEGER, stars INTEGER, text TEXT DEFAULT '',
             consent INTEGER DEFAULT 0, published INTEGER DEFAULT 0, created_at TEXT)""")
@@ -570,8 +560,18 @@ MAIN_KBS = {lang: main_kb(lang) for lang in LANGS}
 MAIN_KB = MAIN_KBS[DEFAULT_LANG]
 
 
+ADMIN_BTN = "🛠 Admin panel"
+_ADMIN_KBS: dict = {}
+
+
 def mkb(uid: int):
-    return MAIN_KBS[L(uid)]
+    lang = L(uid)
+    if uid in ADMIN_IDS:
+        if lang not in _ADMIN_KBS:
+            base = MAIN_KBS[lang]
+            _ADMIN_KBS[lang] = ReplyKeyboardMarkup(resize_keyboard=True, keyboard=[[KeyboardButton(text=ADMIN_BTN)]] + list(base.keyboard))
+        return _ADMIN_KBS[lang]
+    return MAIN_KBS[lang]
 
 
 def btn_texts(key: str) -> set:
@@ -743,6 +743,14 @@ class AdminSend(StatesGroup):
 
 
 router = Router()
+admin_router = Router()  # 🛠 Admin panel — faqat ADMIN_ID lar uchun
+admin_router.message.filter(F.from_user.id.in_(ADMIN_IDS))
+admin_router.callback_query.filter(F.from_user.id.in_(ADMIN_IDS))
+
+
+class AdminPanel(StatesGroup):
+    find = State()
+    msg = State()
 
 
 def is_admin(uid: int) -> bool:
@@ -1091,7 +1099,7 @@ def brief_label(key: str, lang: str = "uz") -> str:
     return BRIEF_LABEL_TR.get(lang, {}).get(key) or BRIEF_LABEL[key]
 
 
-def brief_kb(lang: str, key: str, pkg: str = "", can_back: bool = False):
+def brief_kb(lang: str, key: str, pkg: str = ""):
     opts = BRIEF_Q[key].get("opts", {}).get(lang, [])
     if key in ("style", "cover"):  # 32 ta shablon — paketga ochiqlari, 4 tadan raqamli tugma
         btns = [(f"№{n}", f"bq:o:{n - 1}", "primary") for n in tpl_allowed(pkg)]
@@ -1104,24 +1112,7 @@ def brief_kb(lang: str, key: str, pkg: str = "", can_back: bool = False):
     if key not in BRIEF_REQUIRED:
         last.insert(0, (btr(lang, "skip"), "bq:skip", None))
     rows.append(last)
-    if can_back:
-        rows.append([(btr(lang, "back"), "bq:back", None)])
     return ikb(rows)
-
-
-def progress_bar(done: int, total: int, width: int = 10) -> str:
-    full = round(width * done / total) if total else width
-    return "▰" * full + "▱" * (width - full)
-
-
-async def close_question(bot: Bot, chat_id: int, msg_id):
-    """Javob berilgan savoldan tugmalarni olib tashlaydi — eski tugmalar bosilmaydi, chat toza turadi."""
-    if not msg_id:
-        return
-    try:
-        await bot.edit_message_reply_markup(chat_id=chat_id, message_id=msg_id, reply_markup=None)
-    except Exception:
-        pass
 
 
 async def start_brief(m: Message, state: FSMContext, lang: str):
@@ -1152,16 +1143,13 @@ async def ask_brief(m: Message, state: FSMContext, lang: str):
         mx = len(tpl_allowed(pkg))
         if mx < len(TPL):
             extra = "\n\n" + ttx(lang, "locked").format(a=mx + 1)
-    head = f"<b>{btr(lang, 'step', i=i + 1, n=len(qs))}</b>  {progress_bar(i, len(qs))}"
-    msg = await m.answer(f"{head}\n\n{q.get(lang) or q['uz']}{extra}",
-                         reply_markup=brief_kb(lang, qs[i], pkg, can_back=i > 0))
-    await state.update_data(bq_msg=msg.message_id)
+    await m.answer(f"<i>{btr(lang, 'step', i=i + 1, n=len(qs))}</i>\n{q.get(lang) or q['uz']}{extra}",
+                   reply_markup=brief_kb(lang, qs[i], pkg))
 
 
 async def brief_next(m: Message, state: FSMContext, lang: str, answer: str | None, finish: bool = False):
     data = await state.get_data()
     qs, i, brief = data["bq"], data["bi"], data.get("brief", [])
-    await close_question(m.bot, m.chat.id, data.get("bq_msg"))
     if i < len(qs) and answer:
         brief.append([qs[i], answer.strip()])
     await state.update_data(brief=brief, bi=len(qs) if finish else i + 1)
@@ -1194,18 +1182,6 @@ async def brief_button(c: CallbackQuery, state: FSMContext):
         if qs[i] in ("style", "cover") and idx < len(TPL) and idx + 1 not in tpl_allowed(data.get("pkg") or ""):
             return
         await brief_next(c.message, state, lang, opts[idx] if idx < len(opts) else None)
-    elif parts[1] == "back":
-        if i <= 0:
-            return
-        prev = qs[i - 1]
-        brief = data.get("brief", [])
-        for j in range(len(brief) - 1, -1, -1):  # oldingi savolga berilgan javobni o'chiramiz
-            if brief[j][0] == prev:
-                del brief[j]
-                break
-        await close_question(c.bot, c.message.chat.id, data.get("bq_msg"))
-        await state.update_data(brief=brief, bi=i - 1)
-        await ask_brief(c.message, state, lang)
     elif parts[1] == "skip":
         if i < len(qs) and qs[i] in BRIEF_REQUIRED:
             await c.message.answer(BRIEF_REQ_TX.get(lang) or BRIEF_REQ_TX["uz"])
@@ -1477,16 +1453,8 @@ async def show_confirm(m: Message, state: FSMContext):
             calc["price"] -= off
             calc["discount"] += off
             sub_line = SUB_TX["disc"][lang].format(pct=SUB_DISC, sum=money(off, lang))
-    free = ""
-    if price and not sub_use:
-        tier = None if is_admin(uid) else (pick_credit(uid, data.get("pkg") or "") if qty == 1 else None)
-        if is_admin(uid) or tier:
-            free = "admin" if is_admin(uid) else tier
-            calc.update(price=0, discount=calc["full_price"], bonus_used=0, welcome=0, promo_off=0, group_off=0, loyalty_off=0)
-            sub_line = (CR_TX["admin"][lang] if free == "admin" else
-                        CR_TX["covered"][lang].format(tier=TIER_NAME[tier], left=credits_of(uid).get(tier, 1) - 1))
     await state.update_data(price=calc["price"], full_price=calc["full_price"], discount=calc["discount"],
-                            bonus_used=calc["bonus_used"], welcome=calc["welcome"], promo=promo, sub_use=sub_use, free=free)
+                            bonus_used=calc["bonus_used"], welcome=calc["welcome"], promo=promo, sub_use=sub_use)
     await state.set_state(Order.confirm)
     label = svc_tr(data["aud"], data["svc"], lang)[0]
     if data.get("pkg"):
@@ -1678,29 +1646,6 @@ async def confirm(c: CallbackQuery, state: FSMContext, bot: Bot):
         await send_order_files(bot, oid, data.get("files", []))
         await send_tz(bot, o)
         await approve_order(bot, oid, None, f"💎 #{oid} — obuna hisobidan (qoldi {sub['quota'] - sub['used'] - 1} ta).")
-        await c.answer()
-        return
-    if data.get("free") and not quote:
-        free = data["free"]
-        if free != "admin" and not take_credit(c.from_user.id, free):
-            await c.answer(CR_TX["gone"][lang], show_alert=True)
-            await show_confirm(c.message, state)
-            return
-        oid = create_order(dict(data, price=0, bonus_used=0, welcome=0, promo=""), c.from_user)
-        tag = " [👑 admin]" if free == "admin" else f" [🎁 bepul {TIER_NAME[free]}]"
-        with db() as con:
-            con.execute("UPDATE orders SET status='paid', details=details || ? WHERE id=?", (tag, oid))
-        await state.clear()
-        left = credits_of(c.from_user.id).get(free, 0) if free != "admin" else None
-        await c.message.answer(CR_TX["used_ok"][lang].format(oid=oid) + (CR_TX["left"][lang].format(n=left) if left is not None else ""),
-                               reply_markup=MAIN_KBS[lang])
-        o = get_order(oid)
-        if free != "admin":
-            await notify_admins(bot, f"🎁 <b>Bepul ish bilan buyurtma</b> ({TIER_NAME[free]}, qoldi {left} ta)\n🌐 {LANGS[lang]}\n\n"
-                                + order_text(o, True))
-            await send_order_files(bot, oid, data.get("files", []))
-            await send_tz(bot, o)
-        await approve_order(bot, oid, None, f"{'👑' if free == 'admin' else '🎁'} #{oid} — to'lovsiz ({'admin' if free == 'admin' else TIER_NAME[free]}).")
         await c.answer()
         return
     if quote:
@@ -2014,109 +1959,6 @@ async def addbonus_cmd(m: Message, command: CommandObject, bot: Bot):
             await bot.send_message(uid, tr(L(uid), "bonus_gift", sum=money(amount, L(uid))))
         except Exception:
             pass
-
-
-# ------------------------------------------------------------------ 🎁 bepul ishlar (Start / Professional / Premium)
-TIER_RANK = {"start": 0, "pro": 1, "premium": 2}
-TIER_NAME = {"start": "Start", "pro": "Professional", "premium": "Premium"}
-CR_TX = {
-    "admin": {"uz": "👑 Admin — bepul, limitsiz", "ru": "👑 Админ — бесплатно, без лимита", "en": "👑 Admin — free, unlimited"},
-    "covered": {"uz": "🎁 Bepul ish ({tier}): <b>0 so'm</b> (keyin qoladi: {left} ta)",
-                "ru": "🎁 Бесплатная работа ({tier}): <b>0 сум</b> (останется: {left})",
-                "en": "🎁 Free work ({tier}): <b>0</b> ({left} left after)"},
-    "gone": {"uz": "Bepul ishlar tugagan", "ru": "Бесплатные работы закончились", "en": "No free works left"},
-    "used_ok": {"uz": "🎁 #{oid} qabul qilindi — to'lov kerak emas! Ish hozir tayyorlanmoqda ⚡",
-                "ru": "🎁 #{oid} принят — оплата не нужна! Работа уже готовится ⚡",
-                "en": "🎁 #{oid} accepted — no payment needed! Your work is being prepared ⚡"},
-    "left": {"uz": "\nQolgan bepul ishlar: <b>{n}</b> ta", "ru": "\nОсталось бесплатных работ: <b>{n}</b>",
-             "en": "\nFree works left: <b>{n}</b>"},
-    "gift": {"uz": "🎁 <b>Sizga {n} ta bepul {tier} ish berildi!</b>\nBuyurtma berganingizda to'lov so'ralmaydi — ish avtomatik tayyorlanadi.",
-             "ru": "🎁 <b>Вам подарено бесплатных работ {tier}: {n}!</b>\nПри заказе оплата не нужна — работа будет готова автоматически.",
-             "en": "🎁 <b>You got {n} free {tier} works!</b>\nNo payment needed when you order — the work is made automatically."},
-}
-
-
-def credits_of(uid: int) -> dict:
-    with db() as con:
-        return {r["tier"]: r["left"] for r in con.execute("SELECT tier, left FROM credits WHERE user_id=? AND left>0", (uid,))}
-
-
-def add_credits(uid: int, tier: str, n: int) -> int:
-    with db() as con:
-        con.execute("INSERT INTO credits(user_id, tier, left) VALUES(?,?,0) ON CONFLICT(user_id, tier) DO NOTHING", (uid, tier))
-        con.execute("UPDATE credits SET left=MAX(left+?, 0) WHERE user_id=? AND tier=?", (n, uid, tier))
-        return con.execute("SELECT left FROM credits WHERE user_id=? AND tier=?", (uid, tier)).fetchone()[0]
-
-
-def pick_credit(uid: int, pkg: str):
-    """Buyurtma darajasiga yetadigan eng arzon bepul ish (paketsiz xizmatlar — Start darajasi)."""
-    need = TIER_RANK.get(pkg, 0)
-    have = credits_of(uid)
-    ok = [t for t in TIER_RANK if have.get(t, 0) > 0 and TIER_RANK[t] >= need]
-    return min(ok, key=TIER_RANK.get) if ok else None
-
-
-def take_credit(uid: int, tier: str) -> bool:
-    with db() as con:
-        return con.execute("UPDATE credits SET left=left-1 WHERE user_id=? AND tier=? AND left>0", (uid, tier)).rowcount == 1
-
-
-def find_user(arg: str):
-    """USER_ID yoki @username bo'yicha foydalanuvchi."""
-    arg = arg.strip().lstrip("@")
-    with db() as con:
-        if arg.isdigit():
-            return con.execute("SELECT * FROM users WHERE user_id=?", (int(arg),)).fetchone()
-        return con.execute("SELECT * FROM users WHERE lower(username)=lower(?)", (arg,)).fetchone()
-
-
-@router.message(Command("addstart", "addpro", "addprofessional", "addpremium"))
-async def addcredit_cmd(m: Message, command: CommandObject, bot: Bot):
-    if not is_admin(m.from_user.id):
-        return
-    tier = {"addstart": "start", "addpro": "pro", "addprofessional": "pro", "addpremium": "premium"}[command.command.lower()]
-    parts = (command.args or "").split()
-    user = find_user(parts[0]) if parts else None
-    n = parts[1] if len(parts) > 1 else "1"
-    if not user or not n.lstrip("-").isdigit() or int(n) == 0:
-        await m.answer(f"🎁 Bepul <b>{TIER_NAME[tier]}</b> ish berish:\n<code>/{command.command} USER_ID</code> — 1 ta\n"
-                       f"<code>/{command.command} USER_ID 5</code> — 5 ta\n<code>/{command.command} @username 3</code>\n"
-                       f"<code>/{command.command} USER_ID -2</code> — 2 tasini olib qo'yish\n\n"
-                       "Foydalanuvchi botga kamida bir marta /start bosgan bo'lishi kerak. Ko'rish: <code>/credits USER_ID</code>")
-        return
-    uid, n = user["user_id"], int(n)
-    left = add_credits(uid, tier, n)
-    name = html.escape(user["full_name"] or str(uid))
-    await m.answer(f"✅ {name} (<code>{uid}</code>): {TIER_NAME[tier]} — <b>{left}</b> ta bepul ish")
-    if n > 0:
-        ul = L(uid)
-        try:
-            await bot.send_message(uid, CR_TX["gift"][ul].format(n=n, tier=TIER_NAME[tier]), reply_markup=MAIN_KBS[ul])
-        except Exception:
-            await m.answer("⚠️ Foydalanuvchiga xabar yetmadi (botni bloklagan bo'lishi mumkin), lekin bepul ishlar qo'shildi.")
-
-
-@router.message(Command("credits", "bepul"))
-async def credits_cmd(m: Message, command: CommandObject):
-    if not is_admin(m.from_user.id):
-        have = credits_of(m.from_user.id)
-        if have:
-            await m.answer("🎁 " + ", ".join(f"{TIER_NAME[t]}: <b>{n}</b>" for t, n in have.items()))
-        return
-    arg = (command.args or "").strip()
-    if arg:
-        user = find_user(arg)
-        if not user:
-            await m.answer("Foydalanuvchi topilmadi")
-            return
-        have = credits_of(user["user_id"])
-        await m.answer(f"🎁 <code>{user['user_id']}</code>: " + (", ".join(f"{TIER_NAME[t]} {n}" for t, n in have.items()) or "bepul ish yo'q"))
-        return
-    with db() as con:
-        rows = con.execute("SELECT c.user_id, c.tier, c.left, u.full_name FROM credits c LEFT JOIN users u USING(user_id) "
-                           "WHERE c.left>0 ORDER BY c.user_id").fetchall()
-    await m.answer("🎁 <b>Bepul ishlar</b>\n" + ("\n".join(f"• {html.escape(r['full_name'] or '')} <code>{r['user_id']}</code> — "
-                                                         f"{TIER_NAME[r['tier']]}: {r['left']}" for r in rows) or "Hech kimda yo'q"))
 
 
 # ------------------------------------------------------------------ 👥 guruh buyurtmasi
@@ -2614,101 +2456,17 @@ async def check_low_balance(bot: Bot):
                                  "platform.claude.com → Billing da to'ldiring, keyin yozing: <code>/avto +5</code>")
 
 
-# 📊 Jonli holat: mijoz va admin bitta xabarni ko'radi, u bosqichma-bosqich yangilanadi
-LIVE_TX = {
-    "head": {"uz": "🤖 <b>Buyurtma #{oid}</b> — ish tayyorlanmoqda", "ru": "🤖 <b>Заказ #{oid}</b> — работа готовится",
-             "en": "🤖 <b>Order #{oid}</b> — your work is being made"},
-    "paid": {"uz": "To'lov qabul qilindi", "ru": "Оплата принята", "en": "Payment received"},
-    "read": {"uz": "Topshiriq o'qilmoqda", "ru": "Читаем задание", "en": "Reading the brief"},
-    "plan": {"uz": "Reja tuzilmoqda", "ru": "Составляем план", "en": "Making the outline"},
-    "write": {"uz": "Matn yozilmoqda", "ru": "Пишем текст", "en": "Writing the text"},
-    "build": {"uz": "Fayl yig'ilmoqda", "ru": "Собираем файл", "en": "Building the file"},
-    "done": {"uz": "Tayyor! Fayl pastda 👇", "ru": "Готово! Файл ниже 👇", "en": "Done! The file is below 👇"},
-    "retry": {"uz": "Kichik nosozlik — qayta urinyapmiz…", "ru": "Небольшой сбой — пробуем ещё раз…",
-              "en": "Small hiccup — trying again…"},
-    "manual": {"uz": "⚠️ Avtomatik tayyorlab bo'lmadi — ishingizni mutaxassis qo'lda tayyorlaydi.\n⏰ Muddat: <b>{due}</b>. Fayl shu chatga keladi 📩",
-               "ru": "⚠️ Автоматически не получилось — работу сделает специалист вручную.\n⏰ Срок: <b>{due}</b>. Файл придёт в этот чат 📩",
-               "en": "⚠️ Couldn't make it automatically — a specialist will do it by hand.\n⏰ Due: <b>{due}</b>. The file will arrive here 📩"},
-    "wait": {"uz": "⏳ Odatda 1–5 daqiqa. Botdan chiqib ketsangiz ham fayl keladi.", "ru": "⏳ Обычно 1–5 минут. Можно закрыть бот — файл всё равно придёт.",
-             "en": "⏳ Usually 1–5 minutes. You can close the bot — the file will still arrive."},
-}
-LIVE_ORDER = {"slides": ["paid", "read", "write", "build"], "paper": ["paid", "read", "plan", "write", "build"]}
-
-
-def live_text(lang: str, oid: int, kind: str, stage: str, done: int = 0, total: int = 0, note: str = "") -> str:
-    def t(k):
-        return LIVE_TX[k].get(lang) or LIVE_TX[k]["uz"]
-    steps = LIVE_ORDER["slides" if kind == "slides" else "paper"]
-    if stage == "done":
-        cur, frac = len(steps), 1.0
-    else:
-        cur = steps.index(stage) if stage in steps else 1
-        frac = (cur + (done / total if total else 0.3)) / len(steps)
-    lines = []
-    for i, k in enumerate(steps):
-        label = t(k) + (f" ({done}/{total})" if k == "write" and k == stage and total else "")
-        lines.append((E["ok"] + " " if i < cur else "⏳ <b>" if i == cur else "▫️ ") + label + ("</b>" if i == cur else ""))
-    tail = (f"\n\n🎉 <b>{t('done')}</b>" if stage == "done" else f"\n\n{t('wait')}")
-    return (t("head").replace("🤖", E["bot"]).format(oid=oid) + "\n\n" + "\n".join(lines) + f"\n\n{progress_bar(round(frac * 20), 20, 10)} "
-            f"<b>{round(frac * 100)}%</b>" + (f"\n\n<i>{note}</i>" if note else "") + tail)
-
-
-async def live_edit(bot: Bot, targets: list, text_for):
-    """targets: [(chat_id, message_id, lang)]; text_for(lang) → matn. «not modified» xatolari e'tiborsiz."""
-    for chat_id, mid, lang in targets:
-        try:
-            await bot.edit_message_text(text_for(lang), chat_id=chat_id, message_id=mid)
-        except Exception:
-            pass
-
-
 async def run_auto(bot: Bot, oid: int, to_client: bool = True):
     o = get_order(oid)
     if not o:
         return
     ul = L(o["user_id"])
-    kind = AG.kind_for(o) or "paper"
     acc = AG.cost_tracker()
     with db() as con:
         con.execute("UPDATE orders SET auto='run' WHERE id=?", (oid,))
-    # jonli holat xabarlari: mijozga (agar unga yuborilsa) va har bir adminga
-    targets = []
-    if to_client:
-        try:
-            msg = await bot.send_message(o["user_id"], live_text(ul, oid, kind, "read"))
-            targets.append((o["user_id"], msg.message_id, ul))
-        except Exception as e:
-            logging.warning("Holat xabari: %s", e)
-    for aid in ADMIN_IDS:
-        if to_client and aid == o["user_id"]:
-            continue  # admin o'zi buyurtma bergan — bitta xabar yetadi
-        try:
-            msg = await bot.send_message(aid, live_text("uz", oid, kind, "read"))
-            targets.append((aid, msg.message_id, "uz"))
-        except Exception:
-            pass
-    state = {"note": ""}
-
-    async def progress(stage, done=0, total=0):
-        await live_edit(bot, targets, lambda lg: live_text(lg, oid, kind, stage, done, total, state["note"]))
-
     try:
-        last_err = None
-        for attempt in range(2):  # bitta nosozlikda — butun ishni yana bir marta urinib ko'ramiz
-            try:
-                name, data, report = await asyncio.wait_for(
-                    AG.generate(bot, o, svc_tr(o["audience"], o["service"], "uz")[0], ul, progress=progress), timeout=900)
-                break
-            except AG.AutoError as e:
-                last_err = e
-                if str(e).startswith("BALANS") or attempt == 1:
-                    raise
-                logging.warning("Avto #%s 1-urinish xato: %s — qayta", oid, e)
-                state["note"] = LIVE_TX["retry"]["uz"]
-                await live_edit(bot, targets, lambda lg: live_text(lg, oid, kind, "read", note=LIVE_TX["retry"].get(lg) or ""))
-        else:
-            raise last_err
-        await live_edit(bot, targets, lambda lg: live_text(lg, oid, kind, "done"))
+        name, data, report = await asyncio.wait_for(
+            AG.generate(bot, o, svc_tr(o["audience"], o["service"], "uz")[0], ul), timeout=900)
         file = BufferedInputFile(data, filename=name)
         cost = acc[0]
         with db() as con:
@@ -2719,8 +2477,6 @@ async def run_auto(bot: Bot, oid: int, to_client: bool = True):
                f"{html.escape(service_label(o))} · {report}\n💵 ${cost:.2f}")
         sent_fid = None
         for aid in ADMIN_IDS:
-            if to_client and aid == o["user_id"]:
-                continue  # o'zi buyurtmachi — fayl pastda mijoz sifatida keladi
             try:
                 msg = await bot.send_document(aid, file, caption=cap, reply_markup=kb)
                 if msg and msg.document:
@@ -2728,42 +2484,29 @@ async def run_auto(bot: Bot, oid: int, to_client: bool = True):
                     file = msg.document.file_id  # keyingi yuborishlar uchun qayta yuklamaymiz
             except Exception as e:
                 logging.warning("Admin nusxasi yuborilmadi: %s", e)
-        if to_client:
-            msg = await bot.send_document(o["user_id"], file, caption=tr(ul, "file_cap", oid=oid)
-                                          + (f"\n\n{cap}" if is_admin(o["user_id"]) else ""),
-                                          reply_markup=kb if is_admin(o["user_id"]) else None)
-            if msg and msg.document:
-                sent_fid = sent_fid or msg.document.file_id
-            set_status(oid, "done")
-            await bot.send_message(o["user_id"], tr(ul, "done", oid=oid, contact=CONTACT), reply_markup=fix_kb(oid, ul))
-            if not is_admin(o["user_id"]):
-                await ask_review(bot, get_order(oid))
         if sent_fid:
             set_setting(f"ai_file_{oid}", sent_fid)
+        if to_client:
+            await bot.send_document(o["user_id"], file, caption=tr(ul, "file_cap", oid=oid))
+            set_status(oid, "done")
+            await bot.send_message(o["user_id"], tr(ul, "done", oid=oid, contact=CONTACT), reply_markup=fix_kb(oid, ul))
+            await ask_review(bot, get_order(oid))
     except Exception as e:
         cost = acc[0]
         with db() as con:
             con.execute("UPDATE orders SET auto='fail', ai_cost=COALESCE(ai_cost,0)+? WHERE id=?", (cost, oid))
         logging.warning("Avto #%s xato: %s", oid, e)
         msg = str(e)[:300]
-        due = due_time(get_order(oid))
-        due_s = fmt_local(due) if due else "—"
-        for chat_id, mid, lang in targets:
-            if chat_id == o["user_id"] and to_client:
-                try:
-                    await bot.edit_message_text((LIVE_TX["manual"].get(lang) or LIVE_TX["manual"]["uz"]).format(due=due_s),
-                                                chat_id=chat_id, message_id=mid)
-                except Exception:
-                    pass
-        if to_client and not targets:
+        if to_client:
+            due = due_time(get_order(oid))
             try:
-                await bot.send_message(o["user_id"], fx(ul, "auto_manual", oid=oid, due=due_s))
+                await bot.send_message(o["user_id"], fx(ul, "auto_manual", oid=oid, due=fmt_local(due) if due else "—"))
             except Exception:
                 pass
-        head = "💳 <b>API balansi tugagan!</b>" if msg.startswith("BALANS") else "⚠️ <b>Avtomatik bajarilmadi</b> (2 marta urinildi)"
+        head = "💳 <b>API balansi tugagan!</b>" if msg.startswith("BALANS") else "⚠️ <b>Avtomatik bajarilmadi</b>"
         await notify_admins(bot, f"{head} — #{oid}\n<code>{html.escape(msg)}</code>\n\n"
-                                 + (f"Mijozga muddat yozildi. Qayta urinish: «🔁 Qayta yaratish» yoki qo'lda: /yubor_{oid}" if to_client else ""),
-                            ikb([[("🔁 Qayta yaratish", f"adm:regen:{oid}", "success")]]))
+                                 + (f"Mijozga muddat yozildi. Qo'lda bajaring: /yubor_{oid}" if to_client else ""),
+                            admin_kb(oid, "work") if to_client else None)
     await check_low_balance(bot)
 
 
@@ -2797,6 +2540,7 @@ async def approve_order(bot: Bot, oid: int, reply_to: Message | None = None, aut
     o = get_order(oid)
     due = due_time(o)
     if auto_ready(o):
+        await bot.send_message(o["user_id"], fx(ul, "auto_wait", oid=oid))
         await tell((auto_note or f"#{oid} — ✅ tasdiqlandi.") + "\n🤖 Ish avtomatik tayyorlanmoqda (1–5 daqiqa), tayyor bo'lgach "
                    "mijozga yuboriladi va sizga nusxasi keladi.",
                    ikb([[("🚩 Soxta chek", f"adm:fake:{oid}", "danger")]]) if auto_note else None)
@@ -2849,13 +2593,6 @@ async def check_cheque(bot: Bot, oid: int, file_id: str, unique_id: str, mime: s
             reasons.append("chekda sana o'qilmadi")
         elif not (datetime.now() - timedelta(hours=36) <= dt <= datetime.now() + timedelta(minutes=30)):
             reasons.append("chek sanasi eski yoki noto'g'ri")
-        else:
-            try:  # chek buyurtmadan OLDIN qilingan bo'lsa — eski (boshqa to'lovning) cheki
-                created = datetime.strptime(o["created_at"], "%Y-%m-%d %H:%M")
-                if dt < created - timedelta(minutes=15):
-                    reasons.append(f"chek buyurtmadan oldin qilingan ({info.get('datetime')}) — eski chek bo'lishi mumkin")
-            except (TypeError, ValueError):
-                pass
     except Exception as e:
         reasons.append(f"chek o'qilmadi ({str(e)[:120]})")
     with db() as con:
@@ -3187,7 +2924,7 @@ async def send_ad(m: Message):
         logging.warning("Reklama yuborilmadi: %s", e)
 
 
-@router.message(F.video, F.caption.regexp(r"(?i)^/reklama\b"))
+@router.message(F.video, F.caption.regexp(r"^/reklama\b"))
 async def set_ad(m: Message):
     if not is_admin(m.from_user.id):
         return
@@ -3326,7 +3063,7 @@ async def post_go(c: CallbackQuery, state: FSMContext, bot: Bot):
 
 
 # ------------------------------------------------------------------ admin yordam
-@router.message(Command("admin"))
+@router.message(Command("buyruqlar", "commands"))
 async def admin_help(m: Message):
     if not is_admin(m.from_user.id):
         return
@@ -3346,11 +3083,200 @@ async def admin_help(m: Message):
         "<code>/delshop ID</code>\n"
         "🎟 <code>/promo KOD FOIZ [SONI]</code> · /promos · <code>/delpromo KOD</code>\n"
         "🔥 <code>/aksiya matn</code> · 🎁 <code>/addbonus ID SUMMA</code>\n"
-        "🆓 Bepul ish berish: <code>/addstart ID [SONI]</code> · <code>/addprofessional ID [SONI]</code> · "
-        "<code>/addpremium ID [SONI]</code> · ko'rish: /credits\n"
-        "👑 Siz (admin) buyurtma bersangiz — to'lovsiz va limitsiz, ish darhol boshlanadi\n"
         "📢 /post — kanalga post · /broadcast — hammaga xabar\n"
         "👀 Buyurtmadagi «Namuna yuborish» — to'lovdan oldin suv belgili rasmlar")
+
+
+
+# ------------------------------------------------------------------ 🛠 ADMIN PANEL
+class _AsMsg:
+    """Callback'dan eski /buyruq handlerlarini chaqirish uchun: javob o'sha chatga, egasi — admin."""
+
+    def __init__(self, c: CallbackQuery):
+        self.from_user, self.chat, self._m = c.from_user, c.message.chat, c.message
+
+    def __getattr__(self, name):
+        return getattr(self._m, name)
+
+
+class _NoArgs:
+    args = None
+
+
+def panel_text() -> str:
+    total, blocked, today, orders, done = user_stats()
+    now = datetime.now()
+    d0, m0 = now.strftime("%Y-%m-%d"), now.strftime("%Y-%m")
+    with db() as con:
+        cnt = dict(con.execute("SELECT status, COUNT(*) FROM orders GROUP BY status").fetchall())
+        inc_d = con.execute("SELECT COALESCE(SUM(price),0) FROM orders WHERE status IN ('work','done') AND created_at LIKE ?",
+                            (d0 + "%",)).fetchone()[0]
+        inc_m = con.execute("SELECT COALESCE(SUM(price),0) FROM orders WHERE status IN ('work','done') AND created_at LIKE ?",
+                            (m0 + "%",)).fetchone()[0]
+        subs = con.execute("SELECT COUNT(DISTINCT user_id) FROM subs WHERE ends>?", (now.strftime("%Y-%m-%d %H:%M"),)).fetchone()[0]
+        act = con.execute("SELECT COUNT(*) FROM users WHERE last_seen LIKE ?", (d0 + "%",)).fetchone()[0]
+    f = lambda n: f"{n:,}".replace(",", " ")
+    last = get_setting("last_broadcast")
+    return ("🛠 <b>Admin panel</b>\n\n"
+            f"👥 Foydalanuvchilar: <b>{f(total)}</b> · 🆕 bugun: <b>{today}</b> · 🔥 bugun faol: <b>{act}</b>\n"
+            f"🚫 Bloklagan: <b>{blocked}</b> · 💎 Obunachilar: <b>{subs}</b>\n\n"
+            f"🧾 Chek tekshirish kutilmoqda: <b>{cnt.get('paid', 0)}</b>\n"
+            f"🛠 Ishda: <b>{cnt.get('work', 0)}</b> · 🕐 To'lov kutilmoqda: <b>{cnt.get('new', 0)}</b> · "
+            f"💬 Narx kelishish: <b>{cnt.get('quote', 0)}</b>\n"
+            f"✅ Topshirilgan: <b>{done}</b> / {orders}\n\n"
+            f"💰 Bugun: <b>{f(inc_d)}</b> so'm · Shu oy: <b>{f(inc_m)}</b> so'm\n"
+            f"🤖 Avto rejim: <b>{'yoqilgan' if auto_on() else 'o' + chr(39) + 'chiq'}</b>"
+            + (f"\n📢 Oxirgi xabar: {html.escape(last)}" if last else ""))
+
+
+def panel_kb():
+    return ikb([
+        [("📊 Statistika", "ap:stats", "primary"), ("💰 Daromad", "ap:income", "primary")],
+        [("📦 Buyurtmalar", "ap:orders", None), ("⏰ Muddatlar", "ap:due", None)],
+        [("📢 Xabar yuborish", "ap:bc", "success"), ("👤 Mijozni topish", "ap:find", "success")],
+        [("🤖 Avto / API", "ap:auto", None), ("💎 Obunalar", "ap:subs", None)],
+        [("⭐ Sharhlar", "ap:reviews", None), ("🎟 Promokodlar", "ap:promos", None)],
+        [("🛍 Do'kon", "ap:shop", None), ("🎬 Reklama", "ap:ad", None)],
+        [("📣 Kanalga post", "ap:post", None), ("📋 Barcha buyruqlar", "ap:help", None)],
+        [("🔄 Yangilash", "ap:home", None)],
+    ])
+
+
+@admin_router.message(Command("admin", "panel"))
+@admin_router.message(F.text == ADMIN_BTN)
+async def admin_panel(m: Message, state: FSMContext):
+    await state.clear()
+    await m.answer(panel_text(), reply_markup=panel_kb())
+
+
+@admin_router.callback_query(F.data.startswith("ap:"))
+async def admin_panel_cb(c: CallbackQuery, state: FSMContext, bot: Bot):
+    act = c.data[3:]
+    await c.answer()
+    am = _AsMsg(c)
+    if act == "home":
+        try:
+            await c.message.edit_text(panel_text(), reply_markup=panel_kb())
+        except Exception:
+            await c.message.answer(panel_text(), reply_markup=panel_kb())
+    elif act == "stats":
+        await stats_cmd(am)
+    elif act == "income":
+        await daromad_cmd(am)
+    elif act == "orders":
+        await admin_orders(am)
+    elif act == "due":
+        await muddat_cmd(am)
+    elif act == "bc":
+        await broadcast_start(am, state)
+    elif act == "find":
+        await state.set_state(AdminPanel.find)
+        await c.message.answer("👤 Mijozning <b>ID</b>, <b>@username</b>, ismi yoki <b>buyurtma raqami</b> (#12) ni yozing.\n"
+                               "Bekor qilish: /cancel")
+    elif act == "auto":
+        await avto_cmd(am, _NoArgs(), bot)
+    elif act == "subs":
+        await subs_admin(am)
+    elif act == "reviews":
+        await reviews_cmd(am)
+    elif act == "promos":
+        await promo_list(am)
+    elif act == "shop":
+        await shop_admin_list(am)
+    elif act == "ad":
+        await c.message.answer("🎬 <b>Reklama video</b>\n\nHozirgisini ko'rish — pastda 👇\n"
+                               "Almashtirish: yangi videoni botga yuboring, izohiga <code>/reklama</code> yozing — "
+                               "hamma foydalanuvchi uni /start da bir marta ko'radi.")
+        await send_ad(am)
+    elif act == "post":
+        await post_start(am, state)
+    elif act == "help":
+        await admin_help(am)
+
+
+def find_users(q: str):
+    q = q.strip()
+    with db() as con:
+        if q.lstrip("#").isdigit() and q.startswith("#"):
+            r = con.execute("SELECT user_id FROM orders WHERE id=?", (int(q[1:]),)).fetchone()
+            return [r[0]] if r else []
+        if q.isdigit():
+            return [int(q)] if con.execute("SELECT 1 FROM users WHERE user_id=?", (int(q),)).fetchone() else []
+        like = f"%{q.lstrip('@')}%"
+        return [r[0] for r in con.execute("SELECT user_id FROM users WHERE username LIKE ? OR full_name LIKE ? "
+                                          "ORDER BY last_seen DESC LIMIT 8", (like, like))]
+
+
+def user_card(uid: int) -> str:
+    with db() as con:
+        u = con.execute("SELECT * FROM users WHERE user_id=?", (uid,)).fetchone()
+        os_ = con.execute("SELECT COUNT(*), COALESCE(SUM(CASE WHEN status IN ('work','done') THEN price END),0) "
+                          "FROM orders WHERE user_id=?", (uid,)).fetchone()
+        last = con.execute("SELECT id, service, status FROM orders WHERE user_id=? ORDER BY id DESC LIMIT 5", (uid,)).fetchall()
+    if not u:
+        return "Topilmadi."
+    keys = u.keys()
+    sub = active_sub(uid)
+    lines = [f"👤 <b>{html.escape(u['full_name'] or '—')}</b>" + (f" · @{html.escape(u['username'])}" if u["username"] else ""),
+             f"🆔 <code>{uid}</code> · 🌐 {L(uid)}",
+             f"📅 Qo'shilgan: {u['joined_at']} · 👀 Oxirgi: {u['last_seen']}",
+             f"📦 Buyurtmalar: <b>{os_[0]}</b> · 💰 To'lagan: <b>{(os_[1] or 0):,}</b> so'm".replace(",", " ")]
+    if "bonus" in keys:
+        lines.append(f"🎁 Bonus: <b>{(u['bonus'] or 0):,}</b> so'm".replace(",", " "))
+    if sub:
+        lines.append(f"💎 Obuna: {sub['plan']} · {sub['used']}/{sub['quota']} · {sub['ends']} gacha")
+    if u["blocked"]:
+        lines.append("🚫 Botni bloklagan")
+    if last:
+        lines.append("\n<b>Oxirgi buyurtmalar:</b>")
+        lines += [f"#{r['id']} · {html.escape(str(r['service']))} · {STATUS.get(r['status'], r['status'])}" for r in last]
+    return "\n".join(lines)
+
+
+@admin_router.message(AdminPanel.find, ~F.text.startswith("/"))
+async def admin_find(m: Message, state: FSMContext):
+    ids = find_users(m.text or "")
+    if not ids:
+        await m.answer("Hech kim topilmadi. Boshqacha yozib ko'ring yoki /cancel")
+        return
+    await state.clear()
+    if len(ids) > 1:
+        with db() as con:
+            rows = [con.execute("SELECT user_id, full_name, username FROM users WHERE user_id=?", (i,)).fetchone() for i in ids]
+        await m.answer("Bir nechta odam topildi — tanlang:",
+                       reply_markup=ikb([[(f"{r['full_name'] or r['user_id']}" + (f" @{r['username']}" if r["username"] else ""),
+                                           f"au:card:{r['user_id']}", None)] for r in rows if r]))
+        return
+    await m.answer(user_card(ids[0]), reply_markup=user_kb(ids[0]))
+
+
+def user_kb(uid: int):
+    return ikb([[("✉️ Xabar yozish", f"au:msg:{uid}", "success"), ("🔄 Yangilash", f"au:card:{uid}", None)]])
+
+
+@admin_router.callback_query(F.data.startswith("au:"))
+async def admin_user_cb(c: CallbackQuery, state: FSMContext):
+    _, act, uid = c.data.split(":")
+    uid = int(uid)
+    await c.answer()
+    if act == "card":
+        await c.message.answer(user_card(uid), reply_markup=user_kb(uid))
+    elif act == "msg":
+        await state.set_state(AdminPanel.msg)
+        await state.update_data(to_uid=uid)
+        await c.message.answer("✉️ Mijozga yuboriladigan xabarni yozing (matn, rasm, fayl...). Bekor qilish: /cancel")
+
+
+@admin_router.message(AdminPanel.msg, ~F.text.startswith("/"))
+async def admin_user_msg(m: Message, state: FSMContext, bot: Bot):
+    uid = (await state.get_data()).get("to_uid")
+    await state.clear()
+    try:
+        await bot.send_message(uid, "📩 <b>Admindan xabar:</b>")
+        await bot.copy_message(uid, m.chat.id, m.message_id)
+        await m.answer("✅ Yuborildi.", reply_markup=user_kb(uid))
+    except Exception as e:
+        await m.answer(f"❌ Yuborilmadi: {html.escape(str(e))[:150]}")
 
 
 # ------------------------------------------------------------------ admin
@@ -3406,8 +3332,6 @@ async def admin_action(c: CallbackQuery, state: FSMContext, bot: Bot):
             return
         ul = L(o["user_id"])
         await bot.send_document(o["user_id"], fid, caption=tr(ul, "file_cap", oid=oid) + " (yangilangan)")
-        if o["status"] != "done":
-            set_status(oid, "done")
         await c.message.answer(f"#{oid} — yangi variant mijozga yuborildi ✅")
     elif act == "send":
         await state.set_state(AdminSend.file)
@@ -3503,14 +3427,67 @@ async def stats_cmd(m: Message):
                    f"📦 Buyurtmalar: <b>{orders}</b>\n✅ Topshirilgan: <b>{done}</b>".replace(",", " "))
 
 
+BC_AUD = {
+    "all": "👥 Hammaga",
+    "s": "🎓 Talabalar (buyurtma bergan)",
+    "t": "👩‍🏫 Ustozlar (buyurtma bergan)",
+    "buy": "💳 Xarid qilganlar",
+    "nobuy": "🆕 Hali buyurtma bermaganlar",
+    "sub": "💎 Faol obunachilar",
+    "act": "🔥 Oxirgi 7 kunda faol",
+}
+
+
+def audience_ids(aud: str) -> list:
+    week = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d %H:%M")
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    q = {
+        "all": ("SELECT user_id FROM users WHERE blocked=0", ()),
+        "s": ("SELECT DISTINCT u.user_id FROM users u JOIN orders o ON o.user_id=u.user_id WHERE u.blocked=0 AND o.audience='s'", ()),
+        "t": ("SELECT DISTINCT u.user_id FROM users u JOIN orders o ON o.user_id=u.user_id WHERE u.blocked=0 AND o.audience='t'", ()),
+        "buy": ("SELECT DISTINCT u.user_id FROM users u JOIN orders o ON o.user_id=u.user_id WHERE u.blocked=0 "
+                "AND o.status IN ('paid','work','done')", ()),
+        "nobuy": ("SELECT user_id FROM users WHERE blocked=0 AND user_id NOT IN (SELECT user_id FROM orders)", ()),
+        "sub": ("SELECT DISTINCT u.user_id FROM users u JOIN subs s ON s.user_id=u.user_id WHERE u.blocked=0 AND s.ends>?", (now,)),
+        "act": ("SELECT user_id FROM users WHERE blocked=0 AND last_seen>=?", (week,)),
+    }.get(aud)
+    if not q:
+        return []
+    with db() as con:
+        return [r[0] for r in con.execute(*q)]
+
+
+def bc_aud_kb():
+    rows = [[(f"{v} · {len(audience_ids(k))}", f"bca:{k}", "primary" if k == "all" else None)] for k, v in BC_AUD.items()]
+    rows.append([("❌ Bekor", "bc:no", "danger")])
+    return ikb(rows)
+
+
+def bc_confirm_kb(btn: bool):
+    return ikb([[("✅ Yuborish", "bc:go", "success", "ok")],
+                [(("✅" if btn else "⬜") + " «✨ Buyurtma berish» tugmasi", "bc:btn", None)],
+                [("❌ Bekor", "bc:no", "danger", "cancel")]])
+
+
 @router.message(Command("broadcast"))
 async def broadcast_start(m: Message, state: FSMContext):
     if not is_admin(m.from_user.id):
         return
+    await state.clear()
+    await m.answer("📢 <b>Xabar yuborish</b>\n\nKimga yuboramiz? (yonidagi son — nechta odam)", reply_markup=bc_aud_kb())
+
+
+@router.callback_query(F.data.startswith("bca:"))
+async def broadcast_aud(c: CallbackQuery, state: FSMContext):
+    if not is_admin(c.from_user.id):
+        return
+    aud = c.data[4:]
+    await c.answer()
     await state.set_state(AdminSend.broadcast)
-    await m.answer(f"📢 <b>Hammaga xabar</b>\n\nYubormoqchi bo'lgan xabarni yuboring: matn, rasm, video, "
-                   f"fayl yoki ovozli xabar — xuddi shu ko'rinishda hamma {len(all_user_ids())} ta foydalanuvchiga boradi.\n\n"
-                   "Bekor qilish: /cancel")
+    await state.update_data(bc_aud=aud, bc_btn=False)
+    await c.message.answer(f"Auditoriya: <b>{BC_AUD.get(aud, aud)}</b> — {len(audience_ids(aud))} ta odam.\n\n"
+                           "Endi xabarni yuboring: matn, rasm, video, fayl yoki ovozli xabar — xuddi shu ko'rinishda boradi.\n"
+                           "Bekor qilish: /cancel")
 
 
 @router.message(Command("cancel"))
@@ -3521,36 +3498,54 @@ async def cancel_cmd(m: Message, state: FSMContext):
 
 @router.message(AdminSend.broadcast)
 async def broadcast_preview(m: Message, state: FSMContext):
+    data = await state.get_data()
+    aud = data.get("bc_aud", "all")
     await state.update_data(bc_chat=m.chat.id, bc_msg=m.message_id)
     await state.set_state(AdminSend.broadcast_confirm)
-    await m.answer(f"Yuqoridagi xabar <b>{len(all_user_ids())}</b> ta foydalanuvchiga yuborilsinmi?",
-                   reply_markup=ikb([[("✅ Yuborish", "bc:go", "success", "ok"), ("❌ Bekor", "bc:no", "danger", "cancel")]]))
+    await m.answer(f"👆 Shu xabar <b>{BC_AUD.get(aud, aud)}</b> — <b>{len(audience_ids(aud))}</b> ta foydalanuvchiga yuborilsinmi?",
+                   reply_markup=bc_confirm_kb(bool(data.get("bc_btn"))))
 
 
 @router.callback_query(AdminSend.broadcast_confirm, F.data.startswith("bc:"))
+@router.callback_query(F.data == "bc:no")
 async def broadcast_go(c: CallbackQuery, state: FSMContext, bot: Bot):
+    if not is_admin(c.from_user.id):
+        return
     data = await state.get_data()
-    await state.clear()
     await c.answer()
+    if c.data == "bc:btn":
+        btn = not data.get("bc_btn")
+        await state.update_data(bc_btn=btn)
+        try:
+            await c.message.edit_reply_markup(reply_markup=bc_confirm_kb(btn))
+        except Exception:
+            pass
+        return
+    await state.clear()
     if c.data == "bc:no":
         await c.message.answer("Bekor qilindi.")
         return
-    ids = all_user_ids()
+    ids = audience_ids(data.get("bc_aud", "all"))
+    try:
+        await c.message.edit_reply_markup(reply_markup=None)
+    except Exception:
+        pass
     status = await c.message.answer(f"📤 Yuborilmoqda... 0 / {len(ids)}")
-    asyncio.create_task(run_broadcast(bot, ids, data["bc_chat"], data["bc_msg"], status))
+    asyncio.create_task(run_broadcast(bot, ids, data["bc_chat"], data["bc_msg"], status,
+                                      order_button() if data.get("bc_btn") else None))
 
 
-async def run_broadcast(bot: Bot, ids, from_chat, msg_id, status_msg):
+async def run_broadcast(bot: Bot, ids, from_chat, msg_id, status_msg, markup=None):
     from aiogram.exceptions import TelegramForbiddenError, TelegramRetryAfter, TelegramBadRequest
     ok = fail = 0
     for n, uid in enumerate(ids, 1):
         try:
-            await bot.copy_message(uid, from_chat, msg_id)
+            await bot.copy_message(uid, from_chat, msg_id, reply_markup=markup)
             ok += 1
         except TelegramRetryAfter as e:
             await asyncio.sleep(e.retry_after + 1)
             try:
-                await bot.copy_message(uid, from_chat, msg_id)
+                await bot.copy_message(uid, from_chat, msg_id, reply_markup=markup)
                 ok += 1
             except Exception:
                 fail += 1
@@ -3566,6 +3561,7 @@ async def run_broadcast(bot: Bot, ids, from_chat, msg_id, status_msg):
                 await status_msg.edit_text(f"📤 Yuborilmoqda... {n} / {len(ids)}")
             except Exception:
                 pass
+    set_setting("last_broadcast", f"{datetime.now():%d.%m %H:%M} — {ok} ta yetkazildi, {fail} ta yo'q")
     await status_msg.edit_text(f"✅ <b>Tayyor!</b>\n\n📨 Yetkazildi: <b>{ok}</b>\n🚫 Yetkazilmadi (bloklagan): <b>{fail}</b>")
 
 
@@ -3698,19 +3694,6 @@ async def set_commands(bot: Bot):
                 await bot.set_my_commands(items)  # boshqa tildagi foydalanuvchilar uchun
     except Exception as e:
         logging.warning("set_my_commands: %s", e)
-    # adminlar uchun alohida «Menu»: oddiy buyruqlar + admin buyruqlari
-    from aiogram.types import BotCommandScopeChat
-    admin_extra = [("admin", "🛠 Barcha admin buyruqlari"), ("reklama", "🎬 Reklama videoni ko'rish (almashtirish: video + /reklama)"),
-                   ("orders", "📋 Oxirgi buyurtmalar"), ("daromad", "📊 Daromad"), ("avto", "🤖 Avto rejim va API balansi"),
-                   ("addpremium", "🎁 Bepul Premium ish berish: ID [soni]"), ("addprofessional", "🎁 Bepul Professional ish: ID [soni]"),
-                   ("addstart", "🎁 Bepul Start ish: ID [soni]"), ("credits", "🎁 Kimda nechta bepul ish bor")]
-    base = [(c, d) for c, d in COMMANDS.get(DEFAULT_LANG, [])]
-    for aid in ADMIN_IDS:
-        try:
-            await bot.set_my_commands([BotCommand(command=c, description=d) for c, d in admin_extra + base],
-                                      scope=BotCommandScopeChat(chat_id=aid))
-        except Exception as e:
-            logging.warning("admin menu %s: %s", aid, e)
     # bot profilidagi tavsif — hamma ko'radi («Bu bot nima qila oladi?» va bio)
     for lang in DESCRIPTION:
         ch = CHANNEL_LINE[lang].format(ch=channel_name()) if channel_url() else ""
@@ -3743,6 +3726,7 @@ async def main():
                 logging.warning("touch_user: %s", e)
         return await handler(event, data)
 
+    dp.include_router(admin_router)
     dp.include_router(router)
     await set_commands(bot)
     asyncio.create_task(reminders_loop(bot))
