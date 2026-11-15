@@ -111,16 +111,50 @@ def kind_for(o) -> str | None:
 
 
 # ------------------------------------------------------------------ Claude API
-JSON_TOOL = {
-    "name": "natija",
-    "description": "Tayyor natijani shu vosita orqali JSON obyekt sifatida qaytar (so'ralgan tuzilishda).",
-    "input_schema": {"type": "object", "additionalProperties": True},
-}
+# ---- JSON sxemalari (structured outputs): API javobni aynan shu tuzilishda, doim to'g'ri JSON qilib beradi.
+# Claude Sonnet 5.5 majburiy tool_choice'ni qo'llamaydi, shuning uchun output_config.format ishlatiladi.
+def _o(props: dict) -> dict:
+    return {"type": "object", "properties": props, "required": list(props), "additionalProperties": False}
 
 
-async def claude(system: str, content, max_tokens: int = 8000, retries: int = 2, as_json: bool = False) -> str:
-    """Claude API. as_json=True — javob majburiy «natija» vositasi orqali keladi, shuning uchun JSON doim to'g'ri
-    (matn ichidagi qo'shtirnoqlar endi JSONni buzmaydi)."""
+_S, _N, _I, _B = {"type": "string"}, {"type": "number"}, {"type": "integer"}, {"type": "boolean"}
+
+
+def _arr(x):
+    return {"type": "array", "items": x}
+
+
+def _null(x):
+    return {"anyOf": [x, {"type": "null"}]}
+
+
+SLIDES_SCHEMA = _o({
+    "cover": _o({k: _S for k in ("university", "author", "group", "teacher", "city")}),
+    "kicker": _S, "title": _S, "subtitle": _S, "plan": _arr(_S),
+    "slides": _arr(_o({
+        "layout": {"type": "string", "enum": ["cards", "bullets", "stat", "timeline", "quote", "compare"]},
+        "title": _S, "points": _arr(_o({"h": _S, "t": _S})),
+        "stat": _o({"value": _S, "label": _S, "text": _S}), "quote": _o({"text": _S, "author": _S}),
+        "image": _I, "notes": _S})),
+    "conclusion": _arr(_S), "thanks": _S,
+})
+OUTLINE_SCHEMA = _o({
+    "cover": _o({k: _S for k in ("ministry", "university", "faculty", "author", "group", "teacher", "subject", "city")}),
+    "work_type": _S, "title": _S,
+    "sections": _arr(_o({"heading": _S, "subs": _arr(_S), "share": _N})),
+    "references": _arr(_S),
+})
+BLOCKS_SCHEMA = _o({"blocks": _arr({"anyOf": [_o({"h": _S}), _o({"p": _S}),
+                                               _o({"q": _S, "a": _arr(_S), "c": _S})]})})
+CHEQUE_SCHEMA = _o({
+    "is_receipt": _B, "success": _null(_B), "amount": _null(_I), "recipient_card_last4": _null(_S),
+    "recipient_name": _null(_S), "datetime": _null(_S), "edited_signs": _B,
+})
+
+
+async def claude(system: str, content, max_tokens: int = 8000, retries: int = 2, schema: dict | None = None) -> str:
+    """Claude API. schema berilsa — javob shu JSON sxema bo'yicha (structured outputs), shuning uchun JSON doim to'g'ri:
+    matn ichidagi qo'shtirnoqlar endi uni buzmaydi."""
     if not API_KEY:
         raise AutoError("ANTHROPIC_API_KEY yo'q")
     headers = {"x-api-key": API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"}
@@ -128,9 +162,8 @@ async def claude(system: str, content, max_tokens: int = 8000, retries: int = 2,
     for attempt in range(retries + 1):
         body = {"model": MODEL, "max_tokens": max_tokens, "system": system,
                 "messages": [{"role": "user", "content": content}]}
-        if as_json:
-            body["tools"] = [JSON_TOOL]
-            body["tool_choice"] = {"type": "tool", "name": JSON_TOOL["name"]}
+        if schema:
+            body["output_config"] = {"format": {"type": "json_schema", "schema": schema}}
         try:
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=420)) as s:
                 async with s.post(API_URL, json=body, headers=headers) as r:
@@ -141,21 +174,25 @@ async def claude(system: str, content, max_tokens: int = 8000, retries: int = 2,
                         if acc is not None:
                             tin = u.get("input_tokens", 0) + u.get("cache_creation_input_tokens", 0) + u.get("cache_read_input_tokens", 0)
                             acc[0] += tin * PRICE_IN / 1e6 + u.get("output_tokens", 0) * PRICE_OUT / 1e6
-                        blocks = data.get("content", [])
                         if data.get("stop_reason") == "max_tokens":
                             # javob sig'madi — kesilgan JSON ishlamaydi, ko'proq joy berib qayta so'raymiz
                             last = AutoError("Javob juda uzun bo'lib kesildi")
                             max_tokens = min(int(max_tokens * 1.6), 32000)
                             continue
-                        if as_json:
-                            for b in blocks:
-                                if b.get("type") == "tool_use" and isinstance(b.get("input"), dict):
-                                    return json.dumps(b["input"], ensure_ascii=False)
-                            last = AutoError("Javobda natija yo'q")
+                        text = "".join(b.get("text", "") for b in data.get("content", []) if b.get("type") == "text")
+                        if not text.strip():
+                            last = AutoError(f"Bo'sh javob ({data.get('stop_reason')})")
                             continue
-                        return "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
+                        return text
                     err = (data.get("error") or {}).get("message", str(data))[:300]
                     last = AutoError(f"API {r.status}: {err}")
+                    if r.status == 400 and schema and any(w in err.lower() for w in ("output_config", "schema", "format")):
+                        # sxema qabul qilinmasa — oddiy JSON so'rovga qaytamiz (zaxira yo'l)
+                        logging.warning("Structured outputs rad etildi: %s — oddiy JSON bilan davom", err)
+                        schema = None
+                        system += ("\n\nFaqat bitta to'g'ri JSON obyekt qaytar. Matn ichida qo'shtirnoq kerak bo'lsa faqat «» ishlat, "
+                                   "hech qachon \" belgisini ishlatma.")
+                        continue
                     if r.status in (400, 401, 403, 404):  # qayta urinishdan foyda yo'q (balans, kalit, model)
                         if "credit" in err.lower() or "balance" in err.lower():
                             raise AutoError("BALANS: API balansi tugagan — platform.claude.com da to'ldiring")
@@ -877,7 +914,7 @@ async def generate(bot, o, svc_name: str, client_lang: str, progress=None):
         await step("write")
         notes = (o["package"] or "") in ("pro", "premium")
         raw = await claude(SLIDES_SYSTEM, content_blocks(slides_prompt(ctx, lang, n, len(images), notes), images, blocks, texts),
-                           max_tokens=12000, as_json=True)
+                           max_tokens=12000, schema=SLIDES_SCHEMA)
         d = parse_json(raw)
         await step("build")
         deck = Deck(theme_no(o, "style"), lang)
@@ -887,7 +924,7 @@ async def generate(bot, o, svc_name: str, client_lang: str, progress=None):
     pages = page_count(o, kind)
     await step("plan")
     outline = parse_json(await claude(PAPER_SYSTEM, content_blocks(paper_outline_prompt(ctx, lang, pages, kind), images, blocks, texts),
-                                      max_tokens=4000, as_json=True))
+                                      max_tokens=4000, schema=OUTLINE_SCHEMA))
     secs = [s for s in outline.get("sections", []) if isinstance(s, dict) and s.get("heading")]
     if not secs:
         raise AutoError("Reja tuzilmadi")
@@ -898,7 +935,7 @@ async def generate(bot, o, svc_name: str, client_lang: str, progress=None):
         words = max(180, int(total_words * float(sec.get("share") or 1 / len(secs)) / tot_share))
         mt = min(16000, int(words * 3.2) + 1500)
         raw = await claude(PAPER_SYSTEM, content_blocks(section_prompt(ctx, lang, outline, sec, words, kind), images[:3], [], texts[:1]),
-                           max_tokens=mt, as_json=True)
+                           max_tokens=mt, schema=BLOCKS_SCHEMA)
         return parse_json(raw).get("blocks", [])
 
     sem = asyncio.Semaphore(4)
@@ -952,5 +989,5 @@ async def read_cheque(data: bytes, mime: str = "image/jpeg") -> dict:
         im.thumbnail((1600, 1600))
         out = io.BytesIO(); im.save(out, "JPEG", quality=90)
         block = {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": base64.b64encode(out.getvalue()).decode()}}
-    raw = await claude(CHEQUE_SYSTEM, [block, {"type": "text", "text": CHEQUE_PROMPT}], max_tokens=600, retries=1, as_json=True)
+    raw = await claude(CHEQUE_SYSTEM, [block, {"type": "text", "text": CHEQUE_PROMPT}], max_tokens=1500, retries=1, schema=CHEQUE_SCHEMA)
     return parse_json(raw)
