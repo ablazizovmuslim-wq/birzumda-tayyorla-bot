@@ -111,14 +111,26 @@ def kind_for(o) -> str | None:
 
 
 # ------------------------------------------------------------------ Claude API
-async def claude(system: str, content, max_tokens: int = 8000, retries: int = 2) -> str:
+JSON_TOOL = {
+    "name": "natija",
+    "description": "Tayyor natijani shu vosita orqali JSON obyekt sifatida qaytar (so'ralgan tuzilishda).",
+    "input_schema": {"type": "object", "additionalProperties": True},
+}
+
+
+async def claude(system: str, content, max_tokens: int = 8000, retries: int = 2, as_json: bool = False) -> str:
+    """Claude API. as_json=True — javob majburiy «natija» vositasi orqali keladi, shuning uchun JSON doim to'g'ri
+    (matn ichidagi qo'shtirnoqlar endi JSONni buzmaydi)."""
     if not API_KEY:
         raise AutoError("ANTHROPIC_API_KEY yo'q")
-    body = {"model": MODEL, "max_tokens": max_tokens, "system": system,
-            "messages": [{"role": "user", "content": content}]}
     headers = {"x-api-key": API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"}
     last = None
     for attempt in range(retries + 1):
+        body = {"model": MODEL, "max_tokens": max_tokens, "system": system,
+                "messages": [{"role": "user", "content": content}]}
+        if as_json:
+            body["tools"] = [JSON_TOOL]
+            body["tool_choice"] = {"type": "tool", "name": JSON_TOOL["name"]}
         try:
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=420)) as s:
                 async with s.post(API_URL, json=body, headers=headers) as r:
@@ -129,7 +141,19 @@ async def claude(system: str, content, max_tokens: int = 8000, retries: int = 2)
                         if acc is not None:
                             tin = u.get("input_tokens", 0) + u.get("cache_creation_input_tokens", 0) + u.get("cache_read_input_tokens", 0)
                             acc[0] += tin * PRICE_IN / 1e6 + u.get("output_tokens", 0) * PRICE_OUT / 1e6
-                        return "".join(b.get("text", "") for b in data.get("content", []) if b.get("type") == "text")
+                        blocks = data.get("content", [])
+                        if data.get("stop_reason") == "max_tokens":
+                            # javob sig'madi — kesilgan JSON ishlamaydi, ko'proq joy berib qayta so'raymiz
+                            last = AutoError("Javob juda uzun bo'lib kesildi")
+                            max_tokens = min(int(max_tokens * 1.6), 32000)
+                            continue
+                        if as_json:
+                            for b in blocks:
+                                if b.get("type") == "tool_use" and isinstance(b.get("input"), dict):
+                                    return json.dumps(b["input"], ensure_ascii=False)
+                            last = AutoError("Javobda natija yo'q")
+                            continue
+                        return "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
                     err = (data.get("error") or {}).get("message", str(data))[:300]
                     last = AutoError(f"API {r.status}: {err}")
                     if r.status in (400, 401, 403, 404):  # qayta urinishdan foyda yo'q (balans, kalit, model)
@@ -829,8 +853,15 @@ def safe_name(s: str) -> str:
     return (re.sub(r"\s+", "_", s)[:50] or "ish")
 
 
-async def generate(bot, o, svc_name: str, client_lang: str):
-    """→ (fayl_nomi, baytlar, qisqa_hisobot)"""
+async def generate(bot, o, svc_name: str, client_lang: str, progress=None):
+    """→ (fayl_nomi, baytlar, qisqa_hisobot). progress(stage, done, total) — holat xabarini yangilash uchun."""
+
+    async def step(stage, done=0, total=0):
+        if progress:
+            try:
+                await progress(stage, done, total)
+            except Exception as e:  # holat xabari ishni to'xtatmasin
+                logging.warning("progress: %s", e)
     kind = kind_for(o)
     if not kind:
         raise AutoError("Bu xizmat avtomatik qilinmaydi")
@@ -840,19 +871,23 @@ async def generate(bot, o, svc_name: str, client_lang: str):
             (f", {len(texts)} ta Word fayl" if texts else "") + " yubordi (yuqorida).") if (images or blocks or texts) else ""
     ctx = order_context(o, svc_name, note)
 
+    await step("read")
     if kind == "slides":
         n = slide_count(o)
+        await step("write")
         notes = (o["package"] or "") in ("pro", "premium")
         raw = await claude(SLIDES_SYSTEM, content_blocks(slides_prompt(ctx, lang, n, len(images), notes), images, blocks, texts),
-                           max_tokens=12000)
+                           max_tokens=12000, as_json=True)
         d = parse_json(raw)
+        await step("build")
         deck = Deck(theme_no(o, "style"), lang)
         data = deck.build(d, images)
         return f"{safe_name(d.get('title') or o['topic'])}.pptx", data, f"{deck.n} ta slayd, shablon №{deck.tn}"
 
     pages = page_count(o, kind)
+    await step("plan")
     outline = parse_json(await claude(PAPER_SYSTEM, content_blocks(paper_outline_prompt(ctx, lang, pages, kind), images, blocks, texts),
-                                      max_tokens=4000))
+                                      max_tokens=4000, as_json=True))
     secs = [s for s in outline.get("sections", []) if isinstance(s, dict) and s.get("heading")]
     if not secs:
         raise AutoError("Reja tuzilmadi")
@@ -863,16 +898,22 @@ async def generate(bot, o, svc_name: str, client_lang: str):
         words = max(180, int(total_words * float(sec.get("share") or 1 / len(secs)) / tot_share))
         mt = min(16000, int(words * 3.2) + 1500)
         raw = await claude(PAPER_SYSTEM, content_blocks(section_prompt(ctx, lang, outline, sec, words, kind), images[:3], [], texts[:1]),
-                           max_tokens=mt)
+                           max_tokens=mt, as_json=True)
         return parse_json(raw).get("blocks", [])
 
     sem = asyncio.Semaphore(4)
+    done_n = [0]
+    await step("write", 0, len(secs))
 
     async def guarded(sec):
         async with sem:
-            return await one(sec)
+            res = await one(sec)
+        done_n[0] += 1
+        await step("write", done_n[0], len(secs))
+        return res
 
     bodies = await asyncio.gather(*(guarded(s) for s in secs))
+    await step("build")
     paper = Paper(lang, theme_no(o, "cover"))
     paper.cover(outline.get("cover"), outline.get("work_type") or svc_name.upper(), outline.get("title") or o["topic"])
     if kind == "test":
@@ -911,5 +952,5 @@ async def read_cheque(data: bytes, mime: str = "image/jpeg") -> dict:
         im.thumbnail((1600, 1600))
         out = io.BytesIO(); im.save(out, "JPEG", quality=90)
         block = {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": base64.b64encode(out.getvalue()).decode()}}
-    raw = await claude(CHEQUE_SYSTEM, [block, {"type": "text", "text": CHEQUE_PROMPT}], max_tokens=600, retries=1)
+    raw = await claude(CHEQUE_SYSTEM, [block, {"type": "text", "text": CHEQUE_PROMPT}], max_tokens=600, retries=1, as_json=True)
     return parse_json(raw)
