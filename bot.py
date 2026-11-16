@@ -50,7 +50,7 @@ ADMIN_IDS = {int(x) for x in os.getenv("ADMIN_ID", "0").replace(" ", "").split("
 CARD_NUMBER = os.getenv("CARD_NUMBER", "0000 0000 0000 0000")
 CARD_OWNER = os.getenv("CARD_OWNER", "Ism Familiya")
 CONTACT = os.getenv("CONTACT", "@Abdulazizov_prince")
-CHANNEL = os.getenv("CHANNEL", "@Birzumda_Tayyorla").strip()
+CHANNEL = os.getenv("CHANNEL", "").strip()  # kanal o'chirilgan; qaytarish uchun Railway'da CHANNEL=@nom qo'ying
 OTHER_BOTS = os.getenv("OTHER_BOTS", "@Birzumda_Yukla_bot")  # boshqa Birzumda botlari  # bot kanali: @username yoki https://t.me/... havola
 DB_PATH = os.getenv("DB_PATH", "orders.db")
 BASE = Path(__file__).parent
@@ -591,8 +591,7 @@ def main_kb(lang: str = DEFAULT_LANG):
     rows += [
         [kbtn(b(lang, "prices"), "primary", "prices"), kbtn(b(lang, "samples"), "primary", "samples")],
         [kbtn(b(lang, "sub"), "success", "fire"), kbtn(b(lang, "bonus"), "danger", "heart")],
-        [kbtn(b(lang, "shop"), "primary", "fire")],
-        [kbtn(b(lang, "info"), "primary", "book"), kbtn(b(lang, "channel"), "success", "channel")],
+        [kbtn(b(lang, "shop"), "primary", "fire"), kbtn(b(lang, "info"), "primary", "book")],
         [kbtn(b(lang, "orders"), None, "orders"), kbtn(b(lang, "contact"), None, "contact"),
          kbtn(b(lang, "lang"), None, "globe")],
     ]
@@ -1949,7 +1948,10 @@ async def info_cmd(m: Message):
 async def channel_cmd(m: Message):
     lang = L(m.from_user.id)
     kb = channel_kb(lang)
-    await m.answer(tr(lang, "channel_msg") if kb else tr(lang, "channel_soon"), reply_markup=kb)
+    if not kb:  # kanal yo'q — eski tugmani bosganlarga yangi menyuni beramiz
+        await m.answer(tr(lang, "menu"), reply_markup=mkb(m.from_user.id))
+        return
+    await m.answer(tr(lang, "channel_msg"), reply_markup=kb)
 
 
 # ------------------------------------------------------------------ bonus va aksiyalar
@@ -1979,9 +1981,9 @@ async def bonus_menu(m: Message):
 
 # ------------------------------------------------------------------ admin: promokod, aksiya, bonus
 PROMO_TX = {
-    "expired": {"uz": "⌛ Bu promokodning muddati tugagan. Keyingi haftalik promokodni kanal va botdan kuting!",
-                "ru": "⌛ Срок этого промокода истёк. Ждите следующий еженедельный промокод в канале и боте!",
-                "en": "⌛ This promo code has expired. Watch for next week's code in the channel and the bot!"},
+    "expired": {"uz": "⌛ Bu promokodning muddati tugagan. Keyingi haftalik promokodni botda kuting!",
+                "ru": "⌛ Срок этого промокода истёк. Ждите следующий еженедельный промокод в боте!",
+                "en": "⌛ This promo code has expired. Watch for next week's code in the bot!"},
     "announce": {"uz": "🎁 <b>Haftalik promokod!</b>\n\n🎟 Kod: <code>{code}</code> — <b>{pct}% chegirma</b>\n"
                        "⏰ Faqat <b>{hours} soat</b>: {until} gacha\n\n"
                        "Qanday ishlatiladi: buyurtma berishda «Promokod» tugmasini bosing va kodni yozing 👇",
@@ -2426,7 +2428,7 @@ async def review_text(m: Message, state: FSMContext):
     with db() as con:
         con.execute("UPDATE reviews SET text=? WHERE order_id=?", (m.text.strip()[:700], oid))
     rv = get_review(oid)
-    if rv and rv["stars"] >= 4:
+    if rv and rv["stars"] >= 4 and channel_url():
         await m.answer(fx(lang, "rv_consent"), reply_markup=ikb([[(fx(lang, "rv_yes"), f"rv:c:{oid}:1", "success"),
                                                                  (fx(lang, "rv_no"), f"rv:c:{oid}:0", None)]]))
     else:
@@ -3551,7 +3553,7 @@ async def admin_help(m: Message):
         "🆓 Bepul ish berish: <code>/addstart ID [SONI]</code> · <code>/addprofessional ID [SONI]</code> · "
         "<code>/addpremium ID [SONI]</code> · ko'rish: /credits\n"
         "👑 Siz (admin) buyurtma bersangiz — to'lovsiz va limitsiz, ish darhol boshlanadi\n"
-        "📢 /post — kanalga post · /broadcast — hammaga xabar\n"
+        "📢 /broadcast — hammaga xabar\n"
         "👀 Buyurtmadagi «Namuna yuborish» — to'lovdan oldin suv belgili rasmlar")
 
 
@@ -3606,7 +3608,7 @@ def panel_kb():
         [("🤖 Avto / API", "ap:auto", None, "bot"), ("💎 Obunalar", "ap:subs", None, "sub")],
         [("⭐ Sharhlar", "ap:reviews", None, "rating"), ("🎟 Promokodlar", "ap:promos", None, "promo")],
         [("🛍 Do'kon", "ap:shop", None, "shop"), ("🎬 Reklama", "ap:ad", None, "ad")],
-        [("📣 Kanalga post", "ap:post", None, "post"), ("📋 Barcha buyruqlar", "ap:help", None, "list")],
+        [("📋 Barcha buyruqlar", "ap:help", None, "list")],
         [("😀 Premium emoji", "ap:emoji", None, "star")],
         [("🔄 Yangilash", "ap:home", None, "refresh")],
     ])

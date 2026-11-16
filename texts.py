@@ -412,9 +412,8 @@ TX = {
                "{e[heart]} <b>Bonus va aksiyalar</b>\n"
                "• Do'stingiz havolangiz orqali kelsa — unga <b>{welcome}</b> chegirma, sizga <b>{bonus}</b> bonus\n"
                "• Bonus bilan buyurtmaning {pct}% gacha qismini to'laysiz\n"
-               "• Promokodlar va aksiyalar — kanalimizda\n\n"
+               "• Haftalik promokodlar — shu botda e'lon qilinadi\n\n"
                "{e[globe]} Tillar: O'zbekcha · Русский · English — /lang\n"
-               "{e[channel]} Kanal: {channel}\n"
                "{e[bot]} Video yuklash boti: {yukla}\n"
                "{e[contact]} Admin: {contact}\n"
                "🔒 Maxfiylik siyosati: /privacy"),
@@ -437,9 +436,8 @@ TX = {
                "{e[heart]} <b>Бонусы и акции</b>\n"
                "• Друг пришёл по вашей ссылке — ему скидка <b>{welcome}</b>, вам <b>{bonus}</b> бонуса\n"
                "• Бонусами можно оплатить до {pct}% заказа\n"
-               "• Промокоды и акции — в нашем канале\n\n"
+               "• Еженедельные промокоды — объявляем в этом боте\n\n"
                "{e[globe]} Языки: O'zbekcha · Русский · English — /lang\n"
-               "{e[channel]} Канал: {channel}\n"
                "{e[bot]} Бот для скачивания видео: {yukla}\n"
                "{e[contact]} Админ: {contact}\n"
                "🔒 Политика конфиденциальности: /privacy"),
@@ -462,9 +460,8 @@ TX = {
                "{e[heart]} <b>Bonuses & promos</b>\n"
                "• A friend joins with your link — they get <b>{welcome}</b> off, you get a <b>{bonus}</b> bonus\n"
                "• Pay up to {pct}% of an order with bonuses\n"
-               "• Promo codes and offers — in our channel\n\n"
+               "• Weekly promo codes — announced right here in the bot\n\n"
                "{e[globe]} Languages: O'zbekcha · Русский · English — /lang\n"
-               "{e[channel]} Channel: {channel}\n"
                "{e[bot]} Video downloader bot: {yukla}\n"
                "{e[contact]} Admin: {contact}\n"
                "🔒 Privacy policy: /privacy")},
@@ -473,13 +470,13 @@ TX = {
 # Bot menyusidagi buyruqlar (chap pastdagi «Menu» tugmasi)
 COMMANDS = {
     "uz": [("start", "Botni ishga tushirish"), ("order", "Buyurtma berish"), ("bonus", "Bonus va aksiyalar"),
-           ("info", "Bot haqida ma'lumot"), ("tayyor", "Tayyor ishlar do'koni"), ("shablon", "Dizayn shablonlari"), ("channel", "Kanalimizga obuna bo'lish"), ("lang", "Tilni o'zgartirish"),
+           ("info", "Bot haqida ma'lumot"), ("tayyor", "Tayyor ishlar do'koni"), ("shablon", "Dizayn shablonlari"), ("lang", "Tilni o'zgartirish"),
            ("privacy", "Maxfiylik siyosati")],
     "ru": [("start", "Запустить бота"), ("order", "Сделать заказ"), ("bonus", "Бонусы и акции"),
-           ("info", "Информация о боте"), ("tayyor", "Магазин готовых работ"), ("shablon", "Шаблоны дизайна"), ("channel", "Подписаться на канал"), ("lang", "Сменить язык"),
+           ("info", "Информация о боте"), ("tayyor", "Магазин готовых работ"), ("shablon", "Шаблоны дизайна"), ("lang", "Сменить язык"),
            ("privacy", "Политика конфиденциальности")],
     "en": [("start", "Start the bot"), ("order", "Place an order"), ("bonus", "Bonuses & promos"),
-           ("info", "About the bot"), ("tayyor", "Ready works shop"), ("shablon", "Design templates"), ("channel", "Subscribe to our channel"), ("lang", "Change language"),
+           ("info", "About the bot"), ("tayyor", "Ready works shop"), ("shablon", "Design templates"), ("lang", "Change language"),
            ("privacy", "Privacy policy")],
 }
 
