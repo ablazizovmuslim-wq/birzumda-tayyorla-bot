@@ -81,7 +81,7 @@ DEFAULT_EMOJI_IDS = {
     "teacher": "5372926953978341366", "order": "5443127283898405358", "prices": "5188208446461188962",
     "samples": "5431456208487716895", "app": "5176998281170911817", "ok": "4956672355876209142",
     "check": "4956672355876209142", "money": "5188208446461188962", "down": "5470177992950946662",
-    "orders": "5188311512791393083", "contact": "5933749305155260825", "cancel": "5210952531676504517",
+    "orders": "5188311512791393083", "cancel": "5210952531676504517",
     "globe": "5447410659077661506", "bot": "5244983043621411868", "music": "5213323516832667837",
     "image": "5375074927252621134", "channel": "5370599459661045441", "edit": "5237808360882977239",
     "heart": "5345961113479572537", "fire": "5176998281170911817",
@@ -113,8 +113,32 @@ import autogen as AG  # noqa: E402
 E_FALLBACK = {"hi": "👋", "star": "✨", "bot": "🤖", "student": "🎓", "teacher": "👩‍🏫", "edit": "✍️",
               "heart": "🎁", "ok": "✅", "image": "🎨", "fire": "⚡", "orders": "📋", "contact": "💜",
               "down": "👇", "money": "💰", "check": "📋", "globe": "🌐", "app": "✨", "channel": "📢", "samples": "🎨",
-              "n1": "1️⃣", "n2": "2️⃣", "n3": "3️⃣", "n4": "4️⃣"}
+              "n1": "1️⃣", "n2": "2️⃣", "n3": "3️⃣", "n4": "4️⃣",
+              # admin panel
+              "tools": "🛠", "users": "👥", "new": "🆕", "block": "🚫", "sub": "💎", "receipt": "🧾", "wait": "🕐",
+              "chat": "💬", "stats": "📊", "box": "📦", "clock": "⏰", "send": "📢", "user": "👤", "promo": "🎟",
+              "shop": "🛍", "ad": "🎬", "post": "📣", "list": "📋", "refresh": "🔄", "rating": "⭐"}
 E = {k: pe(k, v) for k, v in E_FALLBACK.items()}
+
+
+def refresh_emoji():
+    """Premium emoji ID'lari o'zgarganda (/emoji) — matnlar va pastki tugmalar qayta yig'iladi, qayta deploy shart emas."""
+    global MAIN_KB
+    E.update({k: pe(k, v) for k, v in E_FALLBACK.items()})
+    for lg in list(MAIN_KBS):
+        MAIN_KBS[lg] = main_kb(lg)
+    MAIN_KB = MAIN_KBS[DEFAULT_LANG]
+    _ADMIN_KBS.clear()
+
+
+def load_saved_emoji():
+    try:
+        saved = json.loads(get_setting("emoji_ids", "{}") or "{}")
+    except json.JSONDecodeError:
+        saved = {}
+    if saved and os.getenv("PREMIUM_EMOJI", "1") != "0":
+        EMOJI_IDS.update(saved)
+        refresh_emoji()
 
 
 def tr(lang: str, key: str, **kw) -> str:
@@ -588,7 +612,7 @@ def mkb(uid: int):
     if uid in ADMIN_IDS:
         if lang not in _ADMIN_KBS:
             base = MAIN_KBS[lang]
-            _ADMIN_KBS[lang] = ReplyKeyboardMarkup(resize_keyboard=True, keyboard=list(base.keyboard) + [[KeyboardButton(text=ADMIN_BTN)]])
+            _ADMIN_KBS[lang] = ReplyKeyboardMarkup(resize_keyboard=True, keyboard=list(base.keyboard) + [[kbtn(ADMIN_BTN, None, "tools")]])
         return _ADMIN_KBS[lang]
     return MAIN_KBS[lang]
 
@@ -3561,28 +3585,30 @@ def panel_text() -> str:
         act = con.execute("SELECT COUNT(*) FROM users WHERE last_seen LIKE ?", (d0 + "%",)).fetchone()[0]
     f = lambda n: f"{n:,}".replace(",", " ")
     last = get_setting("last_broadcast")
-    return ("🛠 <b>Admin panel</b>\n\n"
-            f"👥 Foydalanuvchilar: <b>{f(total)}</b> · 🆕 bugun: <b>{today}</b> · 🔥 bugun faol: <b>{act}</b>\n"
-            f"🚫 Bloklagan: <b>{blocked}</b> · 💎 Obunachilar: <b>{subs}</b>\n\n"
-            f"🧾 Chek tekshirish kutilmoqda: <b>{cnt.get('paid', 0)}</b>\n"
-            f"🛠 Ishda: <b>{cnt.get('work', 0)}</b> · 🕐 To'lov kutilmoqda: <b>{cnt.get('new', 0)}</b> · "
-            f"💬 Narx kelishish: <b>{cnt.get('quote', 0)}</b>\n"
-            f"✅ Topshirilgan: <b>{done}</b> / {orders}\n\n"
-            f"💰 Bugun: <b>{f(inc_d)}</b> so'm · Shu oy: <b>{f(inc_m)}</b> so'm\n"
-            f"🤖 Avto rejim: <b>{'yoqilgan' if auto_on() else 'o' + chr(39) + 'chiq'}</b>"
-            + (f"\n📢 Oxirgi xabar: {html.escape(last)}" if last else ""))
+    e = E
+    return (f"{e['tools']} <b>Admin panel</b>\n\n"
+            f"{e['users']} Foydalanuvchilar: <b>{f(total)}</b> · {e['new']} bugun: <b>{today}</b> · {e['fire']} bugun faol: <b>{act}</b>\n"
+            f"{e['block']} Bloklagan: <b>{blocked}</b> · {e['sub']} Obunachilar: <b>{subs}</b>\n\n"
+            f"{e['receipt']} Chek tekshirish kutilmoqda: <b>{cnt.get('paid', 0)}</b>\n"
+            f"{e['tools']} Ishda: <b>{cnt.get('work', 0)}</b> · {e['wait']} To'lov kutilmoqda: <b>{cnt.get('new', 0)}</b> · "
+            f"{e['chat']} Narx kelishish: <b>{cnt.get('quote', 0)}</b>\n"
+            f"{e['ok']} Topshirilgan: <b>{done}</b> / {orders}\n\n"
+            f"{e['money']} Bugun: <b>{f(inc_d)}</b> so'm · Shu oy: <b>{f(inc_m)}</b> so'm\n"
+            f"{e['bot']} Avto rejim: <b>{'yoqilgan' if auto_on() else 'o' + chr(39) + 'chiq'}</b>"
+            + (f"\n{e['send']} Oxirgi xabar: {html.escape(last)}" if last else ""))
 
 
 def panel_kb():
     return ikb([
-        [("📊 Statistika", "ap:stats", "primary"), ("💰 Daromad", "ap:income", "primary")],
-        [("📦 Buyurtmalar", "ap:orders", None), ("⏰ Muddatlar", "ap:due", None)],
-        [("📢 Xabar yuborish", "ap:bc", "success"), ("👤 Mijozni topish", "ap:find", "success")],
-        [("🤖 Avto / API", "ap:auto", None), ("💎 Obunalar", "ap:subs", None)],
-        [("⭐ Sharhlar", "ap:reviews", None), ("🎟 Promokodlar", "ap:promos", None)],
-        [("🛍 Do'kon", "ap:shop", None), ("🎬 Reklama", "ap:ad", None)],
-        [("📣 Kanalga post", "ap:post", None), ("📋 Barcha buyruqlar", "ap:help", None)],
-        [("🔄 Yangilash", "ap:home", None)],
+        [("📊 Statistika", "ap:stats", "primary", "stats"), ("💰 Daromad", "ap:income", "primary", "money")],
+        [("📦 Buyurtmalar", "ap:orders", None, "box"), ("⏰ Muddatlar", "ap:due", None, "clock")],
+        [("📢 Xabar yuborish", "ap:bc", "success", "send"), ("👤 Mijozni topish", "ap:find", "success", "user")],
+        [("🤖 Avto / API", "ap:auto", None, "bot"), ("💎 Obunalar", "ap:subs", None, "sub")],
+        [("⭐ Sharhlar", "ap:reviews", None, "rating"), ("🎟 Promokodlar", "ap:promos", None, "promo")],
+        [("🛍 Do'kon", "ap:shop", None, "shop"), ("🎬 Reklama", "ap:ad", None, "ad")],
+        [("📣 Kanalga post", "ap:post", None, "post"), ("📋 Barcha buyruqlar", "ap:help", None, "list")],
+        [("😀 Premium emoji", "ap:emoji", None, "star")],
+        [("🔄 Yangilash", "ap:home", None, "refresh")],
     ])
 
 
@@ -3625,6 +3651,8 @@ async def admin_panel_cb(c: CallbackQuery, state: FSMContext, bot: Bot):
         await reviews_cmd(am)
     elif act == "promos":
         await promo_list(am)
+    elif act == "emoji":
+        await emoji_help(am)
     elif act == "shop":
         await shop_admin_list(am)
     elif act == "ad":
@@ -4032,18 +4060,75 @@ async def admin_orders(m: Message):
         await m.answer(order_text(o, True), reply_markup=admin_kb(o["id"], o["status"]))
 
 
+def emoji_status_text() -> str:
+    rows = []
+    for k, fb in E_FALLBACK.items():
+        rows.append(f"{pe(k, fb)} <code>{k}</code>" + ("" if EMOJI_IDS.get(k) else " ▫️"))
+    return ("😀 <b>Premium emoji</b>\n\n"
+            "Qanday almashtiriladi: menga bitta xabar yuboring — <b>kalit so'z, keyin premium emoji</b>:\n"
+            "<code>n1</code> 1️⃣ <code>n2</code> 2️⃣ <code>n3</code> 3️⃣ <code>n4</code> 4️⃣\n"
+            "(emojilar o'rniga Telegram Premium paketidagi emojini qo'ying). Bir xabarda nechta bo'lsa ham bo'ladi.\n"
+            "Darhol ishlaydi — botni qayta ishga tushirish shart emas.\n"
+            "O'chirish (oddiy emojiga qaytarish): <code>/emoji reset n1</code>\n\n"
+            "▫️ — hali premium qo'yilmagan\n\n" + "  ".join(rows))
+
+
 @router.message(Command("emoji"))
-async def emoji_help(m: Message):
-    if is_admin(m.from_user.id):
-        await m.answer("Premium emoji ID olish: menga premium emojili xabar yuboring — ID'larini qaytaraman.")
+async def emoji_help(m: Message, command: CommandObject | None = None):
+    if not is_admin(m.chat.id):
+        return
+    args = ((command.args if command else "") or "").split()
+    if len(args) >= 2 and args[0].lower() == "reset":
+        try:
+            saved = json.loads(get_setting("emoji_ids", "{}") or "{}")
+        except json.JSONDecodeError:
+            saved = {}
+        for k in args[1:]:
+            saved.pop(k, None)
+            if k in DEFAULT_EMOJI_IDS:
+                EMOJI_IDS[k] = DEFAULT_EMOJI_IDS[k]
+            else:
+                EMOJI_IDS.pop(k, None)
+        set_setting("emoji_ids", json.dumps(saved))
+        refresh_emoji()
+        await m.answer("♻️ Qaytarildi: " + ", ".join(args[1:]), reply_markup=mkb(m.chat.id))
+        return
+    await m.answer(emoji_status_text())
+
+
+def _utf16_prefix(text: str, offset: int) -> str:
+    return text.encode("utf-16-le")[:offset * 2].decode("utf-16-le", errors="ignore")
 
 
 @router.message(lambda m: bool(m.entities) and any(e.type == "custom_emoji" for e in m.entities))
 async def emoji_ids(m: Message, state: FSMContext):
     if not is_admin(m.from_user.id) or await state.get_state() is not None:
         return
-    ids = [e.custom_emoji_id for e in m.entities if e.type == "custom_emoji"]
-    await m.answer("Emoji ID'lari:\n" + "\n".join(f"<code>{i}</code>" for i in ids))
+    text = m.text or ""
+    found, ids = {}, []
+    for ent in m.entities:
+        if ent.type != "custom_emoji":
+            continue
+        ids.append(ent.custom_emoji_id)
+        words = _utf16_prefix(text, ent.offset).split()
+        key = words[-1].strip(":=-—").lower() if words else ""
+        if key in E_FALLBACK or key in DEFAULT_EMOJI_IDS:
+            found[key] = ent.custom_emoji_id
+    if not found:
+        await m.answer("Emoji ID'lari:\n" + "\n".join(f"<code>{i}</code>" for i in ids)
+                       + "\n\nBotga qo'yish uchun oldiga kalit yozing, masalan: <code>n1</code> 😀 — ro'yxat: /emoji")
+        return
+    try:
+        saved = json.loads(get_setting("emoji_ids", "{}") or "{}")
+    except json.JSONDecodeError:
+        saved = {}
+    saved.update(found)
+    set_setting("emoji_ids", json.dumps(saved))
+    EMOJI_IDS.update(found)
+    refresh_emoji()
+    await m.answer("✅ Saqlandi: " + "  ".join(f"{pe(k, E_FALLBACK.get(k, '•'))} <code>{k}</code>" for k in found)
+                   + "\n\nMatnlar va tugmalarda darhol ishlaydi (pastki tugmalar — keyingi /start dan keyin).",
+                   reply_markup=mkb(m.from_user.id))
 
 
 @router.message(Command("privacy"))
@@ -4172,6 +4257,7 @@ async def main():
     if not BOT_TOKEN:
         raise SystemExit("BOT_TOKEN o'rnatilmagan")
     init_db()
+    load_saved_emoji()
     sync_ad_file()
     bot = Bot(BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     bot.session.middleware(RetryMiddleware())
