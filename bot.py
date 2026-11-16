@@ -4112,6 +4112,9 @@ async def emoji_ids(m: Message, state: FSMContext):
         ids.append(ent.custom_emoji_id)
         words = _utf16_prefix(text, ent.offset).split()
         key = words[-1].strip(":=-—").lower() if words else ""
+        alt = _utf16_prefix(text, ent.offset + ent.length)[len(_utf16_prefix(text, ent.offset)):]
+        if key == "n" and alt[:1].isdigit():  # «n 1️⃣» deb yozilsa ham — raqam emojining o'zidan olinadi
+            key = "n" + alt[:1]
         if key in E_FALLBACK or key in DEFAULT_EMOJI_IDS:
             found[key] = ent.custom_emoji_id
     if not found:
