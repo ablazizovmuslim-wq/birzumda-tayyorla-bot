@@ -527,7 +527,7 @@ const TIER_NAME = { start: 'START', pro: 'PRO', premium: 'PREMIUM' };
 const tierOf = n => n <= 12 ? 'start' : n <= 22 ? 'pro' : 'premium';
 const tplMax = () => ({ start: 12, pro: 22, premium: 32 })[order.pkg] || 32;
 const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
-const tplCard = (k, n, sel, onclick, lk) => `<div class="tp ${k === 'c' ? 'c' : ''} ${sel ? 'on' : ''} ${lk ? 'lk' : ''}" onclick="${onclick}"><img loading="lazy" src="tpl_${k}${n}.jpg${n > 22 ? '?v=3' : ''}" alt=""><i class="${tierOf(n)}">${TIER_NAME[tierOf(n)]}</i><span>№${n} ${t('tplNames')[n - 1]}</span></div>`;
+const tplCard = (k, n, sel, onclick, lk) => `<div class="tp ${k === 'c' ? 'c' : ''} ${sel ? 'on' : ''} ${lk ? 'lk' : ''}" onclick="${onclick}"><img loading="lazy" src="tpl_${k}${n}.jpg?v=4" alt=""><i class="${tierOf(n)}">${TIER_NAME[tierOf(n)]}</i><span>№${n} ${t('tplNames')[n - 1]}</span></div>`;
 let galKind = 's', galTier = 'pro';
 function renderGallery() {
   const g = document.getElementById('tplGallery');
