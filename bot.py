@@ -4519,8 +4519,17 @@ async def main():
     await web.TCPSite(runner, "0.0.0.0", PORT).start()
     logging.info("Mini ilova serveri %s portda ishga tushdi", PORT)
     await bot.delete_webhook(drop_pending_updates=False)  # qayta ishga tushganda xabarlar yo'qolmasin
+    tasks = [dp.start_polling(bot)]
+    try:  # @MyBirzumda_bot — saytga kirish boti (shu jarayonda, PENDING umumiy)
+        import login_bot
+        lbot, ldp = login_bot.build()
+        if lbot:
+            await lbot.delete_webhook(drop_pending_updates=True)
+            tasks.append(ldp.start_polling(lbot, handle_signals=False))
+    except Exception as e:
+        logging.warning("login bot ishga tushmadi: %s", e)
     try:
-        await dp.start_polling(bot)
+        await asyncio.gather(*tasks)
     finally:
         await runner.cleanup()
 

@@ -69,6 +69,18 @@ def quick_cancel(token: str):
     PENDING.pop(token, None)
 
 
+_DB = {"db": None}
+
+
+def quick_revoke(uid: int):
+    """«Bu men emasman»: shu foydalanuvchining saytdagi barcha sessiyalarini bekor qiladi."""
+    if _DB["db"] is None:
+        return
+    with _DB["db"]() as con:
+        con.execute("CREATE TABLE IF NOT EXISTS site_revoke(uid INTEGER PRIMARY KEY, ts INTEGER)")
+        con.execute("INSERT OR REPLACE INTO site_revoke(uid, ts) VALUES(?, ?)", (uid, int(time.time()) + 1))
+
+
 def register(app: web.Application, *, db, bot_token: str, admin_ids, ref_link, ref_stats,
              bonus_balance, service_label, status_tr, get_setting,
              catalog_json=None, sub_plans=None, sub_names=None, sub_disc=0, login_tokens=()):
@@ -99,6 +111,9 @@ def register(app: web.Application, *, db, bot_token: str, admin_ids, ref_link, r
         return resp
 
     app.middlewares.append(cors)
+    _DB["db"] = db
+    with db() as con:
+        con.execute("CREATE TABLE IF NOT EXISTS site_revoke(uid INTEGER PRIMARY KEY, ts INTEGER)")
 
     # ---------------------------------------------------------------- token
     def make_token(uid: int) -> str:
@@ -113,7 +128,11 @@ def register(app: web.Application, *, db, bot_token: str, admin_ids, ref_link, r
             uid, exp, sig = tok.split(".")
             good = hmac.new(token_secret, f"{uid}.{exp}".encode(), hashlib.sha256).hexdigest()
             if hmac.compare_digest(sig, good) and int(exp) > time.time():
-                return int(uid)
+                with db() as con:
+                    row = con.execute("SELECT ts FROM site_revoke WHERE uid=?", (int(uid),)).fetchone()
+                issued = int(exp) - TOKEN_DAYS * 86400
+                if not row or issued >= row[0]:
+                    return int(uid)
         except ValueError:
             pass
         raise web.HTTPUnauthorized(text='{"error":"auth"}', content_type="application/json")
