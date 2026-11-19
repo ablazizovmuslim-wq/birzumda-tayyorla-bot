@@ -31,10 +31,11 @@ LOGIN_MAX_AGE = 24 * 3600  # Telegram login ma'lumoti 24 soatdan eski bo'lmasin
 
 def register(app: web.Application, *, db, bot_token: str, admin_ids, ref_link, ref_stats,
              bonus_balance, service_label, status_tr, get_setting,
-             catalog_json=None, sub_plans=None, sub_names=None, sub_disc=0):
+             catalog_json=None, sub_plans=None, sub_names=None, sub_disc=0, login_tokens=()):
     origins = {o.strip().rstrip("/") for o in os.getenv(
         "SITE_ORIGINS", "https://mybirzumda.uz,https://www.mybirzumda.uz").split(",") if o.strip()}
-    login_secret = hashlib.sha256(bot_token.encode()).digest()          # Telegram tekshiruvi uchun
+    # Telegram Login tekshiruvi: asosiy bot va sayt uchun alohida kirish boti (SITE_LOGIN_BOT_TOKEN)
+    login_secrets = [hashlib.sha256(t.encode()).digest() for t in (bot_token, *login_tokens) if t]
     token_secret = hashlib.sha256(b"site-session:" + bot_token.encode()).digest()  # o'z tokenlarimiz uchun
 
     # ---------------------------------------------------------------- CORS
@@ -104,8 +105,8 @@ def register(app: web.Application, *, db, bot_token: str, admin_ids, ref_link, r
         data = {k: str(v) for k, v in data.items() if v is not None}
         got_hash = data.pop("hash", "")
         check = "\n".join(f"{k}={data[k]}" for k in sorted(data))
-        good = hmac.new(login_secret, check.encode(), hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(got_hash, good):
+        if not any(hmac.compare_digest(got_hash, hmac.new(sec, check.encode(), hashlib.sha256).hexdigest())
+                   for sec in login_secrets):
             return web.json_response({"error": "bad_hash"}, status=403)
         if time.time() - int(data.get("auth_date", 0)) > LOGIN_MAX_AGE:
             return web.json_response({"error": "expired"}, status=403)
@@ -226,3 +227,4 @@ def register(app: web.Application, *, db, bot_token: str, admin_ids, ref_link, r
     r.add_get("/api/site/me", me)
     r.add_get("/api/site/admin", admin)
     r.add_post("/api/site/admin/review/{oid:\\d+}", approve_review)
+    return {"read_token": read_token, "lang_of": lang_of}

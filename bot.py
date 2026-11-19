@@ -4163,8 +4163,158 @@ def catalog_json():
             "i18n": CAT_TR}
 
 
-def make_web_app():
-    app = web.Application()
+# ------------------------------------------------------------------ saytdan buyurtma (mybirzumda.uz)
+SITE_TX = {
+    "start_bot": {"uz": "Avval botga /start bosing", "ru": "Сначала нажмите /start в боте", "en": "Press /start in the bot first"},
+    "got": {"uz": "🌐 Saytdan buyurtma <b>#{oid}</b> qabul qilindi.\n\n{pay}",
+            "ru": "🌐 Заказ с сайта <b>#{oid}</b> принят.\n\n{pay}",
+            "en": "🌐 Order <b>#{oid}</b> from the website received.\n\n{pay}"},
+    "quote": {"uz": "🌐 Saytdan so'rov <b>#{oid}</b> qabul qilindi. Narxni tez orada yozamiz.",
+              "ru": "🌐 Запрос с сайта <b>#{oid}</b> принят. Скоро сообщим цену.",
+              "en": "🌐 Request <b>#{oid}</b> from the website received. We'll send the price soon."},
+}
+
+
+def site_order_price(uid: int, aud: str, svc: str, pkg: str, urgent: bool, turtle: bool, promo: str) -> dict | None:
+    """Saytdagi buyurtma narxi — botdagi show_confirm bilan bir xil hisob (obuna/bepul ishlarsiz)."""
+    s = CATALOG.get(aud, {}).get("services", {}).get(svc)
+    if not s or ("packages" in s and pkg not in s["packages"]):
+        return None
+    pkg = pkg if "packages" in s else ""
+    base = s["packages"][pkg][1] if pkg else s.get("price")
+    price = 0
+    if base:
+        price = int(base * (1 + URGENT_EXTRA)) if urgent else base
+        price = round(price / 1000) * 1000
+    tk = turtle_kind(aud, svc, pkg, turtle)
+    if price and tk == "add":
+        price += TURTLE_ADDON
+    p = get_promo(promo) if promo else None
+    calc = calc_price(uid, price, p["percent"] if p else 0, False, 1)
+    calc.update(pkg=pkg, promo=promo if p else "", promo_ok=bool(p), quote=not price, turtle=bool(turtle))
+    return calc
+
+
+def register_site_orders(app: web.Application, bot: Bot, read_token):
+    async def body(request):
+        try:
+            return await request.json()
+        except Exception:
+            raise web.HTTPBadRequest(text='{"error":"json"}', content_type="application/json")
+
+    def parse(d):
+        return (str(d.get("aud", "")), str(d.get("svc", "")), str(d.get("pkg", "") or ""), d.get("deadline") == "urgent",
+                bool(d.get("turtle")), str(d.get("promo", "")).strip().upper()[:32])
+
+    async def quote_price(request):  # narxni oldindan ko'rsatish
+        uid = read_token(request)
+        aud, svc, pkg, urgent, turtle, promo = parse(await body(request))
+        calc = site_order_price(uid, aud, svc, pkg, urgent, turtle, promo)
+        if calc is None:
+            return web.json_response({"error": "not_found"}, status=404)
+        return web.json_response({k: calc[k] for k in ("price", "full_price", "discount", "promo_ok", "quote", "loyalty_off",
+                                                        "welcome", "promo_off")})
+
+    async def create(request):
+        uid = read_token(request)
+        d = await body(request)
+        u = get_user(uid)
+        if not u:
+            return web.json_response({"error": "start_bot"}, status=409)
+        aud, svc, pkg, urgent, turtle, promo = parse(d)
+        topic = str(d.get("topic", "")).strip()[:300]
+        if len(topic) < 2:
+            return web.json_response({"error": "topic"}, status=400)
+        calc = site_order_price(uid, aud, svc, pkg, urgent, turtle, promo)
+        if calc is None:
+            return web.json_response({"error": "not_found"}, status=404)
+        lang = L(uid)
+        user = type("SiteUser", (), {"id": uid, "username": u["username"] or "", "full_name": u["full_name"] or ""})()
+        data = dict(aud=aud, svc=svc, pkg=calc["pkg"], topic=topic, details=(str(d.get("details", "")).strip()[:1000] + " [🌐 sayt]").strip(),
+                    deadline="urgent" if urgent else "normal", turtle=turtle, price=calc["price"], full_price=calc["full_price"],
+                    discount=calc["discount"], promo=calc["promo"], bonus_used=0, welcome=calc["welcome"])
+        if calc["quote"]:
+            data.update(price=0, full_price=0, discount=0, welcome=0, promo="")
+        oid = create_order(data, user)
+        if data["promo"]:
+            use_promo(data["promo"])
+        if data["welcome"]:
+            with db() as con:
+                con.execute("UPDATE users SET welcome_used=1 WHERE user_id=?", (uid,))
+        if calc["quote"]:
+            set_status(oid, "quote")
+        o = get_order(oid)
+        head = ("🌐 Saytdan so'rov — NARX BELGILANG" if calc["quote"] else "🌐 Saytdan buyurtma (to'lov kutilmoqda)") + f"\n🌐 Mijoz tili: {LANGS[lang]}"
+        await notify_admins(bot, head + "\n\n" + order_text(o, True), admin_kb(oid, o["status"]))
+        try:
+            await send_tz(bot, o)
+        except Exception as e:
+            logging.warning("send_tz (sayt): %s", e)
+        try:
+            msg = SITE_TX["quote"][lang].format(oid=oid) if calc["quote"] else \
+                SITE_TX["got"][lang].format(oid=oid, pay=payment_text(oid, data["price"], lang))
+            await bot.send_message(uid, msg)
+        except Exception as e:
+            logging.info("Mijozga sayt xabari yuborilmadi: %s", e)
+        return web.json_response({"oid": oid, "quote": calc["quote"], "price": data["price"], "full_price": data["full_price"],
+                                  "discount": data["discount"], "card": CARD_NUMBER, "owner": CARD_OWNER})
+
+    async def cheque(request):
+        uid = read_token(request)
+        oid = int(request.match_info["oid"])
+        o = get_order(oid)
+        if not o or o["user_id"] != uid:
+            return web.json_response({"error": "not_found"}, status=404)
+        if o["status"] != "new":
+            return web.json_response({"error": "status", "status": o["status"]}, status=409)
+        form = await request.post()
+        f = form.get("file")
+        if f is None or not hasattr(f, "file"):
+            return web.json_response({"error": "file"}, status=400)
+        raw = f.file.read()
+        mime = (f.content_type or "").lower()
+        if not raw or len(raw) > 10 * 1024 * 1024 or not (mime.startswith("image/") or mime == "application/pdf"):
+            return web.json_response({"error": "file"}, status=400)
+        set_status(oid, "paid")
+        o = get_order(oid)
+        text = "🧾 Chek keldi! (🌐 saytdan)\n\n" + order_text(o, True)
+        smart = auto_ready(o) and get_setting("auto_cheque", "on") == "on"
+        if smart:
+            text += "\n\n🤖 <b>Chek avtomatik tekshirilmoqda…</b> To'g'ri bo'lsa, ish o'zi boshlanadi — sizga xabar keladi."
+        elif auto_ready(o):
+            text += "\n\n🤖 <b>Tasdiqlasangiz — ish avtomatik tayyorlanib, mijozga darhol yuboriladi.</b>"
+        is_pdf = mime == "application/pdf"
+        file_id = unique_id = None
+        for aid in ADMIN_IDS:  # birinchi yuborishda file_id olamiz, keyingilarga shu bilan
+            try:
+                media = file_id or BufferedInputFile(raw, filename=f"chek_{oid}.{'pdf' if is_pdf else 'jpg'}")
+                if is_pdf:
+                    msg = await bot.send_document(aid, media, caption=text, reply_markup=admin_kb(oid, "paid"))
+                    if not file_id:
+                        file_id, unique_id = msg.document.file_id, msg.document.file_unique_id
+                else:
+                    msg = await bot.send_photo(aid, media, caption=text, reply_markup=admin_kb(oid, "paid"))
+                    if not file_id:
+                        file_id, unique_id = msg.photo[-1].file_id, msg.photo[-1].file_unique_id
+            except Exception as e:
+                logging.warning("Adminga sayt cheki yuborilmadi %s: %s", aid, e)
+        lang = L(uid)
+        try:
+            await bot.send_message(uid, tr(lang, "cheque_ok"), reply_markup=mkb(uid))
+        except Exception:
+            pass
+        if smart and file_id:
+            asyncio.create_task(check_cheque(bot, oid, file_id, unique_id, "application/pdf" if is_pdf else "image/jpeg"))
+        return web.json_response({"ok": True, "status": "paid"})
+
+    r = app.router
+    r.add_post("/api/site/price", quote_price)
+    r.add_post("/api/site/order", create)
+    r.add_post("/api/site/order/{oid:\\d+}/cheque", cheque)
+
+
+def make_web_app(bot: Bot | None = None):
+    app = web.Application(client_max_size=12 * 1024 * 1024)
 
     async def index(_):
         return web.FileResponse(WEBAPP_DIR / "index.html")
@@ -4205,10 +4355,13 @@ def make_web_app():
     # mybirzumda.uz sayti uchun API (/api/site/...)
     try:
         import site_api
-        site_api.register(app, db=db, bot_token=BOT_TOKEN, admin_ids=ADMIN_IDS, ref_link=ref_link,
+        helpers = site_api.register(app, db=db, bot_token=BOT_TOKEN, admin_ids=ADMIN_IDS, ref_link=ref_link,
                           ref_stats=ref_stats, bonus_balance=bonus_balance, service_label=service_label,
                           status_tr=ST_TR, get_setting=get_setting, catalog_json=catalog_json,
-                          sub_plans=SUB_PLANS, sub_names=SUB_TX["name"], sub_disc=SUB_DISC)
+                          sub_plans=SUB_PLANS, sub_names=SUB_TX["name"], sub_disc=SUB_DISC,
+                          login_tokens=[t for t in os.getenv("SITE_LOGIN_BOT_TOKEN", "").split(",") if t.strip()])
+        if bot is not None:
+            register_site_orders(app, bot, helpers["read_token"])
     except Exception as e:
         logging.warning("site_api ulanmadi: %s", e)
     return app
@@ -4297,7 +4450,7 @@ async def main():
         BOT_USERNAME = (await bot.get_me()).username or BOT_USERNAME
     except Exception as e:
         logging.warning("get_me: %s", e)
-    runner = web.AppRunner(make_web_app())
+    runner = web.AppRunner(make_web_app(bot))
     await runner.setup()
     await web.TCPSite(runner, "0.0.0.0", PORT).start()
     logging.info("Mini ilova serveri %s portda ishga tushdi", PORT)
