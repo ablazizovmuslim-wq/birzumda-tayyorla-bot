@@ -2083,6 +2083,7 @@ async def weekly_promo(m: Message, command: CommandObject, state: FSMContext):
         return
     code = code or gen_promo_code()
     expires = save_promo(code, int(pct), None, hours)
+    set_setting("weekly_code", code)  # saytdagi kabinetda ko'rsatish uchun
     until = fmt_until(expires)
     await state.update_data(wp_code=code, wp_pct=int(pct), wp_hours=hours, wp_until=until)
     n = len(audience_ids("all"))
@@ -4201,6 +4202,14 @@ def make_web_app():
     if (SAMPLES / "4_Reklama.mp4").exists():
         app.router.add_get("/4_Reklama.mp4", video)
     app.router.add_get("/privacy.html", privacy)
+    # mybirzumda.uz sayti uchun API (/api/site/...)
+    try:
+        import site_api
+        site_api.register(app, db=db, bot_token=BOT_TOKEN, admin_ids=ADMIN_IDS, ref_link=ref_link,
+                          ref_stats=ref_stats, bonus_balance=bonus_balance, service_label=service_label,
+                          status_tr=ST_TR, get_setting=get_setting)
+    except Exception as e:
+        logging.warning("site_api ulanmadi: %s", e)
     return app
 
 
