@@ -828,11 +828,75 @@ async def send_welcome(m: Message, user, lang: str):
         await m.answer(text, reply_markup=MAIN_KBS[lang])
 
 
+SITE_URL = os.getenv("SITE_URL", "https://mybirzumda.uz")
+QUICK_TX = {
+    "uz": {"ask": "🔐 <b>mybirzumda.uz saytiga kirish</b>\n\nSaytda «Kirish» tugmasini o'zingiz bosdingizmi? "
+                  "Unda pastdagi tugmani bosing — akkauntingiz saytda ochiladi.\n\n"
+                  "<i>Bu havolani boshqa odam yuborgan bo'lsa — bosmang.</i>",
+           "yes": "✅ Ha, kiraman", "no": "❌ Yo'q",
+           "ok": "✅ <b>Saytga kirdingiz!</b>\nSahifaga qayting — kabinet o'zi ochiladi.",
+           "back": "🌐 Saytga qaytish", "old": "⌛ Bu havola eskirgan. Saytda «Kirish»ni qaytadan bosing.",
+           "cancel": "Bekor qilindi."},
+    "ru": {"ask": "🔐 <b>Вход на сайт mybirzumda.uz</b>\n\nВы сами нажали «Войти» на сайте? "
+                  "Тогда нажмите кнопку ниже — аккаунт откроется на сайте.\n\n"
+                  "<i>Если эту ссылку прислал кто-то другой — не нажимайте.</i>",
+           "yes": "✅ Да, войти", "no": "❌ Нет",
+           "ok": "✅ <b>Вы вошли на сайт!</b>\nВернитесь на страницу — кабинет откроется сам.",
+           "back": "🌐 Вернуться на сайт", "old": "⌛ Ссылка устарела. Нажмите «Войти» на сайте ещё раз.",
+           "cancel": "Отменено."},
+    "en": {"ask": "🔐 <b>Log in to mybirzumda.uz</b>\n\nDid you tap «Log in» on the site yourself? "
+                  "Then press the button below and your account opens on the site.\n\n"
+                  "<i>If someone else sent you this link, don't press it.</i>",
+           "yes": "✅ Yes, log me in", "no": "❌ No",
+           "ok": "✅ <b>You're logged in!</b>\nGo back to the page — your account opens by itself.",
+           "back": "🌐 Back to the site", "old": "⌛ This link has expired. Tap «Log in» on the site again.",
+           "cancel": "Cancelled."},
+}
+
+
+async def quick_login_ask(m: Message, token: str):
+    import site_api
+    v = site_api.quick_pending(token)
+    lang = get_lang(m.from_user.id) or (v or {}).get("lang") or DEFAULT_LANG
+    if not get_lang(m.from_user.id) and v:
+        set_lang(m.from_user.id, lang)          # yangi foydalanuvchi — sayt tilini olamiz
+    q = QUICK_TX.get(lang, QUICK_TX["uz"])
+    if not v:
+        await m.answer(q["old"])
+        return
+    kb = InlineKeyboardMarkup(inline_keyboard=[[
+        ibtn(q["yes"], f"qlog:y:{token}", "success"), ibtn(q["no"], f"qlog:n:{token}", "danger")]])
+    await m.answer(q["ask"], reply_markup=kb)
+
+
+@router.callback_query(F.data.startswith("qlog:"))
+async def quick_login_answer(c: CallbackQuery):
+    import site_api
+    _, act, token = c.data.split(":", 2)
+    q = QUICK_TX.get(L(c.from_user.id), QUICK_TX["uz"])
+    if act == "n":
+        site_api.quick_cancel(token)
+        await c.answer(q["cancel"])
+        await c.message.edit_text(q["cancel"])
+        return
+    if not site_api.quick_confirm(token, c.from_user):
+        await c.answer()
+        await c.message.edit_text(q["old"])
+        return
+    await c.answer("✅")
+    kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=q["back"], url=SITE_URL + "/cabinet.html")]])
+    await c.message.edit_text(q["ok"], reply_markup=kb)
+    await c.message.answer("👇", reply_markup=MAIN_KBS[L(c.from_user.id)])
+
+
 @router.message(CommandStart())
 async def start(m: Message, state: FSMContext, bot: Bot, command: CommandObject):
     await state.clear()
     uid = m.from_user.id
     arg = (command.args or "").strip()
+    if arg.startswith("login_"):
+        await quick_login_ask(m, arg[6:])
+        return
     referred = False
     if arg.startswith("ref_") and arg[4:].isdigit() and set_referrer(uid, int(arg[4:])):
         ref = int(arg[4:])

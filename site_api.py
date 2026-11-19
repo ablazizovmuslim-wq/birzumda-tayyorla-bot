@@ -12,6 +12,8 @@ Yo'llar:
   GET  /api/site/reviews          — tasdiqlangan sharhlar
   GET  /api/site/catalog          — xizmatlar, paketlar, narxlar va obuna tariflari
   POST /api/site/auth             — Telegram Login Widget ma'lumotini tekshiradi → token
+  POST /api/site/login/start      — tezkor kirish: bot uchun bir martalik havola (t.me/...?start=login_X)
+  GET  /api/site/login/check      — sayt shu yerni so'raydi; botda tasdiqlangach → token
   GET  /api/site/me               — shaxsiy kabinet (token kerak)
   POST /api/site/reviews          — sharh qoldirish (token + bajarilgan buyurtma kerak)
   GET  /api/site/admin            — admin panel ma'lumotlari (faqat ADMIN_ID)
@@ -20,6 +22,7 @@ Yo'llar:
 import hashlib
 import hmac
 import os
+import secrets
 import time
 from datetime import datetime
 
@@ -27,6 +30,43 @@ from aiohttp import web
 
 TOKEN_DAYS = 30
 LOGIN_MAX_AGE = 24 * 3600  # Telegram login ma'lumoti 24 soatdan eski bo'lmasin
+
+# ---------------------------------------------------------------- tezkor kirish (raqamsiz)
+# Sayt «Kirish»ni bosadi → bot ochiladi (/start login_TOKEN) → «✅ Ha, kiraman» → sayt tokenni oladi.
+# poll_key faqat saytning o'zida turadi: havolani ko'rgan boshqa odam sessiyani ololmaydi.
+QUICK_TTL = 300
+QUICK_MAX = 20000
+PENDING: dict[str, dict] = {}
+
+
+def _quick_clean():
+    now = time.time()
+    for k in [k for k, v in PENDING.items() if v["exp"] < now]:
+        PENDING.pop(k, None)
+
+
+def quick_pending(token: str):
+    """Bot uchun: token haqiqiymi (muddati o'tmaganmi). Saytdagi tilni qaytaradi."""
+    v = PENDING.get(token)
+    if not v or v["exp"] < time.time() or v.get("uid"):
+        return None
+    return v
+
+
+def quick_confirm(token: str, user) -> bool:
+    """Bot uchun: foydalanuvchi «Ha, kiraman»ni bosdi."""
+    v = quick_pending(token)
+    if not v:
+        return False
+    v["uid"] = user.id
+    v["user"] = {"id": user.id, "first_name": user.first_name or "", "username": user.username or "",
+                 "photo_url": ""}
+    v["exp"] = time.time() + 120   # sayt 2 daqiqa ichida olib ketsin
+    return True
+
+
+def quick_cancel(token: str):
+    PENDING.pop(token, None)
 
 
 def register(app: web.Application, *, db, bot_token: str, admin_ids, ref_link, ref_stats,
@@ -115,6 +155,31 @@ def register(app: web.Application, *, db, bot_token: str, admin_ids, ref_link, r
                                   "user": {"id": uid, "first_name": data.get("first_name", ""),
                                            "username": data.get("username", ""),
                                            "photo_url": data.get("photo_url", "")}})
+
+    async def quick_start(request):
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        _quick_clean()
+        if len(PENDING) >= QUICK_MAX:
+            return web.json_response({"error": "busy"}, status=503)
+        lang = body.get("lang") if body.get("lang") in ("uz", "ru", "en") else "uz"
+        token, key = secrets.token_urlsafe(16), secrets.token_urlsafe(24)
+        PENDING[token] = {"key": key, "exp": time.time() + QUICK_TTL, "lang": lang, "uid": None}
+        return web.json_response({"token": token, "key": key, "ttl": QUICK_TTL,
+                                  "start": f"login_{token}"})
+
+    async def quick_check(request):
+        token, key = request.query.get("t", ""), request.query.get("k", "")
+        v = PENDING.get(token)
+        if not v or v["exp"] < time.time() or not hmac.compare_digest(key, v["key"]):
+            return web.json_response({"error": "expired"}, status=410)
+        if not v.get("uid"):
+            return web.json_response({"wait": True})
+        PENDING.pop(token, None)   # bir martalik
+        uid = v["uid"]
+        return web.json_response({"token": make_token(uid), "admin": uid in admin_ids, "user": v["user"]})
 
     async def catalog(_):
         subs = [{"id": k, "price": v[0], "days": v[1], "works": v[2],
@@ -224,6 +289,8 @@ def register(app: web.Application, *, db, bot_token: str, admin_ids, ref_link, r
     r.add_get("/api/site/catalog", catalog)
     r.add_post("/api/site/reviews", add_review)
     r.add_post("/api/site/auth", auth)
+    r.add_post("/api/site/login/start", quick_start)
+    r.add_get("/api/site/login/check", quick_check)
     r.add_get("/api/site/me", me)
     r.add_get("/api/site/admin", admin)
     r.add_post("/api/site/admin/review/{oid:\\d+}", approve_review)
