@@ -4207,7 +4207,8 @@ def make_web_app():
         import site_api
         site_api.register(app, db=db, bot_token=BOT_TOKEN, admin_ids=ADMIN_IDS, ref_link=ref_link,
                           ref_stats=ref_stats, bonus_balance=bonus_balance, service_label=service_label,
-                          status_tr=ST_TR, get_setting=get_setting)
+                          status_tr=ST_TR, get_setting=get_setting, catalog_json=catalog_json,
+                          sub_plans=SUB_PLANS, sub_names=SUB_TX["name"], sub_disc=SUB_DISC)
     except Exception as e:
         logging.warning("site_api ulanmadi: %s", e)
     return app

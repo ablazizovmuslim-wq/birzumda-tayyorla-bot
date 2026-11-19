@@ -10,6 +10,7 @@ Muhit o'zgaruvchilari (ixtiyoriy):
 Yo'llar:
   GET  /api/site/stats            — foydalanuvchilar, bajarilgan buyurtmalar, bot holati
   GET  /api/site/reviews          — tasdiqlangan sharhlar
+  GET  /api/site/catalog          — xizmatlar, paketlar, narxlar va obuna tariflari
   POST /api/site/auth             — Telegram Login Widget ma'lumotini tekshiradi → token
   GET  /api/site/me               — shaxsiy kabinet (token kerak)
   POST /api/site/reviews          — sharh qoldirish (token + bajarilgan buyurtma kerak)
@@ -29,7 +30,8 @@ LOGIN_MAX_AGE = 24 * 3600  # Telegram login ma'lumoti 24 soatdan eski bo'lmasin
 
 
 def register(app: web.Application, *, db, bot_token: str, admin_ids, ref_link, ref_stats,
-             bonus_balance, service_label, status_tr, get_setting):
+             bonus_balance, service_label, status_tr, get_setting,
+             catalog_json=None, sub_plans=None, sub_names=None, sub_disc=0):
     origins = {o.strip().rstrip("/") for o in os.getenv(
         "SITE_ORIGINS", "https://mybirzumda.uz,https://www.mybirzumda.uz").split(",") if o.strip()}
     login_secret = hashlib.sha256(bot_token.encode()).digest()          # Telegram tekshiruvi uchun
@@ -112,6 +114,13 @@ def register(app: web.Application, *, db, bot_token: str, admin_ids, ref_link, r
                                   "user": {"id": uid, "first_name": data.get("first_name", ""),
                                            "username": data.get("username", ""),
                                            "photo_url": data.get("photo_url", "")}})
+
+    async def catalog(_):
+        subs = [{"id": k, "price": v[0], "days": v[1], "works": v[2],
+                 "name": {lang: (sub_names or {}).get(lang, {}).get(k, k) for lang in ("uz", "ru", "en")}}
+                for k, v in (sub_plans or {}).items()]
+        return web.json_response({"catalog": catalog_json() if catalog_json else {},
+                                  "subs": subs, "sub_disc": sub_disc})
 
     # ---------------------------------------------------------------- kabinet
     async def me(request):
@@ -211,6 +220,7 @@ def register(app: web.Application, *, db, bot_token: str, admin_ids, ref_link, r
     r = app.router
     r.add_get("/api/site/stats", stats)
     r.add_get("/api/site/reviews", reviews)
+    r.add_get("/api/site/catalog", catalog)
     r.add_post("/api/site/reviews", add_review)
     r.add_post("/api/site/auth", auth)
     r.add_get("/api/site/me", me)
