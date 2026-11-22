@@ -53,7 +53,7 @@ AUTO_SERVICES = {
 }
 
 # n: name, bg, a1, a2, text, muted, card, card_alpha, border, light, title_font
-THEMES = {  # 1–12 Start · 13–22 Professional · 23–32 Premium
+THEMES = {  # 1–22 Start · 23–42 Professional · 43–62 Premium
     1: ("Oq Klassik", "FAFAF7", "1F3A68", "C8A24A", "1B2333", "5E6675", "FFFFFF", 92, "D9DEE8", True, "Arial"),
     2: ("Moviy Osmon", "F3F8FF", "1E6FE0", "38B6FF", "13233D", "56657E", "FFFFFF", 92, "CFE0F7", True, "Arial"),
     3: ("Yashil Bahor", "F4FBF5", "1F8A4C", "8BC34A", "14261A", "566B5C", "FFFFFF", 92, "CFE8D6", True, "Arial"),
@@ -66,29 +66,59 @@ THEMES = {  # 1–12 Start · 13–22 Professional · 23–32 Premium
     10: ("Yalpiz", "F2FBF9", "11998E", "38EF7D", "11302B", "53716B", "FFFFFF", 92, "CDEDE6", True, "Arial"),
     11: ("Qizil Klassik", "FCF8F7", "B3261E", "E57373", "2A1716", "6F5D5B", "FFFFFF", 92, "EED6D3", True, "Arial"),
     12: ("Tungi Minimal", "121417", "8AB4F8", "C3D9FF", "EEF2F7", "A3ABB6", "1C2026", 90, "2E343D", False, "Arial"),
-    13: ("Binafsha Neon", "07050D", "C9A6FF", "FF5FC8", "F4EEFF", "B9AECB", "1C142C", 72, "B48CFF", False, "Arial"),
-    14: ("Ko'k Kosmos", "030914", "5CC8FF", "00F0FF", "EAF6FF", "9FB6CF", "0A1830", 72, "5CC8FF", False, "Arial"),
-    15: ("Yashil Zumrad", "03100B", "4BF0A0", "C8FF6B", "EAFFF3", "9CC9B2", "082218", 72, "4BF0A0", False, "Arial"),
-    16: ("Qizil Olov", "0D0505", "FF6A3D", "FFC24B", "FFF1EC", "D7AFA6", "280E0C", 72, "FF6A3D", False, "Arial"),
-    17: ("Firuza Neon", "021012", "2EE6D6", "7AF7FF", "E8FFFD", "9CC7C4", "06201F", 72, "2EE6D6", False, "Arial"),
-    18: ("Pushti Neon", "0F0510", "FF5CC8", "FFB3E6", "FFEFFA", "D3AFC6", "2A0E26", 72, "FF5CC8", False, "Arial"),
-    19: ("Sariq Elektr", "0D0B02", "FFE14D", "FFA600", "FFFBE6", "D2C9A0", "241F08", 72, "FFE14D", False, "Arial"),
-    20: ("Kiber Ko'k-Pushti", "070616", "6C8CFF", "FF4FD8", "F0F2FF", "AEB4D6", "141535", 72, "6C8CFF", False, "Arial"),
-    21: ("Oq Premium", "F7F5FC", "7B2CBF", "FF4FD8", "16121F", "6B6478", "FFFFFF", 80, "7B2CBF", True, "Arial"),
-    22: ("Pastel Orzu", "FFF4FA", "FF6FB5", "6C8CFF", "2F2448", "7A6E93", "FFFFFF", 66, "FF6FB5", True, "Arial"),
-    23: ("Oltin Lyuks", "0A0907", "F5D27A", "C99A2E", "F7EEDB", "C9BB9C", "1E1A12", 75, "F5D27A", False, "Arial"),
-    24: ("Aurora", "0A0618", "FF8AD8", "7FE3FF", "FFFFFF", "D5CCEA", "FFFFFF", 12, "FFFFFF", False, "Arial"),
-    25: ("Qora Olmos", "060607", "E6E8EE", "9AA3B5", "F5F6F8", "A9AEB8", "16171A", 80, "C9CED8", False, "Arial"),
-    26: ("Zumrad Lyuks", "03110C", "E9C46A", "2A9D8F", "F1F7F2", "A8C2B5", "0B2219", 78, "E9C46A", False, "Arial"),
-    27: ("Yoqut", "120307", "F2C46D", "E0245E", "FFF1F4", "D6AAB4", "2A0A12", 78, "F2C46D", False, "Arial"),
-    28: ("Safir", "030818", "E8C36A", "3D7BFF", "EEF3FF", "A6B4D4", "0C1631", 78, "E8C36A", False, "Arial"),
-    29: ("Shimoliy Yog'du", "020B10", "7CFFCB", "B67CFF", "EFFFF9", "A7C7C0", "0A1D22", 72, "7CFFCB", False, "Arial"),
-    30: ("Kosmik Tumanlik", "07030F", "FF9EE5", "8FB8FF", "F7F1FF", "C5B8DA", "1A1030", 70, "FF9EE5", False, "Arial"),
-    31: ("Marmar Oq", "FBFAF7", "A67C2E", "C9A45C", "1F1A12", "6E6452", "FFFFFF", 90, "D9C49A", True, "Arial"),
-    32: ("Quyosh Botishi", "120709", "FFB86B", "FF5E7E", "FFF4EC", "E0BFB4", "2A1214", 72, "FFB86B", False, "Arial"),
+    13: ("Okean Shabadasi", "F2FAFC", "0E7490", "22D3EE", "1B2333", "5E6675", "FFFFFF", 92, "DDE3EA", True, "Arial"),
+    14: ("Qog'oz Origami", "FBFAF6", "334155", "F59E0B", "1B2333", "5E6675", "FFFFFF", 92, "DDE3EA", True, "Arial"),
+    15: ("Gul Bog'i", "FFF8F6", "BE185D", "FDA4AF", "1B2333", "5E6675", "FFFFFF", 92, "DDE3EA", True, "Arial"),
+    16: ("Shimoliy Minimal", "F7F9FB", "1E3A5F", "94A3B8", "1B2333", "5E6675", "FFFFFF", 92, "DDE3EA", True, "Arial"),
+    17: ("Terrakota", "FBF5EF", "9A3412", "F97316", "1B2333", "5E6675", "FFFFFF", 92, "DDE3EA", True, "Arial"),
+    18: ("Zaytun", "F7F8F1", "4D7C0F", "A3B18A", "1B2333", "5E6675", "FFFFFF", 92, "DDE3EA", True, "Arial"),
+    19: ("Daftar", "FFFEF9", "1D4ED8", "EF4444", "1B2333", "5E6675", "FFFFFF", 92, "DDE3EA", True, "Arial"),
+    20: ("Tong Gradient", "FFF7F3", "7C3AED", "FB923C", "1B2333", "5E6675", "FFFFFF", 92, "DDE3EA", True, "Arial"),
+    21: ("Bauhaus", "FAF7F0", "1E40AF", "DC2626", "1B2333", "5E6675", "FFFFFF", 92, "DDE3EA", True, "Arial"),
+    22: ("Kofe Latte", "FAF6F1", "6F4E37", "C8A27A", "1B2333", "5E6675", "FFFFFF", 92, "DDE3EA", True, "Arial"),
+    23: ("Binafsha Neon", "07050D", "C9A6FF", "FF5FC8", "F4EEFF", "B9AECB", "1C142C", 72, "B48CFF", False, "Arial"),
+    24: ("Ko'k Kosmos", "030914", "5CC8FF", "00F0FF", "EAF6FF", "9FB6CF", "0A1830", 72, "5CC8FF", False, "Arial"),
+    25: ("Yashil Zumrad", "03100B", "4BF0A0", "C8FF6B", "EAFFF3", "9CC9B2", "082218", 72, "4BF0A0", False, "Arial"),
+    26: ("Qizil Olov", "0D0505", "FF6A3D", "FFC24B", "FFF1EC", "D7AFA6", "280E0C", 72, "FF6A3D", False, "Arial"),
+    27: ("Firuza Neon", "021012", "2EE6D6", "7AF7FF", "E8FFFD", "9CC7C4", "06201F", 72, "2EE6D6", False, "Arial"),
+    28: ("Pushti Neon", "0F0510", "FF5CC8", "FFB3E6", "FFEFFA", "D3AFC6", "2A0E26", 72, "FF5CC8", False, "Arial"),
+    29: ("Sariq Elektr", "0D0B02", "FFE14D", "FFA600", "FFFBE6", "D2C9A0", "241F08", 72, "FFE14D", False, "Arial"),
+    30: ("Kiber Ko'k-Pushti", "070616", "6C8CFF", "FF4FD8", "F0F2FF", "AEB4D6", "141535", 72, "6C8CFF", False, "Arial"),
+    31: ("Oq Premium", "F7F5FC", "7B2CBF", "FF4FD8", "16121F", "6B6478", "FFFFFF", 80, "7B2CBF", True, "Arial"),
+    32: ("Pastel Orzu", "FFF4FA", "FF6FB5", "6C8CFF", "2F2448", "7A6E93", "FFFFFF", 66, "FF6FB5", True, "Arial"),
+    33: ("Neon Shahar", "070818", "22D3EE", "F472B6", "EEF6FF", "A9B6CF", "0E1430", 72, "22D3EE", False, "Arial"),
+    34: ("Lazer Nurlar", "08040F", "F43F5E", "A855F7", "FFF0F4", "C9A9B9", "1C0A1E", 72, "F43F5E", False, "Arial"),
+    35: ("Kristall Prizma", "050A14", "60A5FA", "C084FC", "EEF4FF", "A6B3CC", "0C162B", 72, "60A5FA", False, "Arial"),
+    36: ("Raqamli To'lqin", "02100E", "2DD4BF", "A3E635", "EAFFFA", "9CC4BB", "06201C", 72, "2DD4BF", False, "Arial"),
+    37: ("Kosmik Orbita", "04030D", "FBBF24", "818CF8", "FFF8E6", "C4BDA4", "15122A", 72, "FBBF24", False, "Arial"),
+    38: ("Neon Tog'lar", "0A0414", "E879F9", "38BDF8", "FBEFFF", "BFA9CC", "1A0B26", 72, "E879F9", False, "Arial"),
+    39: ("Glitch", "060608", "FF3D7F", "00E5FF", "F5F5F7", "ABAFB8", "141418", 72, "FF3D7F", False, "Arial"),
+    40: ("Bokeh Tun", "0B0712", "FB923C", "FDE047", "FFF5EC", "CDB4A6", "1E1220", 72, "FB923C", False, "Arial"),
+    41: ("Matritsa Kod", "010A04", "22C55E", "86EFAC", "EAFFF0", "95C2A3", "06190C", 72, "22C55E", False, "Arial"),
+    42: ("Elektr Ko'k", "020617", "3B82F6", "E0F2FE", "EEF4FF", "A3B3CF", "0A1530", 72, "3B82F6", False, "Arial"),
+    43: ("Oltin Lyuks", "0A0907", "F5D27A", "C99A2E", "F7EEDB", "C9BB9C", "1E1A12", 75, "F5D27A", False, "Arial"),
+    44: ("Aurora", "0A0618", "FF8AD8", "7FE3FF", "FFFFFF", "D5CCEA", "FFFFFF", 12, "FFFFFF", False, "Arial"),
+    45: ("Qora Olmos", "060607", "E6E8EE", "9AA3B5", "F5F6F8", "A9AEB8", "16171A", 80, "C9CED8", False, "Arial"),
+    46: ("Zumrad Lyuks", "03110C", "E9C46A", "2A9D8F", "F1F7F2", "A8C2B5", "0B2219", 78, "E9C46A", False, "Arial"),
+    47: ("Yoqut", "120307", "F2C46D", "E0245E", "FFF1F4", "D6AAB4", "2A0A12", 78, "F2C46D", False, "Arial"),
+    48: ("Safir", "030818", "E8C36A", "3D7BFF", "EEF3FF", "A6B4D4", "0C1631", 78, "E8C36A", False, "Arial"),
+    49: ("Shimoliy Yog'du", "020B10", "7CFFCB", "B67CFF", "EFFFF9", "A7C7C0", "0A1D22", 72, "7CFFCB", False, "Arial"),
+    50: ("Kosmik Tumanlik", "07030F", "FF9EE5", "8FB8FF", "F7F1FF", "C5B8DA", "1A1030", 70, "FF9EE5", False, "Arial"),
+    51: ("Marmar Oq", "FBFAF7", "A67C2E", "C9A45C", "1F1A12", "6E6452", "FFFFFF", 90, "D9C49A", True, "Arial"),
+    52: ("Quyosh Botishi", "120709", "FFB86B", "FF5E7E", "FFF4EC", "E0BFB4", "2A1214", 72, "FFB86B", False, "Arial"),
+    53: ("Oltin Art Deko", "0B0A08", "E8C468", "B08D3C", "F8F1DE", "C9BB9C", "1E1A12", 75, "E8C468", False, "Arial"),
+    54: ("Ipak To'lqin", "120E14", "F3D9B1", "C084FC", "FBF5EE", "C7B9C4", "221A26", 75, "F3D9B1", False, "Arial"),
+    55: ("Qora Marmar", "0A0A0C", "D4AF37", "E5E7EB", "F5F5F4", "ABAAA6", "18181B", 78, "D4AF37", False, "Arial"),
+    56: ("Shoh Baxmal", "14051F", "F5C542", "A855F7", "FBF3FF", "C6B0D4", "24103A", 76, "F5C542", False, "Arial"),
+    57: ("Kristal Olmos", "06080F", "E2E8F0", "7DD3FC", "F8FAFC", "A7B0C2", "121828", 76, "E2E8F0", False, "Arial"),
+    58: ("Sharqona Naqsh", "04131A", "E9C46A", "2A9D8F", "F1F7F4", "A8C2B9", "0B242C", 80, "E9C46A", False, "Arial"),
+    59: ("Oltin Changlar", "050B1A", "F6D365", "FDA085", "FFF7E8", "C8BDA8", "101A33", 76, "F6D365", False, "Arial"),
+    60: ("Galaktika Lyuks", "07030F", "F0ABFC", "93C5FD", "F8F1FF", "C4B8DA", "1A1030", 70, "F0ABFC", False, "Arial"),
+    61: ("Atirgul Oltin", "FBF3F1", "B76E79", "E8C4A0", "2E1E20", "7A6266", "FFFFFF", 82, "B76E79", True, "Arial"),
+    62: ("Zumrad Saroy", "021A14", "E9C46A", "34D399", "EFFAF5", "A3C4B6", "0A2A21", 78, "E9C46A", False, "Arial"),
 }
-TIER = {n: ('start' if n <= 12 else 'pro' if n <= 22 else 'premium') for n in THEMES}
-DEFAULT_THEME = 13
+TIER = {n: ('start' if n <= 22 else 'pro' if n <= 42 else 'premium') for n in THEMES}
+DEFAULT_THEME = 23  # Binafsha Neon
 
 LANG_NAMES = {"uz": "o'zbek (lotin yozuvida)", "ru": "rus", "en": "ingliz"}
 WORDS_PER_PAGE = 260  # Times New Roman 14, 1.5 interval
@@ -236,8 +266,8 @@ def work_lang(o, client_lang: str) -> str:
     return client_lang if client_lang in LANG_NAMES else "uz"
 
 
-PKG_MAX = {"start": 12, "pro": 22, "premium": 32}
-PKG_DEFAULT = {"start": 2, "pro": 13, "premium": 23}
+PKG_MAX = {"start": 22, "pro": 42, "premium": 62}
+PKG_DEFAULT = {"start": 2, "pro": 23, "premium": 43}
 
 
 def theme_no(o, key: str) -> int:
@@ -245,7 +275,7 @@ def theme_no(o, key: str) -> int:
     pkg = (o["package"] or "") if "package" in o.keys() else ""
     m = re.search(r"№\s*(\d{1,2})", brief_dict(o).get(key, ""))
     n = int(m.group(1)) if m and int(m.group(1)) in THEMES else 0
-    if n and n > PKG_MAX.get(pkg, 32):
+    if n and n > PKG_MAX.get(pkg, 62):
         n = 0
     if not n and key == "style":
         n = PKG_DEFAULT.get(pkg, DEFAULT_THEME)
@@ -631,6 +661,54 @@ class Deck:
         if who:
             self.text(s, Inches(1), Inches(4.35), Inches(11.33), Inches(0.5), who, 16, self.mu, align=PP_ALIGN.CENTER)
 
+    # --- 👑 Premium: jonli slaydlar — o'tish effektlari va elementlarning navbat bilan chiqishi
+    TRANSITIONS = ["fade", "push", "wipe", "split", "cover"]
+
+    def animate(self):
+        if TIER.get(self.tn) != "premium":
+            return
+        from lxml import etree
+        P = "http://schemas.openxmlformats.org/presentationml/2006/main"
+        for i, s in enumerate(self.p.slides):
+            el = s._element
+            for old in el.findall(f"{{{P}}}transition") + el.findall(f"{{{P}}}timing"):
+                el.remove(old)
+            kind = self.TRANSITIONS[i % len(self.TRANSITIONS)] if i else "fade"
+            extra = {"push": ' dir="u"', "wipe": ' dir="r"', "split": ' orient="vert" dir="out"', "cover": ' dir="l"'}.get(kind, "")
+            tr = etree.fromstring(f'<p:transition xmlns:p="{P}" spd="slow"><p:{kind}{extra}/></p:transition>')
+            # matn va kartalar (fon rasmidan tashqari) — birin-ketin «paydo bo'lish» (fade)
+            ids = [sh.shape_id for sh in s.shapes][1:]
+            ids = [x for x in ids if x][:14]
+            pars, nid = [], 4
+            for k, sid in enumerate(ids):
+                node = "withEffect" if k else "afterEffect"
+                delay = 0 if k == 0 else 120
+                pars.append(
+                    f'<p:par><p:cTn id="{nid}" fill="hold"><p:stCondLst><p:cond delay="{delay * k if k else 0}"/></p:stCondLst><p:childTnLst>'
+                    f'<p:par><p:cTn id="{nid + 1}" presetID="10" presetClass="entr" presetSubtype="0" fill="hold" nodeType="{node}">'
+                    f'<p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst>'
+                    f'<p:set><p:cBhvr><p:cTn id="{nid + 2}" dur="1" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst></p:cTn>'
+                    f'<p:tgtEl><p:spTgt spid="{sid}"/></p:tgtEl><p:attrNameLst><p:attrName>style.visibility</p:attrName></p:attrNameLst></p:cBhvr>'
+                    f'<p:to><p:strVal val="visible"/></p:to></p:set>'
+                    f'<p:animEffect transition="in" filter="fade"><p:cBhvr><p:cTn id="{nid + 3}" dur="600"/><p:tgtEl><p:spTgt spid="{sid}"/></p:tgtEl></p:cBhvr></p:animEffect>'
+                    f'</p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par>')
+                nid += 4
+            if pars:
+                tm = etree.fromstring(
+                    f'<p:timing xmlns:p="{P}"><p:tnLst><p:par><p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot"><p:childTnLst>'
+                    f'<p:seq concurrent="1" nextAc="seek"><p:cTn id="2" dur="indefinite" nodeType="mainSeq"><p:childTnLst>'
+                    f'<p:par><p:cTn id="3" fill="hold"><p:stCondLst><p:cond delay="indefinite"/><p:cond evt="onBegin" delay="0"><p:tn val="2"/></p:cond></p:stCondLst><p:childTnLst>'
+                    + "".join(pars) +
+                    f'</p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn><p:prevCondLst><p:cond evt="onPrev" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:prevCondLst>'
+                    f'<p:nextCondLst><p:cond evt="onNext" delay="0"><p:tgtEl><p:sldTgt/></p:tgtEl></p:cond></p:nextCondLst></p:seq></p:childTnLst></p:cTn></p:par></p:tnLst></p:timing>')
+            # sxema tartibi: ... cSld, clrMapOvr, transition, timing, extLst
+            anchor = el.find(f"{{{P}}}extLst")
+            for node in (tr,) + ((tm,) if pars else ()):
+                if anchor is not None:
+                    anchor.addprevious(node)
+                else:
+                    el.append(node)
+
     def build(self, d, images) -> bytes:
         plan = [str(x) for x in d.get("plan", [])][:6]
         self.cover_slide(d, plan[:5])
@@ -642,6 +720,7 @@ class Deck:
         if d.get("conclusion"):
             self.conclusion_slide([str(x) for x in d["conclusion"]])
         self.thanks_slide(d)
+        self.animate()
         out = io.BytesIO(); self.p.save(out)
         return out.getvalue()
 
