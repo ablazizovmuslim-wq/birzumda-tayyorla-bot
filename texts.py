@@ -738,8 +738,8 @@ FX = {
 }
 
 
-# ------------------------------------------------------------------ 🎨 dizayn shablonlari (32 ta)
-# 1–12 Start (toza), 13–22 Professional (neon), 23–32 Premium (lyuks)
+# ------------------------------------------------------------------ 🎨 dizayn shablonlari (62 ta)
+# 1–22 Start (toza), 23–42 Professional (neon), 43–62 Premium (lyuks, jonli: o'tish effektlari va animatsiya)
 TPL = {
     1: {"uz": "Oq Klassik", "ru": "Белая классика", "en": "White Classic"},
     2: {"uz": "Moviy Osmon", "ru": "Голубое небо", "en": "Sky Blue"},
@@ -753,34 +753,64 @@ TPL = {
     10: {"uz": "Yalpiz", "ru": "Мята", "en": "Mint"},
     11: {"uz": "Qizil Klassik", "ru": "Красная классика", "en": "Classic Red"},
     12: {"uz": "Tungi Minimal", "ru": "Ночной минимализм", "en": "Night Minimal"},
-    13: {"uz": "Binafsha Neon", "ru": "Фиолетовый неон", "en": "Purple Neon"},
-    14: {"uz": "Ko'k Kosmos", "ru": "Синий космос", "en": "Blue Cosmos"},
-    15: {"uz": "Yashil Zumrad", "ru": "Изумрудный неон", "en": "Emerald Neon"},
-    16: {"uz": "Qizil Olov", "ru": "Красный огонь", "en": "Red Fire"},
-    17: {"uz": "Firuza Neon", "ru": "Бирюзовый неон", "en": "Teal Neon"},
-    18: {"uz": "Pushti Neon", "ru": "Розовый неон", "en": "Pink Neon"},
-    19: {"uz": "Sariq Elektr", "ru": "Электро-жёлтый", "en": "Electric Yellow"},
-    20: {"uz": "Kiber Ko'k-Pushti", "ru": "Кибер синий-розовый", "en": "Cyber Blue-Pink"},
-    21: {"uz": "Oq Premium", "ru": "Белый премиум", "en": "White Premium"},
-    22: {"uz": "Pastel Orzu", "ru": "Пастельная мечта", "en": "Pastel Dream"},
-    23: {"uz": "Oltin Lyuks", "ru": "Золотой люкс", "en": "Gold Luxe"},
-    24: {"uz": "Aurora", "ru": "Аврора", "en": "Aurora"},
-    25: {"uz": "Qora Olmos", "ru": "Чёрный бриллиант", "en": "Black Diamond"},
-    26: {"uz": "Zumrad Lyuks", "ru": "Изумрудный люкс", "en": "Emerald Luxe"},
-    27: {"uz": "Yoqut", "ru": "Рубин", "en": "Ruby"},
-    28: {"uz": "Safir", "ru": "Сапфир", "en": "Sapphire"},
-    29: {"uz": "Shimoliy Yog'du", "ru": "Северное сияние", "en": "Northern Lights"},
-    30: {"uz": "Kosmik Tumanlik", "ru": "Космическая туманность", "en": "Cosmic Nebula"},
-    31: {"uz": "Marmar Oq", "ru": "Белый мрамор", "en": "White Marble"},
-    32: {"uz": "Quyosh Botishi", "ru": "Закат", "en": "Sunset"},
+    13: {"uz": "Okean Shabadasi", "ru": "Морской бриз", "en": "Sea Breeze"},
+    14: {"uz": "Qog'oz Origami", "ru": "Бумажное оригами", "en": "Paper Origami"},
+    15: {"uz": "Gul Bog'i", "ru": "Цветочный сад", "en": "Flower Garden"},
+    16: {"uz": "Shimoliy Minimal", "ru": "Скандинавский минимализм", "en": "Nordic Minimal"},
+    17: {"uz": "Terrakota", "ru": "Терракота", "en": "Terracotta"},
+    18: {"uz": "Zaytun", "ru": "Олива", "en": "Olive"},
+    19: {"uz": "Daftar", "ru": "Тетрадь", "en": "Notebook"},
+    20: {"uz": "Tong Gradient", "ru": "Рассветный градиент", "en": "Dawn Gradient"},
+    21: {"uz": "Bauhaus", "ru": "Баухаус", "en": "Bauhaus"},
+    22: {"uz": "Kofe Latte", "ru": "Кофе латте", "en": "Coffee Latte"},
+    23: {"uz": "Binafsha Neon", "ru": "Фиолетовый неон", "en": "Purple Neon"},
+    24: {"uz": "Ko'k Kosmos", "ru": "Синий космос", "en": "Blue Cosmos"},
+    25: {"uz": "Yashil Zumrad", "ru": "Изумрудный неон", "en": "Emerald Neon"},
+    26: {"uz": "Qizil Olov", "ru": "Красный огонь", "en": "Red Fire"},
+    27: {"uz": "Firuza Neon", "ru": "Бирюзовый неон", "en": "Teal Neon"},
+    28: {"uz": "Pushti Neon", "ru": "Розовый неон", "en": "Pink Neon"},
+    29: {"uz": "Sariq Elektr", "ru": "Электро-жёлтый", "en": "Electric Yellow"},
+    30: {"uz": "Kiber Ko'k-Pushti", "ru": "Кибер синий-розовый", "en": "Cyber Blue-Pink"},
+    31: {"uz": "Oq Premium", "ru": "Белый премиум", "en": "White Premium"},
+    32: {"uz": "Pastel Orzu", "ru": "Пастельная мечта", "en": "Pastel Dream"},
+    33: {"uz": "Neon Shahar", "ru": "Неоновый город", "en": "Neon City"},
+    34: {"uz": "Lazer Nurlar", "ru": "Лазерные лучи", "en": "Laser Beams"},
+    35: {"uz": "Kristall Prizma", "ru": "Кристальная призма", "en": "Crystal Prism"},
+    36: {"uz": "Raqamli To'lqin", "ru": "Цифровая волна", "en": "Digital Wave"},
+    37: {"uz": "Kosmik Orbita", "ru": "Космическая орбита", "en": "Cosmic Orbit"},
+    38: {"uz": "Neon Tog'lar", "ru": "Неоновые горы", "en": "Neon Mountains"},
+    39: {"uz": "Glitch", "ru": "Глитч", "en": "Glitch"},
+    40: {"uz": "Bokeh Tun", "ru": "Ночное боке", "en": "Bokeh Night"},
+    41: {"uz": "Matritsa Kod", "ru": "Код матрицы", "en": "Matrix Code"},
+    42: {"uz": "Elektr Ko'k", "ru": "Электрический синий", "en": "Electric Blue"},
+    43: {"uz": "Oltin Lyuks", "ru": "Золотой люкс", "en": "Gold Luxe"},
+    44: {"uz": "Aurora", "ru": "Аврора", "en": "Aurora"},
+    45: {"uz": "Qora Olmos", "ru": "Чёрный бриллиант", "en": "Black Diamond"},
+    46: {"uz": "Zumrad Lyuks", "ru": "Изумрудный люкс", "en": "Emerald Luxe"},
+    47: {"uz": "Yoqut", "ru": "Рубин", "en": "Ruby"},
+    48: {"uz": "Safir", "ru": "Сапфир", "en": "Sapphire"},
+    49: {"uz": "Shimoliy Yog'du", "ru": "Северное сияние", "en": "Northern Lights"},
+    50: {"uz": "Kosmik Tumanlik", "ru": "Космическая туманность", "en": "Cosmic Nebula"},
+    51: {"uz": "Marmar Oq", "ru": "Белый мрамор", "en": "White Marble"},
+    52: {"uz": "Quyosh Botishi", "ru": "Закат", "en": "Sunset"},
+    53: {"uz": "Oltin Art Deko", "ru": "Золотой ар-деко", "en": "Gold Art Deco"},
+    54: {"uz": "Ipak To'lqin", "ru": "Шёлковая волна", "en": "Silk Wave"},
+    55: {"uz": "Qora Marmar", "ru": "Чёрный мрамор", "en": "Black Marble"},
+    56: {"uz": "Shoh Baxmal", "ru": "Королевский бархат", "en": "Royal Velvet"},
+    57: {"uz": "Kristal Olmos", "ru": "Кристальный бриллиант", "en": "Crystal Diamond"},
+    58: {"uz": "Sharqona Naqsh", "ru": "Восточный орнамент", "en": "Oriental Ornament"},
+    59: {"uz": "Oltin Changlar", "ru": "Золотая пыль", "en": "Gold Dust"},
+    60: {"uz": "Galaktika Lyuks", "ru": "Галактика люкс", "en": "Galaxy Luxe"},
+    61: {"uz": "Atirgul Oltin", "ru": "Розовое золото", "en": "Rose Gold"},
+    62: {"uz": "Zumrad Saroy", "ru": "Изумрудный дворец", "en": "Emerald Palace"},
 }
 TPL_TIER = {n: ("start" if n <= 12 else "pro" if n <= 22 else "premium") for n in TPL}
-TIER_MAX = {"start": 12, "pro": 22, "premium": 32}
+TIER_MAX = {"start": 22, "pro": 42, "premium": 62}
 
 
 def tpl_allowed(pkg: str) -> list:
-    """Paketga qarab ochiq shablonlar: Start 1–12, Pro 1–22, Premium 1–32 (paketsiz — hammasi)."""
-    return [n for n in TPL if n <= TIER_MAX.get(pkg or "", 32)]
+    """Paketga qarab ochiq shablonlar: Start 1–22, Pro 1–42, Premium 1–62 (paketsiz — hammasi)."""
+    return [n for n in TPL if n <= TIER_MAX.get(pkg or "", 62)]
 
 
 TPL_ANY = {"uz": "🤷 Farqi yo'q", "ru": "🤷 Неважно", "en": "🤷 No preference"}
@@ -788,16 +818,16 @@ TPL_TX = {
     "album_style": {"uz": "🎨 <b>Slayd dizayn shablonlari</b> — paketingizga ochiq uslublar. Pastdagi tugmalardan raqamini tanlang 👇",
                     "ru": "🎨 <b>Шаблоны дизайна слайдов</b> — стили, доступные в вашем пакете. Выберите номер кнопкой ниже 👇",
                     "en": "🎨 <b>Slide design templates</b> — styles open for your package. Pick a number with the buttons below 👇"},
-    "album_cover": {"uz": "📄 <b>Muqova shablonlari</b> — 32 ta uslub. Pastdagi tugmalardan raqamini tanlang 👇",
-                    "ru": "📄 <b>Шаблоны обложки</b> — 32 стиля. Выберите номер кнопкой ниже 👇",
-                    "en": "📄 <b>Cover templates</b> — 32 styles. Pick a number with the buttons below 👇"},
-    "locked": {"uz": "🔒 №{a}–32 shablonlar yuqoriroq paketda ochiladi (Professional: 1–22, Premium: 1–32).",
-               "ru": "🔒 Шаблоны №{a}–32 открываются в старшем пакете (Professional: 1–22, Premium: 1–32).",
-               "en": "🔒 Templates №{a}–32 unlock in a higher package (Professional: 1–22, Premium: 1–32)."},
-    "tiers": {"uz": "⭐ <b>Start</b> 1–12 · 💜 <b>Professional</b> 13–22 · 👑 <b>Premium</b> 23–32",
-              "ru": "⭐ <b>Start</b> 1–12 · 💜 <b>Professional</b> 13–22 · 👑 <b>Premium</b> 23–32",
-              "en": "⭐ <b>Start</b> 1–12 · 💜 <b>Professional</b> 13–22 · 👑 <b>Premium</b> 23–32"},
-    "gallery": {"uz": "🎨 <b>Dizayn shablonlari — 32 ta</b>\nBuyurtma berishda o'zingizga yoqqanini tanlaysiz.",
+    "album_cover": {"uz": "📄 <b>Muqova shablonlari</b> — 62 ta uslub. Pastdagi tugmalardan raqamini tanlang 👇",
+                    "ru": "📄 <b>Шаблоны обложки</b> — 62 стиля. Выберите номер кнопкой ниже 👇",
+                    "en": "📄 <b>Cover templates</b> — 62 styles. Pick a number with the buttons below 👇"},
+    "locked": {"uz": "🔒 №{a}–62 shablonlar yuqoriroq paketda ochiladi (Professional: 1–42, Premium: 1–62).",
+               "ru": "🔒 Шаблоны №{a}–62 открываются в старшем пакете (Professional: 1–42, Premium: 1–62).",
+               "en": "🔒 Templates №{a}–62 unlock in a higher package (Professional: 1–42, Premium: 1–62)."},
+    "tiers": {"uz": "⭐ <b>Start</b> 1–22 · 💜 <b>Professional</b> 23–42 · 👑 <b>Premium</b> 43–62 ✨",
+              "ru": "⭐ <b>Start</b> 1–22 · 💜 <b>Professional</b> 23–42 · 👑 <b>Premium</b> 43–62 ✨",
+              "en": "⭐ <b>Start</b> 1–22 · 💜 <b>Professional</b> 23–42 · 👑 <b>Premium</b> 43–62 ✨"},
+    "gallery": {"uz": "🎨 <b>Dizayn shablonlari — 62 ta</b>\nBuyurtma berishda o'zingizga yoqqanini tanlaysiz.",
                 "ru": "🎨 <b>Шаблоны дизайна</b>\nВыберете понравившийся при оформлении заказа.",
                 "en": "🎨 <b>Design templates</b>\nYou pick the one you like when ordering."},
     "btn": {"uz": "🎨 Dizayn shablonlari", "ru": "🎨 Шаблоны дизайна", "en": "🎨 Design templates"},
