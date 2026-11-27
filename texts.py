@@ -738,8 +738,8 @@ FX = {
 }
 
 
-# ------------------------------------------------------------------ 🎨 dizayn shablonlari (32 ta)
-# 1–12 Start (toza), 13–22 Professional (neon), 23–32 Premium (lyuks)
+# ------------------------------------------------------------------ 🎨 dizayn shablonlari (37 ta)
+# 1–12 Start (toza), 13–22 Professional (neon), 23–37 Premium (lyuks)
 TPL = {
     1: {"uz": "Oq Klassik", "ru": "Белая классика", "en": "White Classic"},
     2: {"uz": "Moviy Osmon", "ru": "Голубое небо", "en": "Sky Blue"},
@@ -773,14 +773,19 @@ TPL = {
     30: {"uz": "Kosmik Tumanlik", "ru": "Космическая туманность", "en": "Cosmic Nebula"},
     31: {"uz": "Marmar Oq", "ru": "Белый мрамор", "en": "White Marble"},
     32: {"uz": "Quyosh Botishi", "ru": "Закат", "en": "Sunset"},
+    33: {"uz": "Atirgul Oltin", "ru": "Розовое золото", "en": "Rose Gold"},
+    34: {"uz": "Okean Chuqurligi", "ru": "Глубина океана", "en": "Deep Ocean"},
+    35: {"uz": "Sakura", "ru": "Сакура", "en": "Sakura"},
+    36: {"uz": "Ametist Deko", "ru": "Аметист Деко", "en": "Amethyst Deco"},
+    37: {"uz": "Shampan", "ru": "Шампань", "en": "Champagne"},
 }
 TPL_TIER = {n: ("start" if n <= 12 else "pro" if n <= 22 else "premium") for n in TPL}
-TIER_MAX = {"start": 12, "pro": 22, "premium": 32}
+TIER_MAX = {"start": 12, "pro": 22, "premium": 37}
 
 
 def tpl_allowed(pkg: str) -> list:
-    """Paketga qarab ochiq shablonlar: Start 1–12, Pro 1–22, Premium 1–32 (paketsiz — hammasi)."""
-    return [n for n in TPL if n <= TIER_MAX.get(pkg or "", 32)]
+    """Paketga qarab ochiq shablonlar: Start 1–12, Pro 1–22, Premium 1–37 (paketsiz — hammasi)."""
+    return [n for n in TPL if n <= TIER_MAX.get(pkg or "", 37)]
 
 
 TPL_ANY = {"uz": "🤷 Farqi yo'q", "ru": "🤷 Неважно", "en": "🤷 No preference"}
@@ -788,16 +793,16 @@ TPL_TX = {
     "album_style": {"uz": "🎨 <b>Slayd dizayn shablonlari</b> — paketingizga ochiq uslublar. Pastdagi tugmalardan raqamini tanlang 👇",
                     "ru": "🎨 <b>Шаблоны дизайна слайдов</b> — стили, доступные в вашем пакете. Выберите номер кнопкой ниже 👇",
                     "en": "🎨 <b>Slide design templates</b> — styles open for your package. Pick a number with the buttons below 👇"},
-    "album_cover": {"uz": "📄 <b>Muqova shablonlari</b> — 32 ta uslub. Pastdagi tugmalardan raqamini tanlang 👇",
-                    "ru": "📄 <b>Шаблоны обложки</b> — 32 стиля. Выберите номер кнопкой ниже 👇",
-                    "en": "📄 <b>Cover templates</b> — 32 styles. Pick a number with the buttons below 👇"},
-    "locked": {"uz": "🔒 №{a}–32 shablonlar yuqoriroq paketda ochiladi (Professional: 1–22, Premium: 1–32).",
-               "ru": "🔒 Шаблоны №{a}–32 открываются в старшем пакете (Professional: 1–22, Premium: 1–32).",
-               "en": "🔒 Templates №{a}–32 unlock in a higher package (Professional: 1–22, Premium: 1–32)."},
-    "tiers": {"uz": "⭐ <b>Start</b> 1–12 · 💜 <b>Professional</b> 13–22 · 👑 <b>Premium</b> 23–32",
-              "ru": "⭐ <b>Start</b> 1–12 · 💜 <b>Professional</b> 13–22 · 👑 <b>Premium</b> 23–32",
-              "en": "⭐ <b>Start</b> 1–12 · 💜 <b>Professional</b> 13–22 · 👑 <b>Premium</b> 23–32"},
-    "gallery": {"uz": "🎨 <b>Dizayn shablonlari — 32 ta</b>\nBuyurtma berishda o'zingizga yoqqanini tanlaysiz.",
+    "album_cover": {"uz": "📄 <b>Muqova shablonlari</b> — 37 ta uslub. Pastdagi tugmalardan raqamini tanlang 👇",
+                    "ru": "📄 <b>Шаблоны обложки</b> — 37 стилей. Выберите номер кнопкой ниже 👇",
+                    "en": "📄 <b>Cover templates</b> — 37 styles. Pick a number with the buttons below 👇"},
+    "locked": {"uz": "🔒 №{a}–37 shablonlar yuqoriroq paketda ochiladi (Professional: 1–22, Premium: 1–37).",
+               "ru": "🔒 Шаблоны №{a}–37 открываются в старшем пакете (Professional: 1–22, Premium: 1–37).",
+               "en": "🔒 Templates №{a}–37 unlock in a higher package (Professional: 1–22, Premium: 1–37)."},
+    "tiers": {"uz": "⭐ <b>Start</b> 1–12 · 💜 <b>Professional</b> 13–22 · 👑 <b>Premium</b> 23–37",
+              "ru": "⭐ <b>Start</b> 1–12 · 💜 <b>Professional</b> 13–22 · 👑 <b>Premium</b> 23–37",
+              "en": "⭐ <b>Start</b> 1–12 · 💜 <b>Professional</b> 13–22 · 👑 <b>Premium</b> 23–37"},
+    "gallery": {"uz": "🎨 <b>Dizayn shablonlari — 37 ta</b>\nBuyurtma berishda o'zingizga yoqqanini tanlaysiz.",
                 "ru": "🎨 <b>Шаблоны дизайна</b>\nВыберете понравившийся при оформлении заказа.",
                 "en": "🎨 <b>Design templates</b>\nYou pick the one you like when ordering."},
     "btn": {"uz": "🎨 Dizayn shablonlari", "ru": "🎨 Шаблоны дизайна", "en": "🎨 Design templates"},

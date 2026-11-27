@@ -1207,7 +1207,7 @@ def brief_label(key: str, lang: str = "uz") -> str:
 
 def brief_kb(lang: str, key: str, pkg: str = "", can_back: bool = False):
     opts = BRIEF_Q[key].get("opts", {}).get(lang, [])
-    if key in ("style", "cover"):  # 32 ta shablon — paketga ochiqlari, 4 tadan raqamli tugma
+    if key in ("style", "cover"):  # 37 ta shablon — paketga ochiqlari, 4 tadan raqamli tugma
         btns = [(f"№{n}", f"bq:o:{n - 1}", "primary") for n in tpl_allowed(pkg)]
         rows = [btns[i:i + 4] for i in range(0, len(btns), 4)]
         rows.append([(opts[-1], f"bq:o:{len(opts) - 1}", None)])
@@ -1390,9 +1390,9 @@ def ttx(lang: str, key: str) -> str:
 
 
 def tpl_sheets(kind: str, pkg: str = "") -> list:
-    """Shablon varaqlari: slayd — paket darajasigacha (start/pro/premium), muqova — 2 ta varaq."""
+    """Shablon varaqlari: slayd — paket darajasigacha (start/pro/premium), muqova — 3 ta varaq."""
     if kind == "c":
-        names = ["tpl_csheet1.jpg", "tpl_csheet2.jpg"]
+        names = ["tpl_csheet1.jpg", "tpl_csheet2.jpg", "tpl_csheet3.jpg"]
     else:
         tiers = ["start", "pro", "premium"]
         top = {"start": 1, "pro": 2}.get(pkg or "", 3)

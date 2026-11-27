@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Birzumda Taqdimot</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+/* Android (ayniqsa arzon telefonlar) — yengil rejim: blur, backdrop-filter va cheksiz animatsiyalar o'chadi */
+(function () {
+  try {
+    var ua = navigator.userAgent || '', tw = window.Telegram && Telegram.WebApp;
+    var android = /Android/i.test(ua) || (tw && tw.platform === 'android');
+    var weak = /LOW_PERFORMANCE/i.test(ua) || (navigator.deviceMemory && navigator.deviceMemory <= 2);  // iPhone'ga tegmaydi
+    if (android || weak) document.documentElement.classList.add('lite');
+  } catch (e) {}
+})();
+</script>
 <style>
 :root{--h0B0710:#0B0710;--h0B0812:#0B0812;--h120D1C:#120D1C;--h160F24:#160F24;--h1C1430:#1C1430;--h24173A:#24173A;--h2A1F3E:#2A1F3E;--h2E1F4A:#2E1F4A;--h33264D:#33264D;--h3A2A57:#3A2A57;--h3B0F6E:#3B0F6E;--h4C1D95:#4C1D95;--h5A189A:#5A189A;--h5A2A6E:#5A2A6E;--h6A1FB0:#6A1FB0;--h7B2CBF:#7B2CBF;--h7B3FD0:#7B3FD0;--h8B4DFF:#8B4DFF;--h9B2FB0:#9B2FB0;--h9B5CFF:#9B5CFF;--hA06BFF:#A06BFF;--hB48CFF:#B48CFF;--hB9AECB:#B9AECB;--hC9A6FF:#C9A6FF;--hEDE3FF:#EDE3FF;--hF2ECFA:#F2ECFA;--hFF4FD8:#FF4FD8;--hFF5FC8:#FF5FC8;--hFF8FDA:#FF8FDA;--r106_31_176:106,31,176;--r139_77_255:139,77,255;--r160_107_255:160,107,255;--r20_14_32:20,14,32;--r255_255_255:255,255,255;--r255_80_200:255,80,200;--r255_95_200:255,95,200;--r28_20_44:28,20,44;--r5_3_10:5,3,10;--bg:var(--h0B0812);--card:rgba(var(--r28_20_44),.78);--line:var(--h33264D);--a:var(--hA06BFF);--a2:var(--h6A1FB0);--pk:var(--hFF5FC8);--t:var(--hF2ECFA);--m:var(--hB9AECB)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -233,6 +244,23 @@ html[data-theme="light"] input,html[data-theme="light"] textarea,html[data-theme
 .page.on{animation:pgin .38s cubic-bezier(.2,.8,.2,1)}
 @keyframes pgin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 html[data-anim="off"] *,html[data-anim="off"] *:before,html[data-anim="off"] *:after{animation:none!important;transition:none!important}
+/* === Android / sekin telefon: yengil rejim (html.lite) === */
+html.lite .orb{filter:none!important;animation:none!important;opacity:.5}
+html.lite .o1{background:radial-gradient(circle,var(--h7B2CBF) 0,rgba(0,0,0,0) 68%)}
+html.lite .o2{background:radial-gradient(circle,var(--hFF4FD8) 0,rgba(0,0,0,0) 68%);opacity:.22}
+html.lite .o3{background:radial-gradient(circle,var(--h4C1D95) 0,rgba(0,0,0,0) 68%);opacity:.35}
+html.lite .card,html.lite nav{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html.lite nav{background:rgba(var(--r20_14_32),.97)!important}
+html.lite[data-theme="light"] nav{background:rgba(255,255,255,.98)!important}
+html.lite *,html.lite *::before,html.lite *::after{animation-iteration-count:1!important}
+html.lite .btn::after,html.lite .hero .ring,html.lite .mock .glo,html.lite .bar,html.lite .spark,html.lite .total,html.lite h1 .grad,
+html.lite .logo,html.lite .pk div.hi,html.lite .chip.hot{animation:none!important}
+html.lite .btn{box-shadow:0 6px 16px rgba(var(--r139_77_255),.35)}
+html.lite .btn,html.lite .card,html.lite .tile,html.lite .chip,html.lite .plan,html.lite .sw,html.lite .fl,html.lite nav button,html.lite .tp,html.lite .pk div{transition:transform .15s ease!important}
+html.lite .pressed{filter:none!important}
+html.lite .tp.lk{filter:none;opacity:.38}
+html.lite .slider img{transition:opacity .4s!important;transform:none!important}
+.tp img{background:var(--h160F24);height:auto}
 </style>
 </head>
 <body>
@@ -374,7 +402,7 @@ const tg = window.Telegram ? Telegram.WebApp : null;
 if (tg) { tg.ready(); tg.expand(); try { tg.setHeaderColor('#0B0812'); tg.setBackgroundColor('#0B0812'); } catch (e) {} }
 let hap = t => { try { tg && tg.HapticFeedback.impactOccurred(t || 'light'); } catch (e) {} };
 const T = {
-  uz: { photoHint: "Rasmlaringizni (galereyadan) buyurtmadan keyin botga yuborasiz — ishga qo'yib beramiz", lTpl: "🎨 Dizayn shabloni", tplHint: "Tanlamasangiz — bot keyin so'raydi", tplTitle: "Dizayn shablonlari", tplSlides: "🖼 Slayd", tplCovers: "📄 Muqova", tplGalHint: "Buyurtma berishda o'zingizga yoqqanini tanlaysiz", tplNames: ["Oq Klassik", "Moviy Osmon", "Yashil Bahor", "Pushti Pastel", "Quyoshli Sariq", "Lavanda", "Kulrang Minimal", "Akademik Ko'k", "Shaftoli", "Yalpiz", "Qizil Klassik", "Tungi Minimal", "Binafsha Neon", "Ko'k Kosmos", "Yashil Zumrad", "Qizil Olov", "Firuza Neon", "Pushti Neon", "Sariq Elektr", "Kiber Ko'k-Pushti", "Oq Premium", "Pastel Orzu", "Oltin Lyuks", "Aurora", "Qora Olmos", "Zumrad Lyuks", "Yoqut", "Safir", "Shimoliy Yog'du", "Kosmik Tumanlik", "Marmar Oq", "Quyosh Botishi"], tplLock: "🔒 Bu shablon yuqoriroq paketda ochiladi", tplUp: "🔒 yuqori paketda",
+  uz: { photoHint: "Rasmlaringizni (galereyadan) buyurtmadan keyin botga yuborasiz — ishga qo'yib beramiz", lTpl: "🎨 Dizayn shabloni", tplHint: "Tanlamasangiz — bot keyin so'raydi", tplTitle: "Dizayn shablonlari", tplSlides: "🖼 Slayd", tplCovers: "📄 Muqova", tplGalHint: "Buyurtma berishda o'zingizga yoqqanini tanlaysiz", tplNames: ["Oq Klassik", "Moviy Osmon", "Yashil Bahor", "Pushti Pastel", "Quyoshli Sariq", "Lavanda", "Kulrang Minimal", "Akademik Ko'k", "Shaftoli", "Yalpiz", "Qizil Klassik", "Tungi Minimal", "Binafsha Neon", "Ko'k Kosmos", "Yashil Zumrad", "Qizil Olov", "Firuza Neon", "Pushti Neon", "Sariq Elektr", "Kiber Ko'k-Pushti", "Oq Premium", "Pastel Orzu", "Oltin Lyuks", "Aurora", "Qora Olmos", "Zumrad Lyuks", "Yoqut", "Safir", "Shimoliy Yog'du", "Kosmik Tumanlik", "Marmar Oq", "Quyosh Botishi", "Atirgul Oltin", "Okean Chuqurligi", "Sakura", "Ametist Deko", "Shampan"], tplLock: "🔒 Bu shablon yuqoriroq paketda ochiladi", tplUp: "🔒 yuqori paketda",
     turtleAdd: "🐢 Toshbaqa o'qituvchi qo'shish", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +50 000', close: 'Yopish', heroK: 'Professional dizayn', heroH: 'Chiroyli ishlar<br><span class="grad">bir zumda</span>', heroP: "— o'z vaqtida, bepul tuzatish bilan.",
     chipAud: '🎓 Talaba · 👩‍🏫 Ustoz ›', chipFast: '⚡ Tez ›', chipFix: '🔁 Bepul tuzatish ›', chipTurtle: "🐢 Toshbaqa o'qituvchi ›", orderBtn: '🛒 Buyurtma berish',
     prices: 'Narxlar', students: '🎓 Talabalar', teachers: '👩‍🏫 Ustozlar', priceNote: '⚡ Shoshilinch: +50% · 🔁 Tuzatish bepul · 🐢 ustozlarga Pro/Premium, talabalarga +50 000',
@@ -393,7 +421,7 @@ const T = {
       tez: { t: '⚡ Tez tayyorlash', b: "<p><b>Oddiy muddat</b> (to'lovdan keyin): Start — 3 soat, Professional — 6 soat, Premium — 12 soat.</p><p><b>Shoshilinch (+50%):</b> 1–2 soatda tayyor. Buyurtmada «⚡ Shoshilinch» ni tanlang.</p><p>🌙 Kechasi (22:00 dan keyin) to'langan buyurtmalar ertalab 10:00 gacha tayyor bo'ladi.</p>" },
       fix: { t: '🔁 Bepul tuzatish', b: "<p>Ish tayyor bo'lgach, nimanidir o'zgartirmoqchi bo'lsangiz — bepul tuzatamiz.</p><p><b>Start</b> — 1 marta, <b>Professional</b> — 2 marta, <b>Premium</b> — 3 marta. Boshqa xizmatlarda — 1 marta.</p>" },
       turtle: { t: "🐢 Toshbaqa o'qituvchi", b: "<p>Slaydda animatsion toshbaqa o'qituvchi paydo bo'ladi va <b>gapirib</b>, mavzuni sodda tilda tushuntiradi.</p><p>👩‍🏫 <b>Ustozlarga</b> — Professional va Premium paketlarga kiradi.<br>🎓 <b>Talabalarga</b> — xohlasangiz, buyurtmada qo'shasiz: <b>+50 000 so'm</b>.</p>" } } },
-  ru: { photoHint: "Свои фото (из галереи) отправите боту после заказа — вставим их в работу", lTpl: "🎨 Шаблон дизайна", tplHint: "Не выберете — бот спросит позже", tplTitle: "Шаблоны дизайна", tplSlides: "🖼 Слайды", tplCovers: "📄 Обложки", tplGalHint: "Понравившийся выберете при заказе", tplNames: ["Белая классика", "Голубое небо", "Весенняя зелень", "Розовая пастель", "Солнечный жёлтый", "Лаванда", "Серый минимализм", "Академический синий", "Персик", "Мята", "Красная классика", "Ночной минимализм", "Фиолетовый неон", "Синий космос", "Изумрудный неон", "Красный огонь", "Бирюзовый неон", "Розовый неон", "Электро-жёлтый", "Кибер синий-розовый", "Белый премиум", "Пастельная мечта", "Золотой люкс", "Аврора", "Чёрный бриллиант", "Изумрудный люкс", "Рубин", "Сапфир", "Северное сияние", "Космическая туманность", "Белый мрамор", "Закат"], tplLock: "🔒 Этот шаблон открывается в старшем пакете", tplUp: "🔒 в старшем пакете",
+  ru: { photoHint: "Свои фото (из галереи) отправите боту после заказа — вставим их в работу", lTpl: "🎨 Шаблон дизайна", tplHint: "Не выберете — бот спросит позже", tplTitle: "Шаблоны дизайна", tplSlides: "🖼 Слайды", tplCovers: "📄 Обложки", tplGalHint: "Понравившийся выберете при заказе", tplNames: ["Белая классика", "Голубое небо", "Весенняя зелень", "Розовая пастель", "Солнечный жёлтый", "Лаванда", "Серый минимализм", "Академический синий", "Персик", "Мята", "Красная классика", "Ночной минимализм", "Фиолетовый неон", "Синий космос", "Изумрудный неон", "Красный огонь", "Бирюзовый неон", "Розовый неон", "Электро-жёлтый", "Кибер синий-розовый", "Белый премиум", "Пастельная мечта", "Золотой люкс", "Аврора", "Чёрный бриллиант", "Изумрудный люкс", "Рубин", "Сапфир", "Северное сияние", "Космическая туманность", "Белый мрамор", "Закат", "Розовое золото", "Глубина океана", "Сакура", "Аметист Деко", "Шампань"], tplLock: "🔒 Этот шаблон открывается в старшем пакете", tplUp: "🔒 в старшем пакете",
     turtleAdd: "🐢 Добавить черепаху-учителя", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +50 000', close: 'Закрыть', heroK: 'Профессиональный дизайн', heroH: 'Красивые работы<br><span class="grad">в один миг</span>', heroP: '— вовремя, с бесплатными правками.',
     chipAud: '🎓 Студент · 👩‍🏫 Преподаватель ›', chipFast: '⚡ Срочно ›', chipFix: '🔁 Бесплатные правки ›', chipTurtle: '🐢 Черепаха-учитель ›', orderBtn: '🛒 Заказать',
     prices: 'Цены', students: '🎓 Студентам', teachers: '👩‍🏫 Преподавателям', priceNote: '⚡ Срочно: +50% · 🔁 Правки бесплатно · 🐢 учителям Pro/Premium, студентам +50 000',
@@ -412,7 +440,7 @@ const T = {
       tez: { t: '⚡ Срочно', b: '<p><b>Обычный срок</b> (после оплаты): Start — 3 часа, Professional — 6 часов, Premium — 12 часов.</p><p><b>Срочно (+50%):</b> готово за 1–2 часа. Выберите «⚡ Срочно» в заказе.</p><p>🌙 Заказы, оплаченные ночью (после 22:00), будут готовы к 10:00 утра.</p>' },
       fix: { t: '🔁 Бесплатные правки', b: '<p>Если после сдачи захотите что-то изменить — поправим бесплатно.</p><p><b>Start</b> — 1 раз, <b>Professional</b> — 2 раза, <b>Premium</b> — 3 раза. В остальных услугах — 1 раз.</p>' },
       turtle: { t: '🐢 Черепаха-учитель', b: '<p>На слайдах появляется анимированная черепаха-учитель и <b>голосом</b> простыми словами объясняет тему.</p><p>👩‍🏫 <b>Преподавателям</b> — входит в пакеты Professional и Premium.<br>🎓 <b>Студентам</b> — по желанию при заказе: <b>+50 000 сум</b>.</p>' } } },
-  en: { photoHint: "Send your photos (from gallery) to the bot after ordering — we'll put them into the work", lTpl: "🎨 Design template", tplHint: "Skip it — the bot will ask later", tplTitle: "Design templates", tplSlides: "🖼 Slides", tplCovers: "📄 Covers", tplGalHint: "Pick the one you like when ordering", tplNames: ["White Classic", "Sky Blue", "Spring Green", "Pink Pastel", "Sunny Yellow", "Lavender", "Gray Minimal", "Academic Navy", "Peach", "Mint", "Classic Red", "Night Minimal", "Purple Neon", "Blue Cosmos", "Emerald Neon", "Red Fire", "Teal Neon", "Pink Neon", "Electric Yellow", "Cyber Blue-Pink", "White Premium", "Pastel Dream", "Gold Luxe", "Aurora", "Black Diamond", "Emerald Luxe", "Ruby", "Sapphire", "Northern Lights", "Cosmic Nebula", "White Marble", "Sunset"], tplLock: "🔒 This template unlocks in a higher package", tplUp: "🔒 higher package",
+  en: { photoHint: "Send your photos (from gallery) to the bot after ordering — we'll put them into the work", lTpl: "🎨 Design template", tplHint: "Skip it — the bot will ask later", tplTitle: "Design templates", tplSlides: "🖼 Slides", tplCovers: "📄 Covers", tplGalHint: "Pick the one you like when ordering", tplNames: ["White Classic", "Sky Blue", "Spring Green", "Pink Pastel", "Sunny Yellow", "Lavender", "Gray Minimal", "Academic Navy", "Peach", "Mint", "Classic Red", "Night Minimal", "Purple Neon", "Blue Cosmos", "Emerald Neon", "Red Fire", "Teal Neon", "Pink Neon", "Electric Yellow", "Cyber Blue-Pink", "White Premium", "Pastel Dream", "Gold Luxe", "Aurora", "Black Diamond", "Emerald Luxe", "Ruby", "Sapphire", "Northern Lights", "Cosmic Nebula", "White Marble", "Sunset", "Rose Gold", "Deep Ocean", "Sakura", "Amethyst Deco", "Champagne"], tplLock: "🔒 This template unlocks in a higher package", tplUp: "🔒 higher package",
     turtleAdd: "🐢 Add the Turtle teacher", turtleBadge: '👩‍🏫 Pro · Premium · 🎓 +50 000', close: 'Close', heroK: 'Professional design', heroH: 'Beautiful work<br><span class="grad">in a flash</span>', heroP: '— on time, with free revisions.',
     chipAud: '🎓 Student · 👩‍🏫 Teacher ›', chipFast: '⚡ Fast ›', chipFix: '🔁 Free revisions ›', chipTurtle: '🐢 Turtle teacher ›', orderBtn: '🛒 Place an order',
     prices: 'Prices', students: '🎓 Students', teachers: '👩‍🏫 Teachers', priceNote: '⚡ Urgent: +50% · 🔁 Free revisions · 🐢 teachers Pro/Premium, students +50 000',
@@ -522,12 +550,12 @@ function pick(a, svc) { aud = a; order = { aud: a, svc, pkg: '', deadline: 'norm
 const turtleAvail = () => order.aud === 's' && order.svc === 'taqdimot';
 const TPL_KIND = { taqdimot: 's', dars: 's', tadbir: 's', portfolio: 's', mustaqil: 'c', kurs: 'c', maqola: 'c', amaliy: 'c', referat: 'c', oum: 'c', ishlanma: 'c', test: 'c' };
 const tplKind = () => TPL_KIND[order.svc] || '';
-const TIERS = { start: [1, 12], pro: [13, 22], premium: [23, 32] };
+const TIERS = { start: [1, 12], pro: [13, 22], premium: [23, 37] };
 const TIER_NAME = { start: 'START', pro: 'PRO', premium: 'PREMIUM' };
 const tierOf = n => n <= 12 ? 'start' : n <= 22 ? 'pro' : 'premium';
-const tplMax = () => ({ start: 12, pro: 22, premium: 32 })[order.pkg] || 32;
+const tplMax = () => ({ start: 12, pro: 22, premium: 37 })[order.pkg] || 37;
 const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
-const tplCard = (k, n, sel, onclick, lk) => `<div class="tp ${k === 'c' ? 'c' : ''} ${sel ? 'on' : ''} ${lk ? 'lk' : ''}" onclick="${onclick}"><img loading="lazy" src="tpl_${k}${n}.jpg?v=4" alt=""><i class="${tierOf(n)}">${TIER_NAME[tierOf(n)]}</i><span>№${n} ${t('tplNames')[n - 1]}</span></div>`;
+const tplCard = (k, n, sel, onclick, lk) => `<div class="tp ${k === 'c' ? 'c' : ''} ${sel ? 'on' : ''} ${lk ? 'lk' : ''}" onclick="${onclick}"><img loading="lazy" decoding="async" width="${k === 'c' ? 224 : 384}" height="${k === 'c' ? 317 : 216}" src="th_${k}${n}.jpg?v=5" alt=""><i class="${tierOf(n)}">${TIER_NAME[tierOf(n)]}</i><span>№${n} ${t('tplNames')[n - 1]}</span></div>`;
 let galKind = 's', galTier = 'pro';
 function renderGallery() {
   const g = document.getElementById('tplGallery');
@@ -555,7 +583,7 @@ function renderOrder() {
     `<div class="opt ${order.pkg === k ? 'on' : ''}" onclick="order.pkg='${k}';hap();renderOrder()"><span><b>${pName(aud, order.svc, k)}</b><br><small style="color:var(--m)">${pDesc(aud, order.svc, k)}</small></span><span class="v">${fmt(p[1])}</span></div>`).join('');
   const kind = tplKind(); document.getElementById('tplWrap').style.display = kind ? 'block' : 'none';
   if (order.tpl && order.tpl > tplMax()) order.tpl = 0;
-  if (kind) document.getElementById('tplOpts').innerHTML = range(1, 32).map(n => n > tplMax()
+  if (kind) document.getElementById('tplOpts').innerHTML = range(1, 37).map(n => n > tplMax()
     ? tplCard(kind, n, false, `hap();toast(t('tplLock'))`, true)
     : tplCard(kind, n, order.tpl === n, `order.tpl=order.tpl===${n}?0:${n};hap();renderOrder()`)).join('');
   const tw = document.getElementById('turtleWrap'); tw.style.display = turtleAvail() ? 'block' : 'none';

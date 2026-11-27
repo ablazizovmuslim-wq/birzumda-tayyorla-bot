@@ -53,7 +53,7 @@ AUTO_SERVICES = {
 }
 
 # n: name, bg, a1, a2, text, muted, card, card_alpha, border, light, title_font
-THEMES = {  # 1–12 Start · 13–22 Professional · 23–32 Premium
+THEMES = {  # 1–12 Start · 13–22 Professional · 23–37 Premium
     1: ("Oq Klassik", "FAFAF7", "1F3A68", "C8A24A", "1B2333", "5E6675", "FFFFFF", 92, "D9DEE8", True, "Arial"),
     2: ("Moviy Osmon", "F3F8FF", "1E6FE0", "38B6FF", "13233D", "56657E", "FFFFFF", 92, "CFE0F7", True, "Arial"),
     3: ("Yashil Bahor", "F4FBF5", "1F8A4C", "8BC34A", "14261A", "566B5C", "FFFFFF", 92, "CFE8D6", True, "Arial"),
@@ -86,6 +86,11 @@ THEMES = {  # 1–12 Start · 13–22 Professional · 23–32 Premium
     30: ("Kosmik Tumanlik", "07030F", "FF9EE5", "8FB8FF", "F7F1FF", "C5B8DA", "1A1030", 70, "FF9EE5", False, "Arial"),
     31: ("Marmar Oq", "FBFAF7", "A67C2E", "C9A45C", "1F1A12", "6E6452", "FFFFFF", 90, "D9C49A", True, "Arial"),
     32: ("Quyosh Botishi", "120709", "FFB86B", "FF5E7E", "FFF4EC", "E0BFB4", "2A1214", 72, "FFB86B", False, "Arial"),
+    33: ("Atirgul Oltin", "14080C", "F2B8A2", "E36F8C", "FFF2F0", "D9B3B0", "2A1017", 78, "F2B8A2", False, "Arial"),
+    34: ("Okean Chuqurligi", "02121A", "7FE7F2", "3D9BFF", "EAFDFF", "9EC6CF", "06222E", 76, "7FE7F2", False, "Arial"),
+    35: ("Sakura", "FFF7F9", "C2185B", "F48FB1", "2B1520", "7A5A66", "FFFFFF", 88, "F2B6C8", True, "Arial"),
+    36: ("Ametist Deko", "0D0716", "E6C27A", "A06CFF", "F6EEFF", "BFB2D6", "1C1030", 78, "E6C27A", False, "Arial"),
+    37: ("Shampan", "FBF6EE", "A07A35", "D9B46A", "221A0E", "6E604A", "FFFFFF", 90, "DCC596", True, "Arial"),
 }
 TIER = {n: ('start' if n <= 12 else 'pro' if n <= 22 else 'premium') for n in THEMES}
 DEFAULT_THEME = 13
@@ -236,7 +241,7 @@ def work_lang(o, client_lang: str) -> str:
     return client_lang if client_lang in LANG_NAMES else "uz"
 
 
-PKG_MAX = {"start": 12, "pro": 22, "premium": 32}
+PKG_MAX = {"start": 12, "pro": 22, "premium": 37}
 PKG_DEFAULT = {"start": 2, "pro": 13, "premium": 23}
 
 
@@ -245,7 +250,7 @@ def theme_no(o, key: str) -> int:
     pkg = (o["package"] or "") if "package" in o.keys() else ""
     m = re.search(r"№\s*(\d{1,2})", brief_dict(o).get(key, ""))
     n = int(m.group(1)) if m and int(m.group(1)) in THEMES else 0
-    if n and n > PKG_MAX.get(pkg, 32):
+    if n and n > PKG_MAX.get(pkg, 37):
         n = 0
     if not n and key == "style":
         n = PKG_DEFAULT.get(pkg, DEFAULT_THEME)
