@@ -2057,6 +2057,15 @@ PROMO_TX = {
                  "en": "🎁 <b>Promo code of the week!</b>\n\n🎟 Code: <code>{code}</code> — <b>{pct}% off</b>\n"
                        "⏰ Only <b>{hours} hours</b>: until {until}\n\n"
                        "How to use: tap «Promo code» when ordering and type the code 👇"},
+    "announce_month": {"uz": "🎉 <b>Oylik aksiya boshlandi!</b>\n\n🎟 Kod: <code>{code}</code> — <b>barcha ishlarga {pct}% chegirma</b>\n"
+                             "⏰ Faqat <b>{hours} soat</b>: {until} gacha\n\n"
+                             "Qanday ishlatiladi: buyurtma berishda «Promokod» qatoriga kodni yozing 👇",
+                       "ru": "🎉 <b>Ежемесячная акция!</b>\n\n🎟 Код: <code>{code}</code> — <b>скидка {pct}% на все работы</b>\n"
+                             "⏰ Только <b>{hours} ч</b>: до {until}\n\n"
+                             "Как использовать: при заказе введите код в поле «Промокод» 👇",
+                       "en": "🎉 <b>Monthly sale is on!</b>\n\n🎟 Code: <code>{code}</code> — <b>{pct}% off everything</b>\n"
+                             "⏰ Only <b>{hours} hours</b>: until {until}\n\n"
+                             "How to use: type the code in the «Promo code» field when ordering 👇"},
 }
 
 
@@ -2178,6 +2187,145 @@ async def weekly_promo_send(c: CallbackQuery, state: FSMContext, bot: Bot):
     fmt = dict(code=data["wp_code"], pct=data["wp_pct"], hours=data["wp_hours"], until=data["wp_until"])
     await state.update_data(wp_code=None)
     asyncio.create_task(run_broadcast_text(bot, ids, lambda lg: PROMO_TX["announce"][lg].format(**fmt), status))
+
+
+# ------------------------------------------------------------------ 🗓 oylik aksiya (avtomatik)
+MONTHS_UZ = ["YANVAR", "FEVRAL", "MART", "APREL", "MAY", "IYUN", "IYUL", "AVGUST", "SENTABR", "OKTABR", "NOYABR", "DEKABR"]
+MONTHLY_DEFAULT = {"on": 1, "pct": 50, "day": 1, "time": "14:00", "hours": 24}
+
+
+def monthly_cfg() -> dict:
+    cfg = dict(MONTHLY_DEFAULT)
+    try:
+        cfg.update(json.loads(get_setting("monthly_promo") or "{}"))
+    except ValueError:
+        pass
+    return cfg
+
+
+def save_monthly_cfg(cfg: dict):
+    set_setting("monthly_promo", json.dumps(cfg))
+
+
+def local_now() -> datetime:
+    return datetime.now() + timedelta(hours=TZ_OFFSET)
+
+
+def monthly_status(cfg: dict) -> str:
+    st = "✅ Yoqilgan" if cfg.get("on") else "⏸ O'chirilgan"
+    fire, _ = next_monthly_fire(cfg, local_now())
+    nxt = f"Keyingisi: <b>{fire:%d.%m.%Y %H:%M}</b>\n" if cfg.get("on") else ""
+    return (f"🗓 <b>Oylik aksiya</b> — {st}\n{nxt}\n"
+            f"Har oyning <b>{cfg['day']}-sanasi</b>, soat <b>{cfg['time']}</b> (Toshkent) da bot o'zi:\n"
+            f"1) <b>{cfg['pct']}%</b> lik promokod yaratadi (masalan <code>{MONTHS_UZ[fire.month - 1]}{cfg['pct']}</code>), "
+            f"<b>{cfg['hours']} soat</b> amal qiladi;\n"
+            "2) hammaga o'z tilida e'lon + «Buyurtma berish» tugmasini yuboradi;\n"
+            "3) sizga natijani yozadi. Bir kun oldin eslatma ham keladi.\n"
+            + (f"\nOxirgi aksiya: {cfg['last']}\n" if cfg.get("last") else "")
+            + "\n<b>Sozlash:</b>\n"
+            "<code>/oylik 50 1 14:00</code> — 50%, har oyning 1-sanasi, 14:00\n"
+            "<code>/oylik 30 15 10:00 48h</code> — 30%, 15-sana, 10:00, 48 soat\n"
+            "<code>/oylik off</code> · <code>/oylik on</code> — o'chirish / yoqish\n"
+            "<code>/oylik hozir</code> — shu oyning aksiyasini hoziroq boshlash")
+
+
+async def start_monthly_promo(bot: Bot, cfg: dict, month_key: str, month: int):
+    code = f"{MONTHS_UZ[month - 1]}{cfg['pct']}"
+    expires = save_promo(code, int(cfg["pct"]), None, int(cfg["hours"]))
+    set_setting("weekly_code", code)
+    cfg["last"] = f"{month_key} — {code}"
+    save_monthly_cfg(cfg)
+    until = fmt_until(expires)
+    fmt = dict(code=code, pct=cfg["pct"], hours=cfg["hours"], until=until)
+    ids = audience_ids("all")
+    status = None
+    for aid in ADMIN_IDS:
+        try:
+            m = await bot.send_message(aid, f"🗓 Oylik aksiya boshlandi: <code>{code}</code> — {cfg['pct']}%, {until} gacha.\n"
+                                            f"📤 Yuborilmoqda... 0 / {len(ids)}")
+            status = status or m
+        except Exception as e:
+            logging.warning("oylik aksiya admin %s: %s", aid, e)
+    if status is None:
+        return
+    await run_broadcast_text(bot, ids, lambda lg: PROMO_TX["announce_month"][lg].format(**fmt), status)
+
+
+def next_monthly_fire(cfg: dict, ln: datetime):
+    """Hali o'tkazilmagan eng yaqin aksiya vaqti (Toshkent) va uning oyi «YYYY-MM»."""
+    hh, mm = (int(x) for x in cfg["time"].split(":"))
+    y, mo = ln.year, ln.month
+    for _ in range(3):
+        fire = datetime(y, mo, int(cfg["day"]), hh, mm)
+        key = f"{y}-{mo:02d}"
+        done = (cfg.get("last") or "").startswith(key)
+        if not done and ln < fire + timedelta(hours=12):
+            return fire, key
+        y, mo = (y + 1, 1) if mo == 12 else (y, mo + 1)
+    return fire, key
+
+
+async def check_monthly_promo(bot: Bot):
+    cfg = monthly_cfg()
+    if not cfg.get("on"):
+        return
+    ln = local_now()
+    fire, key = next_monthly_fire(cfg, ln)
+    if fire <= ln:  # vaqti keldi (bot o'chib qolgan bo'lsa ham 12 soat ichida boshlaydi)
+        await start_monthly_promo(bot, cfg, key, fire.month)
+        return
+    if fire - timedelta(days=1) <= ln and cfg.get("reminded") != key:  # bir kun oldin adminga eslatma
+        cfg["reminded"] = key
+        save_monthly_cfg(cfg)
+        for aid in ADMIN_IDS:
+            try:
+                await bot.send_message(aid, f"🗓 Eslatma: ertaga soat {cfg['time']} da oylik aksiya — "
+                                            f"<b>{cfg['pct']}%</b>, kod <code>{MONTHS_UZ[fire.month - 1]}{cfg['pct']}</code>.\n"
+                                            "O'zgartirish: /oylik · bu safar o'tkazib yuborish: <code>/oylik skip</code>")
+            except Exception:
+                pass
+
+
+@router.message(Command("oylik", "monthly"))
+async def monthly_cmd(m: Message, command: CommandObject, bot: Bot):
+    if not is_admin(m.from_user.id):
+        return
+    cfg = monthly_cfg()
+    parts = (command.args or "").lower().split()
+    if not parts:
+        await m.answer(monthly_status(cfg))
+        return
+    if parts[0] in ("off", "stop", "ochir", "o'chir"):
+        cfg["on"] = 0
+    elif parts[0] in ("on", "yoq"):
+        cfg["on"] = 1
+    elif parts[0] in ("skip", "otkaz"):
+        fire, key = next_monthly_fire(cfg, local_now())
+        cfg["last"] = f"{key} — o'tkazib yuborildi"
+        save_monthly_cfg(cfg)
+        await m.answer(f"⏭ {fire:%d.%m} dagi aksiya o'tkazib yuborildi. Keyingisi odatdagidek.")
+        return
+    elif parts[0] in ("hozir", "now"):
+        fire, key = next_monthly_fire(cfg, local_now())
+        await m.answer("🚀 Oylik aksiya hoziroq boshlanmoqda... (shu sababli " + f"{fire:%d.%m} dagisi bo'lmaydi)")
+        asyncio.create_task(start_monthly_promo(bot, cfg, key, local_now().month))
+        return
+    else:
+        pct = parts[0]
+        if not pct.isdigit() or not 1 <= int(pct) <= 90:
+            await m.answer(monthly_status(cfg))
+            return
+        cfg["pct"] = int(pct)
+        for t in parts[1:]:
+            if re.fullmatch(r"\d{1,2}:\d{2}", t) and int(t.split(":")[0]) < 24 and int(t.split(":")[1]) < 60:
+                cfg["time"] = f"{int(t.split(':')[0]):02d}:{t.split(':')[1]}"
+            elif mh := re.fullmatch(r"(\d+)(h|soat|ч)", t):
+                cfg["hours"] = max(1, min(int(mh.group(1)), 24 * 7))
+            elif t.isdigit() and 1 <= int(t) <= 28:
+                cfg["day"] = int(t)
+        cfg["on"] = 1
+    save_monthly_cfg(cfg)
+    await m.answer("✅ Saqlandi.\n\n" + monthly_status(cfg))
 
 
 async def run_broadcast_text(bot: Bot, ids, text_for, status_msg):
@@ -3536,6 +3684,10 @@ async def reminders_loop(bot: Bot):
             await check_reminders(bot)
         except Exception as e:
             logging.warning("Eslatmalar xatosi: %s", e)
+        try:
+            await check_monthly_promo(bot)
+        except Exception as e:
+            logging.warning("Oylik aksiya xatosi: %s", e)
         await asyncio.sleep(300)  # har 5 daqiqada
 
 
@@ -3614,6 +3766,7 @@ async def admin_help(m: Message):
         "<code>/delshop ID</code>\n"
         "🎟 <code>/promo KOD FOIZ [SONI] [24h]</code> · /promos · <code>/delpromo KOD</code>\n"
         "⚡ Haftalik promokod (24 soat) + hammaga e'lon: <code>/haftalik 15</code>\n"
+        "🗓 Har oy avtomatik aksiya: /oylik\n"
         "🔥 <code>/aksiya matn</code> · 🎁 <code>/addbonus ID SUMMA</code>\n"
         "🆓 Bepul ish berish: <code>/addstart ID [SONI]</code> · <code>/addprofessional ID [SONI]</code> · "
         "<code>/addpremium ID [SONI]</code> · ko'rish: /credits\n"
@@ -4463,7 +4616,7 @@ async def set_commands(bot: Bot):
                    ("orders", "📋 Oxirgi buyurtmalar"), ("daromad", "📊 Daromad"), ("avto", "🤖 Avto rejim va API balansi"),
                    ("addpremium", "🎁 Bepul Premium ish berish: ID [soni]"), ("addprofessional", "🎁 Bepul Professional ish: ID [soni]"),
                    ("addstart", "🎁 Bepul Start ish: ID [soni]"), ("credits", "🎁 Kimda nechta bepul ish bor"),
-                   ("haftalik", "⚡ Haftalik promokod 24 soat + e'lon: FOIZ"), ("promo", "🎟 Promokod: KOD FOIZ [SONI] [24h]"),
+                   ("haftalik", "⚡ Haftalik promokod 24 soat + e'lon: FOIZ"), ("oylik", "🗓 Har oylik avtomatik aksiya"), ("promo", "🎟 Promokod: KOD FOIZ [SONI] [24h]"),
                    ("broadcast", "📢 Hammaga xabar")]
     base = [(c, d) for c, d in COMMANDS.get(DEFAULT_LANG, [])]
     for aid in ADMIN_IDS:
