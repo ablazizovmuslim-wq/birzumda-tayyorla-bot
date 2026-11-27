@@ -559,7 +559,7 @@ def order_text(o, for_admin=False, lang: str = "uz") -> str:
           f"{tr(lang, 'f_status')}: {ST_TR.get(o['status'], {}).get(lang, o['status'])}")
     if for_admin:
         uname = f"@{o['username']}" if o["username"] else "username yo'q"
-        t += (f"\n\n👤 {html.escape(o['full_name'])} ({uname})\n🆔 <code>{o['user_id']}</code>"
+        t += (f"\n\n👤 <a href=\"tg://user?id={o['user_id']}\">{html.escape(o['full_name'] or 'Mijoz')}</a> ({uname})\n🆔 <code>{o['user_id']}</code>"
               + (f"\n📞 {o['phone']}" if o["phone"] else "") + f"\n🕐 {o['created_at']}")
     return t
 
@@ -743,6 +743,26 @@ def admin_kb(oid, status):
     if status == "new":
         return ikb([[("👀 Namuna yuborish (to'lovdan oldin)", f"adm:prev:{oid}", None)]])
     return None
+
+
+def who_html(uid, name=None, username=None) -> str:
+    """Mijoz: bosiladigan ism (profil ochiladi) · @username · ID."""
+    nm = html.escape(name or "Mijoz")
+    return (f'👤 <a href="tg://user?id={uid}">{nm}</a>' + (f" · @{html.escape(username)}" if username else " · username yo'q")
+            + f"\n🆔 <code>{uid}</code>")
+
+
+def contact_rows(uid, username=None):
+    """Mijoz bilan bog'lanish tugmalari: bot orqali yozish + Telegramda ochish (username bo'lsa)."""
+    row = [ibtn("✉️ Bot orqali yozish", f"au:msg:{uid}", "success")]
+    if username:
+        row.append(InlineKeyboardButton(text=f"💬 @{username}", url=f"https://t.me/{username}"))
+    return [row, [ibtn("👤 Mijoz kartasi", f"au:card:{uid}", None)]]
+
+
+def with_contact(kb, uid, username=None):
+    rows = list(kb.inline_keyboard) if kb else []
+    return InlineKeyboardMarkup(inline_keyboard=rows + contact_rows(uid, username))
 
 
 # ------------------------------------------------------------------ holatlar
@@ -2361,9 +2381,42 @@ async def run_broadcast_text(bot: Bot, ids, text_for, status_msg):
     await status_msg.edit_text(f"✅ <b>E'lon yuborildi!</b>\n\n📨 Yetkazildi: <b>{ok}</b>\n🚫 Yetkazilmadi: <b>{fail}</b>")
 
 
+PROMO_ST = {"new": "🆕 to'lov kutilmoqda", "quote": "💬 narx kutilmoqda", "paid": "🧾 chek tekshirilmoqda",
+            "work": "⚙️ ishda", "done": "✅ bajarildi", "rejected": "❌ rad etildi"}
+
+
+async def promo_users(m: Message, code: str):
+    with db() as con:
+        rows = con.execute("SELECT id, user_id, username, full_name, status, price, created_at FROM orders "
+                           "WHERE UPPER(promo)=? ORDER BY id DESC LIMIT 40", (code,)).fetchall()
+    if not rows:
+        await m.answer(f"🎟 <code>{html.escape(code)}</code> — hali hech kim ishlatmagan.")
+        return
+    paid = sum(1 for r in rows if r["status"] in ("work", "done"))
+    lines = [f"#{r['id']} · {PROMO_ST.get(r['status'], r['status'])} · {money(r['price'])}\n"
+             f'   👤 <a href="tg://user?id={r["user_id"]}">{html.escape(r["full_name"] or "Mijoz")}</a>'
+             + (f" · @{html.escape(r['username'])}" if r["username"] else "") + f" · <code>{r['user_id']}</code>"
+             for r in rows]
+    # rad etilgan / to'lamaganlar bilan tez bog'lanish tugmalari
+    btns, seen = [], set()
+    for r in rows:
+        if r["status"] in ("rejected", "new", "paid") and r["user_id"] not in seen and len(btns) < 8:
+            seen.add(r["user_id"])
+            label = f"✉️ {(r['full_name'] or str(r['user_id']))[:18]} (#{r['id']})"
+            btns.append([ibtn(label, f"au:msg:{r['user_id']}", "danger" if r["status"] == "rejected" else None)])
+    await m.answer(f"🎟 <b>{html.escape(code)}</b> — kim ishlatdi: <b>{len(rows)}</b> ta buyurtma, to'langan: <b>{paid}</b>\n"
+                   "Ismni bossangiz — profili ochiladi.\n\n" + "\n".join(lines)
+                   + ("\n\n👇 Rad etilgan / to'lamaganlarga yozish:" if btns else ""),
+                   reply_markup=InlineKeyboardMarkup(inline_keyboard=btns) if btns else None)
+
+
 @router.message(Command("promos"))
-async def promo_list(m: Message):
+async def promo_list(m: Message, command: CommandObject = None):
     if not is_admin(m.from_user.id):
+        return
+    arg = ((command.args if command else "") or "").strip().upper()
+    if arg:
+        await promo_users(m, arg)
         return
     with db() as con:
         rows = con.execute("SELECT * FROM promos ORDER BY active DESC, created_at DESC LIMIT 30").fetchall()
@@ -2376,7 +2429,9 @@ async def promo_list(m: Message):
              + (f" · qoldi {r['uses_left']}" if r["uses_left"] is not None else " · cheksiz")
              + (f" · ⏰ {fmt_until(r['expires_at'])} gacha" if r["expires_at"] else "") for r in rows]
     await m.answer("🎟 <b>Promokodlar</b>\n\n" + "\n".join(lines)
-                   + "\n\n➕ <code>/promo KOD FOIZ [SONI] [24h]</code> · ⚡ haftalik + e'lon: <code>/haftalik 15</code>")
+                   + "\n\n👥 Kim ishlatganini ko'rish: <code>/promos KOD</code> (masalan <code>/promos "
+                   + html.escape(rows[0]["code"]) + "</code>)"
+                   + "\n➕ <code>/promo KOD FOIZ [SONI] [24h]</code> · ⚡ haftalik + e'lon: <code>/haftalik 15</code>")
 
 
 @router.message(Command("delpromo"))
@@ -3281,7 +3336,10 @@ async def check_cheque(bot: Bot, oid: int, file_id: str, unique_id: str, mime: s
         return
     if reasons:
         await notify_admins(bot, f"🧾 #{oid} — <b>chek avtomatik tasdiqlanmadi</b>:\n• " + "\n• ".join(html.escape(r) for r in reasons)
-                            + "\n\nKartangizni tekshirib, o'zingiz qaror qiling:", admin_kb(oid, "paid"))
+                            + "\n\n" + who_html(o["user_id"], o["full_name"], o["username"])
+                            + (f"\n🎟 Promokod: <code>{html.escape(o['promo'])}</code>" if o["promo"] else "")
+                            + "\n\nKartangizni tekshirib, o'zingiz qaror qiling:",
+                            with_contact(admin_kb(oid, "paid"), o["user_id"], o["username"]))
         return
     set_setting(f"cheque_{unique_id}", str(oid))
     note = (f"✅ #{oid} — <b>chek avtomatik tasdiqlandi</b>: {money(int(_digits(info.get('amount'))))} → karta "
@@ -3765,6 +3823,7 @@ async def admin_help(m: Message):
         "📦 /dokon — tayyor ishlar · fayl + <code>/sell 15000 Nomi</code> · rasm + <code>/preview ID</code> · "
         "<code>/delshop ID</code>\n"
         "🎟 <code>/promo KOD FOIZ [SONI] [24h]</code> · /promos · <code>/delpromo KOD</code>\n"
+        "👥 Promokodni kim ishlatdi + bog'lanish: <code>/promos KOD</code>\n"
         "⚡ Haftalik promokod (24 soat) + hammaga e'lon: <code>/haftalik 15</code>\n"
         "🗓 Har oy avtomatik aksiya: /oylik\n"
         "🔥 <code>/aksiya matn</code> · 🎁 <code>/addbonus ID SUMMA</code>\n"
@@ -3994,7 +4053,9 @@ async def admin_action(c: CallbackQuery, state: FSMContext, bot: Bot):
             await bot.send_message(o["user_id"], tr(L(o["user_id"]), "rejected", oid=oid, contact=CONTACT))
         except Exception:
             pass
-        await c.message.answer(f"🚩 #{oid} — soxta chek deb belgilandi, mijozga xabar yuborildi.")
+        await c.message.answer(f"🚩 #{oid} — soxta chek deb belgilandi, mijozga xabar yuborildi.\n\n"
+                               + who_html(o["user_id"], o["full_name"], o["username"]),
+                               reply_markup=with_contact(None, o["user_id"], o["username"]))
     elif act == "no":
         if o["status"] in ("rejected", "done"):
             await c.answer("Bu buyurtma allaqachon yopilgan", show_alert=True)
@@ -4002,7 +4063,11 @@ async def admin_action(c: CallbackQuery, state: FSMContext, bot: Bot):
         set_status(oid, "rejected")
         refund_discounts(o)
         await bot.send_message(o["user_id"], tr(L(o["user_id"]), "rejected", oid=oid, contact=CONTACT))
-        await c.message.answer(f"#{oid} — rad etildi.")
+        await c.message.answer(f"❌ #{oid} — rad etildi, mijozga xabar ketdi.\n\n"
+                               + who_html(o["user_id"], o["full_name"], o["username"])
+                               + (f"\n🎟 Promokod: <code>{html.escape(o['promo'])}</code>" if o["promo"] else "")
+                               + "\n\nSababini tushuntirish uchun mijozga yozing 👇",
+                               reply_markup=with_contact(None, o["user_id"], o["username"]))
     elif act == "price":
         await state.set_state(AdminSend.price)
         await state.update_data(price_oid=oid)
